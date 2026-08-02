@@ -52,6 +52,15 @@ export interface ResultListItem extends ImageItem {
   summary: DetectionSummary | null;
 }
 
+/** Reference entry: how to read a condition and what to do about it. */
+export interface ConditionInfo {
+  key: string;
+  label: string;
+  appearance: string;
+  interpretation: string;
+  action: string;
+}
+
 export interface NamedCount {
   label: string;
   count: number;

@@ -66,6 +66,21 @@ def test_pdf_is_a_valid_document(client, analyzed):
     assert len(response.content) > 1000
 
 
+def test_pdf_lists_the_recommended_action_for_each_condition_found(client, analyzed):
+    from pypdf import PdfReader
+
+    from app.inference.diseases import BY_LABEL, HEALTHY
+
+    response = client.get(f"/api/results/{analyzed['image_id']}/export.pdf")
+    text = "".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(response.content)).pages)
+
+    found = {d["disease"] for d in analyzed["detections"] if d["disease"] != HEALTHY}
+    assert found, "citra contoh seharusnya memuat setidaknya satu temuan"
+    assert "Rekomendasi tindakan" in text
+    for label in found:
+        assert BY_LABEL[label].action.split(",")[0] in text
+
+
 def test_pdf_is_offered_as_a_named_download(client, analyzed):
     response = client.get(f"/api/results/{analyzed['image_id']}/export.pdf")
 

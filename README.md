@@ -22,6 +22,7 @@ Layar frontend (tahap 4–5) menunggu `docs/SawitScan_Prototype.html`.
 | `GET /api/results` | Riwayat unggahan, terbaru dulu |
 | `GET /api/results/{image_id}` | Satu hasil deteksi lengkap |
 | `GET /api/dashboard` | Agregat lintas citra |
+| `GET /api/conditions` | Tabel acuan kondisi pohon: ciri, interpretasi, tindakan |
 | `GET /api/results/{image_id}/export.csv` | Unduh CSV, satu baris per pohon |
 | `GET /api/results/{image_id}/export.pdf` | Unduh laporan PDF |
 

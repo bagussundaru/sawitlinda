@@ -69,6 +69,16 @@ class ResultListItem(ImageOut):
     summary: Summary | None = None
 
 
+class ConditionInfo(BaseModel):
+    """Reference entry: how to read a condition and what to do about it."""
+
+    key: str
+    label: str
+    appearance: str
+    interpretation: str
+    action: str
+
+
 class NamedCount(BaseModel):
     label: str
     count: int

@@ -15,6 +15,7 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app import schemas
+from app.inference.diseases import BY_LABEL, HEALTHY
 
 CSV_HEADERS = [
     "no",
@@ -138,6 +139,47 @@ def _detection_table(result: schemas.DetectionResult) -> Table:
     return table
 
 
+def _action_table(result: schemas.DetectionResult) -> Table | None:
+    """Recommended action per condition actually found, most frequent first.
+
+    Healthy trees are left out — there is nothing to act on.
+    """
+    counts: dict[str, int] = {}
+    for detection in result.detections:
+        if detection.disease != HEALTHY:
+            counts[detection.disease] = counts.get(detection.disease, 0) + 1
+
+    if not counts:
+        return None
+
+    rows = [["Kondisi", "Jumlah", "Interpretasi", "Tindakan"]]
+    for label, count in sorted(counts.items(), key=lambda item: -item[1]):
+        condition = BY_LABEL.get(label)
+        rows.append(
+            [
+                label,
+                str(count),
+                condition.interpretation if condition else "-",
+                condition.action if condition else "-",
+            ]
+        )
+
+    table = Table(rows, colWidths=[34 * mm, 16 * mm, 55 * mm, 63 * mm], repeatRows=1)
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eceff1")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cfd8dc")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ALIGN", (1, 1), (1, -1), "CENTER"),
+            ]
+        )
+    )
+    return table
+
+
 def to_pdf(result: schemas.DetectionResult) -> bytes:
     """A one-file report: header, summary figures, then every detection."""
     buffer = io.BytesIO()
@@ -170,6 +212,18 @@ def to_pdf(result: schemas.DetectionResult) -> bytes:
         Spacer(1, 6 * mm),
         _summary_table(result),
         Spacer(1, 8 * mm),
+    ]
+
+    actions = _action_table(result)
+    if actions is not None:
+        story += [
+            Paragraph("Rekomendasi tindakan", styles["Heading2"]),
+            Spacer(1, 2 * mm),
+            actions,
+            Spacer(1, 8 * mm),
+        ]
+
+    story += [
         Paragraph("Rincian temuan", styles["Heading2"]),
         Spacer(1, 2 * mm),
     ]

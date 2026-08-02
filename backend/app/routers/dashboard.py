@@ -4,9 +4,16 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.db import get_db
-from app.inference.diseases import SEVERITIES
+from app.inference.diseases import CONDITIONS, SEVERITIES
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
+
+
+@router.get("/conditions", response_model=list[schemas.ConditionInfo])
+def list_conditions() -> list[schemas.ConditionInfo]:
+    """Reference table of tree conditions — legend for the results screen and the
+    source of the recommended actions shown to the operator."""
+    return [schemas.ConditionInfo(**vars(condition)) for condition in CONDITIONS]
 
 
 @router.get("/dashboard", response_model=schemas.Dashboard)
