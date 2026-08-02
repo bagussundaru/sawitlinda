@@ -12,7 +12,8 @@ Spesifikasi teknis & urutan pengerjaan: [`SPEC.md`](SPEC.md).
 
 ## Status
 
-Tahap **1–3** selesai: seluruh backend MVP sudah berjalan. Layar frontend menyusul.
+Tahap **1–3** dan **6 (export)** selesai: seluruh backend MVP sudah berjalan.
+Layar frontend (tahap 4–5) menunggu `docs/SawitScan_Prototype.html`.
 
 | Endpoint | Keterangan |
 | --- | --- |
@@ -21,6 +22,8 @@ Tahap **1–3** selesai: seluruh backend MVP sudah berjalan. Layar frontend meny
 | `GET /api/results` | Riwayat unggahan, terbaru dulu |
 | `GET /api/results/{image_id}` | Satu hasil deteksi lengkap |
 | `GET /api/dashboard` | Agregat lintas citra |
+| `GET /api/results/{image_id}/export.csv` | Unduh CSV, satu baris per pohon |
+| `GET /api/results/{image_id}/export.pdf` | Unduh laporan PDF |
 
 > **Inference masih MOCK.** `run_inference()` menghasilkan deteksi acak yang realistis
 > dan deterministik per citra. Lihat [`docs/SWAP_MODEL.md`](docs/SWAP_MODEL.md).

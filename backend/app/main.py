@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import dashboard, results, upload
+from app.routers import dashboard, export, results, upload
 
 settings = get_settings()
 
@@ -29,3 +29,4 @@ def health() -> dict:
 app.include_router(upload.router)
 app.include_router(results.router)
 app.include_router(dashboard.router)
+app.include_router(export.router)

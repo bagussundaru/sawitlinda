@@ -22,6 +22,17 @@ def _get_image(db: Session, image_id: UUID) -> models.Image:
     return image
 
 
+def require_analyzed_image(db: Session, image_id: UUID) -> models.Image:
+    """Fetch an image that has results, or fail with a message the user can act on."""
+    image = _get_image(db, image_id)
+    if image.status != "analyzed":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Citra belum dianalisis. Jalankan /api/analyze/{image_id} terlebih dahulu.",
+        )
+    return image
+
+
 @router.post("/analyze/{image_id}", response_model=schemas.DetectionResult)
 def analyze_image(image_id: UUID, db: Session = Depends(get_db)) -> schemas.DetectionResult:
     """Run inference on an uploaded image and persist the detections.
@@ -84,10 +95,4 @@ def list_results(db: Session = Depends(get_db)) -> list[schemas.ResultListItem]:
 
 @router.get("/results/{image_id}", response_model=schemas.DetectionResult)
 def get_result(image_id: UUID, db: Session = Depends(get_db)) -> schemas.DetectionResult:
-    image = _get_image(db, image_id)
-    if image.status != "analyzed":
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Citra belum dianalisis. Jalankan /api/analyze/{image_id} terlebih dahulu.",
-        )
-    return mappers.detection_result(image)
+    return mappers.detection_result(require_analyzed_image(db, image_id))
