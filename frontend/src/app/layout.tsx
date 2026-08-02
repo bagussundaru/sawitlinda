@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+
+import TopBar from "@/components/TopBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -6,10 +8,19 @@ export const metadata: Metadata = {
   description: "Deteksi & klasifikasi penyakit kelapa sawit dari citra UAV",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        <div className="mx-auto min-h-screen max-w-[1080px] bg-[var(--page)]">
+          <TopBar />
+          <main className="screen px-[22px] pb-[60px] pt-[26px]">{children}</main>
+        </div>
+      </body>
     </html>
   );
 }

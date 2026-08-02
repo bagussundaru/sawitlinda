@@ -69,6 +69,18 @@ class ResultListItem(ImageOut):
     summary: Summary | None = None
 
 
+class MapPoint(BaseModel):
+    """One detected tree with coordinates, for the spread map."""
+
+    detection_id: int
+    image_id: UUID
+    filename: str
+    disease: str
+    severity: Severity
+    confidence: float
+    gps: Gps
+
+
 class ConditionInfo(BaseModel):
     """Reference entry: how to read a condition and what to do about it."""
 

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SawitScan AI — Prototype</title>
+<style>
+  :root{
+    --green:#0F6E56; --green-d:#0a4a3a; --green-l:#1D9E75; --green-bg:#E1F5EE;
+    --amber:#BA7517; --amber-bg:#FAEEDA; --red:#A32D2D; --red-bg:#FCEBEB;
+    --ink:#1f2421; --muted:#5F5E5A; --line:#e3e1d8; --card:#ffffff; --page:#f5f4ef;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--page);color:var(--ink);line-height:1.5}
+  .app{max-width:1080px;margin:0 auto;min-height:100vh;background:var(--page)}
+  /* Top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--green)}
+  .logo{width:30px;height:30px;border-radius:8px;background:var(--green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+  .brand small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+  .nav{display:flex;gap:4px;flex-wrap:wrap}
+  .nav button{border:none;background:none;padding:8px 14px;border-radius:8px;font-size:13.5px;color:var(--muted);cursor:pointer;font-weight:500;transition:.15s}
+  .nav button:hover{background:var(--green-bg)}
+  .nav button.active{background:var(--green);color:#fff}
+  .nav button:disabled{opacity:.4;cursor:not-allowed}
+  /* Screens */
+  .screen{display:none;padding:26px 22px 60px}
+  .screen.active{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  h2.title{font-size:20px;margin-bottom:4px}
+  p.sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+  /* Upload */
+  .drop{border:2px dashed var(--green-l);border-radius:16px;background:var(--green-bg);padding:44px 20px;text-align:center;cursor:pointer;transition:.15s}
+  .drop:hover{background:#d3efe5}
+  .drop .ic{font-size:44px;color:var(--green)}
+  .drop h3{margin:10px 0 4px;font-size:16px;color:var(--green-d)}
+  .drop p{color:var(--muted);font-size:13px}
+  .samples{margin-top:26px}
+  .samples h4{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;font-weight:600}
+  .sample-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .sample{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:.15s}
+  .sample:hover{border-color:var(--green-l);transform:translateY(-2px);box-shadow:0 6px 18px rgba(15,110,86,.12)}
+  .sample canvas{display:block;width:100%;height:120px;background:#3a6b3a}
+  .sample .cap{padding:9px 12px;font-size:12.5px;display:flex;justify-content:space-between;align-items:center}
+  .sample .cap b{font-weight:600}
+  .sample .cap span{color:var(--muted)}
+  /* Processing */
+  .proc{max-width:520px;margin:30px auto;text-align:center}
+  .pipe{display:flex;align-items:center;justify-content:center;gap:0;margin:34px 0}
+  .stage{flex:1;padding:14px 6px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted);position:relative;transition:.3s}
+  .stage.done{background:var(--green-bg);border-color:var(--green-l);color:var(--green-d)}
+  .stage.active{background:var(--green);border-color:var(--green);color:#fff;transform:scale(1.05)}
+  .stage small{display:block;font-weight:400;font-size:10.5px;margin-top:2px;opacity:.85}
+  .arrow{color:var(--line);font-size:18px;padding:0 4px}
+  .bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+  .bar>div{height:100%;width:0;background:var(--green-l);border-radius:99px;transition:width .3s}
+  .proc .status{font-size:13px;color:var(--muted);margin-top:14px}
+  /* Results */
+  .results{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+  @media(max-width:820px){.results{grid-template-columns:1fr}}
+  .imgwrap{position:relative;background:#2f5a2f;border-radius:14px;overflow:hidden;border:1px solid var(--line);aspect-ratio:4/3}
+  .imgwrap canvas{display:block;width:100%;height:100%}
+  .imgwrap svg{position:absolute;inset:0;width:100%;height:100%}
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:12.5px;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:6px;color:var(--muted)}
+  .dot{width:12px;height:12px;border-radius:3px;border:2px solid}
+  .panel h3{font-size:14px;margin-bottom:10px}
+  .det{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:9px;padding:11px 13px;margin-bottom:9px;cursor:pointer;transition:.15s}
+  .det:hover{box-shadow:0 3px 10px rgba(0,0,0,.06)}
+  .det.hi{outline:2px solid var(--green-l);outline-offset:1px}
+  .det .row1{display:flex;justify-content:space-between;align-items:center}
+  .det b{font-size:13.5px}
+  .det .conf{font-size:11.5px;color:var(--muted)}
+  .badge{font-size:10.5px;padding:2px 8px;border-radius:99px;font-weight:600}
+  .det .prog{height:5px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+  .det .prog>div{height:100%;border-radius:99px}
+  /* Dashboard */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:820px){.cards{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px}
+  .stat .n{font-size:26px;font-weight:700;color:var(--green-d)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .stat.warn .n{color:var(--amber)} .stat.bad .n{color:var(--red)}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.charts{grid-template-columns:1fr}}
+  .chartcard{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:18px}
+  .chartcard h3{font-size:14px;margin-bottom:16px}
+  .barrow{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12.5px}
+  .barrow .lab{width:120px;color:var(--ink);flex-shrink:0}
+  .barrow .track{flex:1;height:22px;background:var(--page);border-radius:6px;overflow:hidden}
+  .barrow .track>div{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:7px;color:#fff;font-size:11px;font-weight:600;min-width:24px}
+  .donutwrap{display:flex;align-items:center;gap:20px}
+  .donut-legend{font-size:12.5px}
+  .donut-legend div{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  /* Map */
+  .mapwrap{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .mapwrap svg{display:block;width:100%;height:auto}
+  .maphint{font-size:12px;color:var(--muted);margin-top:10px;display:flex;align-items:center;gap:6px}
+  .tip{background:var(--green-bg);border:1px solid #bfe6d7;border-radius:10px;padding:12px 15px;font-size:12.5px;color:var(--green-d);margin-top:18px}
+  .demo-flag{display:inline-block;background:var(--amber-bg);color:var(--amber);font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
+  .btn{background:var(--green);color:#fff;border:none;padding:10px 20px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn:hover{background:var(--green-d)}
+  .btn.ghost{background:none;color:var(--green);border:1px solid var(--green-l)}
+  .exportbar{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="logo">🌴</span><div>SawitScan AI<small>Deteksi penyakit kelapa sawit — citra UAV</small></div></div>
+    <nav class="nav">
+      <button id="nav-upload" class="active" onclick="go('upload')">Upload</button>
+      <button id="nav-hasil" onclick="go('hasil')" disabled>Hasil Deteksi</button>
+      <button id="nav-dash" onclick="go('dash')" disabled>Dashboard</button>
+      <button id="nav-peta" onclick="go('peta')" disabled>Peta Sebaran</button>
+    </nav>
+  </div>
+
+  <!-- UPLOAD -->
+  <section id="screen-upload" class="screen active">
+    <h2 class="title">Unggah Citra UAV <span class="demo-flag">PROTOTYPE</span></h2>
+    <p class="sub">Unggah foto hasil drone perkebunan, atau coba salah satu contoh di bawah untuk melihat alur deteksi.</p>
+    <div class="drop" onclick="runSample(0)">
+      <div class="ic">☁️</div>
+      <h3>Tarik & letakkan citra di sini</h3>
+      <p>atau klik untuk memilih file &nbsp;·&nbsp; JPG / PNG / TIFF &nbsp;·&nbsp; single atau batch</p>
+    </div>
+    <div class="samples">
+      <h4>Coba dengan citra contoh</h4>
+      <div class="sample-grid" id="sampleGrid"></div>
+    </div>
+  </section>
+
+  <!-- PROCESSING -->
+  <section id="screen-proc" class="screen">
+    <div class="proc">
+      <h2 class="title" style="text-align:center">Menganalisis citra…</h2>
+      <div class="pipe">
+        <div class="stage" id="st0">Preprocessing<small>resize · tiling · GPS</small></div>
+        <span class="arrow">→</span>
+        <div class="stage" id="st1">YOLOv8<small>deteksi area</small></div>
+        <span class="arrow">→</span>
+        <div class="stage" id="st2">Swin + MTL<small>klasifikasi</small></div>
+        <span class="arrow">→</span>
+        <div class="stage" id="st3">Hasil<small>label · severity</small></div>
+      </div>
+      <div class="bar"><div id="procbar"></div></div>
+      <div class="status" id="procstatus">Memuat model…</div>
+    </div>
+  </section>
+
+  <!-- HASIL -->
+  <section id="screen-hasil" class="screen">
+    <h2 class="title">Hasil Deteksi <span class="demo-flag">DATA SIMULASI</span></h2>
+    <p class="sub" id="hasilSub"></p>
+    <div class="results">
+      <div>
+        <div class="imgwrap"><canvas id="resCanvas" width="640" height="480"></canvas><svg id="resSvg" viewBox="0 0 640 480" preserveAspectRatio="none"></svg></div>
+        <div class="legend">
+          <span><i class="dot" style="border-color:#1D9E75"></i>Sehat</span>
+          <span><i class="dot" style="border-color:#BA7517"></i>Terinfeksi ringan–sedang</span>
+          <span><i class="dot" style="border-color:#A32D2D"></i>Terinfeksi berat</span>
+        </div>
+        <div class="exportbar">
+          <button class="btn" onclick="go('dash')">Lihat Dashboard →</button>
+          <button class="btn ghost" onclick="alert('Prototype: laporan PDF akan diunduh di sini.')">⬇ Export PDF</button>
+          <button class="btn ghost" onclick="alert('Prototype: data CSV akan diunduh di sini.')">⬇ Export CSV</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 id="detCount"></h3>
+        <div id="detList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="screen-dash" class="screen">
+    <h2 class="title">Dashboard Ringkasan</h2>
+    <p class="sub">Agregat hasil deteksi untuk citra yang dianalisis.</p>
+    <div class="cards">
+      <div class="stat"><div class="n" id="cTotal">0</div><div class="l">Total pohon terdeteksi</div></div>
+      <div class="stat"><div class="n" id="cHealthy">0</div><div class="l">Pohon sehat</div></div>
+      <div class="stat warn"><div class="n" id="cSick">0</div><div class="l">Terinfeksi</div></div>
+      <div class="stat bad"><div class="n" id="cSevere">0</div><div class="l">Kondisi berat</div></div>
+    </div>
+    <div class="charts">
+      <div class="chartcard">
+        <h3>Distribusi jenis penyakit</h3>
+        <div id="diseaseBars"></div>
+      </div>
+      <div class="chartcard">
+        <h3>Sehat vs terinfeksi</h3>
+        <div class="donutwrap">
+          <svg width="150" height="150" viewBox="0 0 42 42" id="donut"></svg>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+    </div>
+    <div class="tip">💡 Pada versi final, dashboard bisa digabung lintas-batch: bandingkan blok kebun, pantau tren keparahan antar waktu, dan atur ambang peringatan otomatis.</div>
+  </section>
+
+  <!-- PETA -->
+  <section id="screen-peta" class="screen">
+    <h2 class="title">Peta Sebaran Penyakit</h2>
+    <p class="sub">Titik pohon terinfeksi diplot berdasarkan koordinat GPS dari metadata citra UAV.</p>
+    <div class="mapwrap"><svg id="mapSvg" viewBox="0 0 800 420"></svg></div>
+    <div class="legend" style="margin-top:12px">
+      <span><i class="dot" style="border-color:#1D9E75;background:#1D9E75"></i>Sehat</span>
+      <span><i class="dot" style="border-color:#BA7517;background:#BA7517"></i>Ringan–sedang</span>
+      <span><i class="dot" style="border-color:#A32D2D;background:#A32D2D"></i>Berat</span>
+    </div>
+    <div class="maphint">📍 Klik titik merah untuk melihat detail pohon (simulasi).</div>
+    <div class="tip">💡 Peta interaktif final akan memakai Leaflet dengan latar peta asli / orthomosaic kebun, sehingga pemilik bisa langsung mengarahkan tim ke titik terinfeksi.</div>
+  </section>
+</div>
+
+<script>
+// ---------- Data model ----------
+const DISEASES = [
+  {name:"Ganoderma (busuk pangkal)", color:"#A32D2D", sev:"berat"},
+  {name:"Karat daun", color:"#BA7517", sev:"sedang"},
+  {name:"Bercak daun (Curvularia)", color:"#BA7517", sev:"ringan"},
+  {name:"Defisiensi hara", color:"#BA7517", sev:"ringan"},
+];
+const SAMPLES = [
+  {label:"Blok A-3", note:"Kepadatan tinggi", seed:11, sick:0.22},
+  {label:"Blok B-7", note:"Area tepi", seed:29, sick:0.38},
+  {label:"Blok C-1", note:"Dekat drainase", seed:47, sick:0.15},
+];
+let RNG = mulberry32(1);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+let currentTrees=[], currentSample=null;
+
+function genTrees(seed, sickRate){
+  RNG = mulberry32(seed);
+  const trees=[]; const cols=7, rows=5; const w=640,h=480;
+  const mx=w/(cols+1), my=h/(rows+1);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const jx=(RNG()-.5)*28, jy=(RNG()-.5)*24;
+    const x=mx*(c+1)+jx, y=my*(r+1)+jy;
+    const isSick=RNG()<sickRate;
+    let disease=null;
+    if(isSick){ disease=DISEASES[Math.floor(RNG()*DISEASES.length)]; }
+    const conf=isSick? 0.72+RNG()*0.26 : 0.90+RNG()*0.09;
+    trees.push({x,y,r:24+RNG()*6,isSick,disease,conf,
+      lat:(-0.789 - (y/h)*0.02).toFixed(5),
+      lng:(101.412 + (x/w)*0.03).toFixed(5)});
+  }
+  return trees;
+}
+
+// ---------- Canvas: draw aerial plantation ----------
+function drawPlantation(canvas, trees, small){
+  const ctx=canvas.getContext('2d'); const w=canvas.width,h=canvas.height;
+  // ground
+  const g=ctx.createLinearGradient(0,0,w,h);
+  g.addColorStop(0,'#3d6b3a');g.addColorStop(1,'#2f5730');
+  ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  // soil texture rows
+  ctx.strokeStyle='rgba(90,70,45,0.18)';ctx.lineWidth=w>200?6:3;
+  for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(0,h*i/8+10);ctx.lineTo(w,h*i/8-10);ctx.stroke();}
+  // palm crowns
+  trees.forEach(t=>{
+    const R=small? t.r*0.42 : t.r;
+    const cx=small? t.x*(canvas.width/640):t.x, cy=small? t.y*(canvas.height/480):t.y;
+    // fronds - radial lines
+    let crown = t.isSick ? (t.disease.sev==='berat'? '#8a7a3a':'#6f8a3a') : '#2f7d3f';
+    ctx.save();ctx.translate(cx,cy);
+    for(let a=0;a<12;a++){
+      ctx.rotate(Math.PI*2/12);
+      ctx.strokeStyle=crown;ctx.lineWidth=R*0.22;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-R);ctx.stroke();
+    }
+    // center
+    ctx.fillStyle= t.isSick? (t.disease.sev==='berat'?'#6b5320':'#4e6b28') : '#1f5a2b';
+    ctx.beginPath();ctx.arc(0,0,R*0.34,0,7);ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ---------- Bounding boxes overlay ----------
+function drawBoxes(trees){
+  const svg=document.getElementById('resSvg');
+  svg.innerHTML='';
+  trees.forEach((t,i)=>{
+    if(!t.isSick) return;
+    const col=t.disease.color;
+    const bw=t.r*2.4, bh=t.r*2.4;
+    const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('data-i',i); g.style.cursor='pointer';
+    g.innerHTML=`<rect x="${t.x-bw/2}" y="${t.y-bh/2}" width="${bw}" height="${bh}" fill="none" stroke="${col}" stroke-width="2.5" rx="3"/>
+      <rect x="${t.x-bw/2}" y="${t.y-bh/2-15}" width="${Math.max(46,t.disease.name.length*4.2)}" height="15" fill="${col}"/>
+      <text x="${t.x-bw/2+4}" y="${t.y-bh/2-4}" fill="#fff" font-size="10" font-family="sans-serif">${(t.conf*100).toFixed(0)}%</text>`;
+    g.onmouseenter=()=>highlightDet(i,true);
+    g.onmouseleave=()=>highlightDet(i,false);
+    svg.appendChild(g);
+  });
+  // healthy markers (subtle)
+  trees.forEach(t=>{ if(t.isSick)return;
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',t.x);c.setAttribute('cy',t.y);c.setAttribute('r',3);
+    c.setAttribute('fill','#1D9E75');c.setAttribute('opacity','.7');
+    document.getElementById('resSvg').appendChild(c);
+  });
+}
+function highlightDet(i,on){
+  const el=document.querySelector(`.det[data-i="${i}"]`);
+  if(el){el.classList.toggle('hi',on); if(on)el.scrollIntoView({block:'nearest',behavior:'smooth'});}
+}
+
+// ---------- Detection list ----------
+function fillDetList(trees){
+  const sick=trees.filter(t=>t.isSick);
+  document.getElementById('detCount').textContent=`${sick.length} temuan penyakit`;
+  const list=document.getElementById('detList');
+  list.innerHTML='';
+  sick.forEach((t,idx)=>{
+    const i=trees.indexOf(t);
+    const bg=t.disease.sev==='berat'?'var(--red-bg)':'var(--amber-bg)';
+    const fg=t.disease.sev==='berat'?'var(--red)':'var(--amber)';
+    const d=document.createElement('div');
+    d.className='det';d.setAttribute('data-i',i);
+    d.style.borderLeftColor=t.disease.color;
+    d.innerHTML=`<div class="row1"><b>${t.disease.name}</b>
+      <span class="badge" style="background:${bg};color:${fg}">${t.disease.sev.toUpperCase()}</span></div>
+      <div class="conf">Pohon #${idx+1} · GPS ${t.lat}, ${t.lng} · keyakinan ${(t.conf*100).toFixed(1)}%</div>
+      <div class="prog"><div style="width:${t.conf*100}%;background:${t.disease.color}"></div></div>`;
+    d.onmouseenter=()=>{const g=document.querySelector(`#resSvg g[data-i="${i}"] rect`);if(g)g.setAttribute('stroke-width','5');};
+    d.onmouseleave=()=>{const g=document.querySelector(`#resSvg g[data-i="${i}"] rect`);if(g)g.setAttribute('stroke-width','2.5');};
+    list.appendChild(d);
+  });
+}
+
+// ---------- Dashboard ----------
+function fillDashboard(trees){
+  const total=trees.length, sick=trees.filter(t=>t.isSick), severe=sick.filter(t=>t.disease.sev==='berat');
+  document.getElementById('cTotal').textContent=total;
+  document.getElementById('cHealthy').textContent=total-sick.length;
+  document.getElementById('cSick').textContent=sick.length;
+  document.getElementById('cSevere').textContent=severe.length;
+  // disease bars
+  const counts={};
+  DISEASES.forEach(d=>counts[d.name]=0);
+  sick.forEach(t=>counts[t.disease.name]++);
+  const max=Math.max(1,...Object.values(counts));
+  const bars=document.getElementById('diseaseBars');bars.innerHTML='';
+  DISEASES.forEach(d=>{
+    const v=counts[d.name];
+    bars.innerHTML+=`<div class="barrow"><div class="lab">${d.name}</div>
+      <div class="track"><div style="width:${Math.max(6,v/max*100)}%;background:${d.color}">${v}</div></div></div>`;
+  });
+  // donut
+  const pctSick=sick.length/total;
+  const svg=document.getElementById('donut');
+  const dash=pctSick*100;
+  svg.innerHTML=`<circle cx="21" cy="21" r="15.9155" fill="none" stroke="#1D9E75" stroke-width="6"/>
+    <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#BA7517" stroke-width="6"
+      stroke-dasharray="${dash} ${100-dash}" stroke-dashoffset="25" transform="rotate(-90 21 21)"/>
+    <text x="21" y="20" text-anchor="middle" font-size="7" font-weight="700" fill="#0F6E56">${(pctSick*100).toFixed(0)}%</text>
+    <text x="21" y="27" text-anchor="middle" font-size="3.4" fill="#5F5E5A">terinfeksi</text>`;
+  document.getElementById('donutLegend').innerHTML=
+    `<div><i class="dot" style="background:#1D9E75;border-color:#1D9E75"></i>Sehat — ${total-sick.length} pohon</div>
+     <div><i class="dot" style="background:#BA7517;border-color:#BA7517"></i>Terinfeksi — ${sick.length} pohon</div>`;
+}
+
+// ---------- Map ----------
+function fillMap(trees){
+  const svg=document.getElementById('mapSvg');
+  let s='';
+  // field background
+  s+=`<rect width="800" height="420" fill="#eef3e6"/>`;
+  // plantation grid rows (visual)
+  for(let i=0;i<14;i++){s+=`<line x1="${i*60}" y1="0" x2="${i*60}" y2="420" stroke="#dbe4cd" stroke-width="1"/>`;}
+  for(let i=0;i<8;i++){s+=`<line x1="0" y1="${i*60}" x2="800" y2="${i*60}" stroke="#dbe4cd" stroke-width="1"/>`;}
+  // block label
+  s+=`<rect x="16" y="16" width="150" height="46" rx="8" fill="#fff" stroke="#e3e1d8"/>
+      <text x="28" y="38" font-size="13" font-weight="700" fill="#0F6E56" font-family="sans-serif">${currentSample?currentSample.label:'Blok'}</text>
+      <text x="28" y="54" font-size="11" fill="#5F5E5A" font-family="sans-serif">Kebun Sawit — sektor UAV</text>`;
+  // points
+  trees.forEach((t,i)=>{
+    const mx=40+(t.x/640)*720, my=40+(t.y/480)*340;
+    if(!t.isSick){
+      s+=`<circle cx="${mx}" cy="${my}" r="4" fill="#1D9E75" opacity=".55"/>`;
+    }else{
+      const col=t.disease.color;
+      s+=`<g style="cursor:pointer" onclick="alert('Pohon terinfeksi\\n${t.disease.name}\\nKeparahan: ${t.disease.sev}\\nGPS: ${t.lat}, ${t.lng}\\nKeyakinan: ${(t.conf*100).toFixed(1)}%')">
+        <circle cx="${mx}" cy="${my}" r="9" fill="${col}" opacity=".22"/>
+        <circle cx="${mx}" cy="${my}" r="5" fill="${col}"/></g>`;
+    }
+  });
+  svg.innerHTML=s;
+}
+
+// ---------- Flow ----------
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  const map={upload:'upload',hasil:'hasil',dash:'dash',peta:'peta'};
+  document.getElementById('screen-'+screen).classList.add('active');
+  const navid={upload:'nav-upload',hasil:'nav-hasil',dash:'nav-dash',peta:'nav-peta'}[screen];
+  if(navid)document.getElementById(navid).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function runSample(idx){
+  currentSample=SAMPLES[idx];
+  currentTrees=genTrees(currentSample.seed,currentSample.sick);
+  // go to processing
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-proc').classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  // reset stages
+  ['st0','st1','st2','st3'].forEach(id=>{document.getElementById(id).className='stage';});
+  const statuses=['Memuat model…','Preprocessing citra…','YOLOv8 mendeteksi area…','Swin Transformer + MTL mengklasifikasi…','Menyusun hasil…'];
+  let step=0;const stages=['st0','st1','st2','st3'];
+  document.getElementById('procbar').style.width='0%';
+  const iv=setInterval(()=>{
+    document.getElementById('procstatus').textContent=statuses[Math.min(step,statuses.length-1)];
+    document.getElementById('procbar').style.width=Math.min(100,(step)/4*100)+'%';
+    if(step>0)document.getElementById(stages[step-1]).className='stage done';
+    if(step<4)document.getElementById(stages[step]).className='stage active';
+    step++;
+    if(step>5){clearInterval(iv);showResults();}
+  },620);
+}
+
+function showResults(){
+  const t=currentTrees;
+  drawPlantation(document.getElementById('resCanvas'),t,false);
+  drawBoxes(t);
+  fillDetList(t);
+  fillDashboard(t);
+  fillMap(t);
+  const sick=t.filter(x=>x.isSick).length;
+  document.getElementById('hasilSub').textContent=`${currentSample.label} · ${currentSample.note} · ${t.length} pohon dianalisis, ${sick} terindikasi penyakit.`;
+  // enable nav
+  ['nav-hasil','nav-dash','nav-peta'].forEach(id=>document.getElementById(id).disabled=false);
+  go('hasil');
+}
+
+// ---------- init sample thumbnails ----------
+window.addEventListener('DOMContentLoaded',()=>{
+  const grid=document.getElementById('sampleGrid');
+  SAMPLES.forEach((s,i)=>{
+    const div=document.createElement('div');
+    div.className='sample';div.onclick=()=>runSample(i);
+    div.innerHTML=`<canvas width="200" height="120"></canvas>
+      <div class="cap"><b>${s.label}</b><span>${s.note}</span></div>`;
+    grid.appendChild(div);
+    const trees=genTrees(s.seed,s.sick);
+    drawPlantation(div.querySelector('canvas'),trees,true);
+  });
+});
+</script>
+</body>
+</html>

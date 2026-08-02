@@ -1,6 +1,8 @@
+from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -90,6 +92,43 @@ def list_results(db: Session = Depends(get_db)) -> list[schemas.ResultListItem]:
             summary=mappers.summarise(image.detections) if image.status == "analyzed" else None,
         )
         for image in images
+    ]
+
+
+@router.get("/images/{image_id}/file", response_class=FileResponse)
+def get_image_file(image_id: UUID, db: Session = Depends(get_db)) -> FileResponse:
+    """Serve the stored image itself, so the results screen can draw boxes over it."""
+    image = _get_image(db, image_id)
+    path = Path(image.storage_path)
+    if not path.is_file():
+        raise HTTPException(
+            status.HTTP_410_GONE, "Berkas citra tidak lagi tersedia di penyimpanan."
+        )
+    return FileResponse(path, filename=image.filename)
+
+
+@router.get("/map", response_model=list[schemas.MapPoint])
+def list_map_points(db: Session = Depends(get_db)) -> list[schemas.MapPoint]:
+    """Every geo-referenced detection across all images, for the spread map."""
+    rows = db.execute(
+        select(models.Detection, models.Image)
+        .join(models.Image, models.Detection.image_id == models.Image.id)
+        .where(models.Detection.gps_lat.is_not(None))
+        .where(models.Detection.gps_lng.is_not(None))
+        .order_by(models.Detection.id)
+    ).all()
+
+    return [
+        schemas.MapPoint(
+            detection_id=detection.id,
+            image_id=image.id,
+            filename=image.filename,
+            disease=detection.disease,
+            severity=detection.severity,
+            confidence=detection.confidence,
+            gps=schemas.Gps(lat=detection.gps_lat, lng=detection.gps_lng),
+        )
+        for detection, image in rows
     ]
 
 

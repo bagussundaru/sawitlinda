@@ -12,8 +12,19 @@ Spesifikasi teknis & urutan pengerjaan: [`SPEC.md`](SPEC.md).
 
 ## Status
 
-Tahap **1–3** dan **6 (export)** selesai: seluruh backend MVP sudah berjalan.
-Layar frontend (tahap 4–5) menunggu `docs/SawitScan_Prototype.html`.
+Tahap **1–6 selesai** — MVP lengkap: unggah citra → hasil deteksi (mock) → dashboard
+& peta → export laporan. Tersisa tahap 7 (perapian).
+
+Tampilan mengikuti [`docs/SawitScan_Prototype.html`](docs/SawitScan_Prototype.html).
+
+| Layar | Rute |
+| --- | --- |
+| Upload | `/` |
+| Proses (animasi pipeline) | `/proses?ids=…` |
+| Hasil deteksi | `/hasil/{image_id}` |
+| Riwayat | `/riwayat` |
+| Dashboard | `/dashboard` |
+| Peta sebaran (Leaflet) | `/peta` |
 
 | Endpoint | Keterangan |
 | --- | --- |
@@ -23,6 +34,8 @@ Layar frontend (tahap 4–5) menunggu `docs/SawitScan_Prototype.html`.
 | `GET /api/results/{image_id}` | Satu hasil deteksi lengkap |
 | `GET /api/dashboard` | Agregat lintas citra |
 | `GET /api/conditions` | Tabel acuan kondisi pohon: ciri, interpretasi, tindakan |
+| `GET /api/images/{image_id}/file` | Berkas citra asli, untuk digambari bbox |
+| `GET /api/map` | Seluruh deteksi ber-GPS lintas citra, untuk peta |
 | `GET /api/results/{image_id}/export.csv` | Unduh CSV, satu baris per pohon |
 | `GET /api/results/{image_id}/export.pdf` | Unduh laporan PDF |
 

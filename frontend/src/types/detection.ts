@@ -52,6 +52,17 @@ export interface ResultListItem extends ImageItem {
   summary: DetectionSummary | null;
 }
 
+/** One detected tree with coordinates, for the spread map. */
+export interface MapPoint {
+  detection_id: number;
+  image_id: string;
+  filename: string;
+  disease: string;
+  severity: Severity;
+  confidence: number;
+  gps: Gps;
+}
+
 /** Reference entry: how to read a condition and what to do about it. */
 export interface ConditionInfo {
   key: string;
