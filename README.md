@@ -178,6 +178,18 @@ dengan pesan berbahasa Indonesia yang bisa ditindaklanjuti operator. Rincian tek
 
 `GET /health` melakukan kueri nyata ke database, bukan sekadar menjawab "ok".
 
+## Deploy
+
+Panduan lengkap: [`docs/DEPLOY.md`](docs/DEPLOY.md). Dirancang untuk VM yang sudah
+menjalankan aplikasi lain — semua sumber daya berawalan `sawitscan`, PostgreSQL tidak
+mem-publish port ke host, dan nginx ditambahi site baru alih-alih diganti.
+
+Selalu jalankan survei (hanya membaca, tidak mengubah apa pun) sebelum memasang:
+
+```bash
+bash deploy/survey.sh
+```
+
 ## Konvensi
 
 - Seluruh label & teks UI berbahasa **Indonesia**; komentar kode & nama variabel berbahasa Inggris.
