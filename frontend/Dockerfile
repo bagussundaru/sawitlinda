@@ -11,7 +11,9 @@ COPY . .
 # Baked in at build time: Next inlines NEXT_PUBLIC_* into the client bundle, so
 # changing the API URL means rebuilding this image, not just restarting it.
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_BASE_PATH
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

@@ -56,6 +56,9 @@ services:
       context: ./frontend
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # Prefiks path bila aplikasi dilayani di balik reverse proxy bersama,
+        # mis. "/sawit". Kosongkan bila dilayani di root.
+        NEXT_PUBLIC_BASE_PATH: ${NEXT_PUBLIC_BASE_PATH:-}
     container_name: sawitscan-frontend
     restart: unless-stopped
     depends_on:
