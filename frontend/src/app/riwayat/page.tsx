@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import ScreenHeading from "@/components/ScreenHeading";
 import { ApiError, listResults } from "@/lib/api";
 import type { ResultListItem } from "@/types/detection";
 
@@ -31,10 +30,12 @@ export default function RiwayatPage() {
 
   return (
     <>
-      <ScreenHeading
-        title="Hasil Deteksi"
-        subtitle="Riwayat citra yang pernah diunggah. Klik untuk membuka hasilnya kembali."
-      />
+      <div className="mb-[18px]">
+        <h1 className="text-[19px] font-bold">Hasil Deteksi</h1>
+        <p className="text-[13px] text-[var(--muted)]">
+          Riwayat citra yang pernah diunggah. Klik untuk membuka hasilnya kembali.
+        </p>
+      </div>
 
       {error && (
         <p
@@ -52,7 +53,7 @@ export default function RiwayatPage() {
       {items?.length === 0 && (
         <div className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-[15px] py-3 text-[12.5px] text-[var(--green-d)]">
           Belum ada citra yang diunggah.{" "}
-          <Link href="/" className="font-semibold underline">
+          <Link href="/unggah" className="font-semibold underline">
             Mulai unggah
           </Link>
           .

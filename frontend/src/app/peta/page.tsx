@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import Legend from "@/components/Legend";
-import ScreenHeading from "@/components/ScreenHeading";
 import { ApiError, listMapPoints } from "@/lib/api";
 import type { MapPoint } from "@/types/detection";
 
@@ -30,10 +29,12 @@ export default function PetaPage() {
 
   return (
     <>
-      <ScreenHeading
-        title="Peta Sebaran"
-        subtitle="Titik pohon diplot berdasarkan koordinat GPS dari metadata citra UAV."
-      />
+      <div className="mb-[18px]">
+        <h1 className="text-[19px] font-bold">Peta Sebaran</h1>
+        <p className="text-[13px] text-[var(--muted)]">
+          Titik pohon diplot berdasarkan koordinat GPS dari metadata citra UAV.
+        </p>
+      </div>
 
       {error && (
         <p

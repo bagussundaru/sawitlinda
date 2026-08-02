@@ -3,32 +3,30 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import AnnotatedImage from "@/components/AnnotatedImage";
+import { Card, StatCard } from "@/components/Card";
 import Legend from "@/components/Legend";
-import ScreenHeading from "@/components/ScreenHeading";
-import { ApiError, exportUrl, getResult, imageFileUrl } from "@/lib/api";
+import { ApiError, exportUrl, getResult } from "@/lib/api";
 import { SEVERITY_BADGE, SEVERITY_COLOR, isHealthy } from "@/lib/severity";
 import type { DetectionResult } from "@/types/detection";
 
 export default function ResultScreen({ imageId }: { imageId: string }) {
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
   const [hovered, setHovered] = useState<number | null>(null);
 
   useEffect(() => {
     getResult(imageId)
       .then(setResult)
       .catch((err) =>
-        setError(
-          err instanceof ApiError ? err.message : "Hasil tidak dapat dimuat.",
-        ),
+        setError(err instanceof ApiError ? err.message : "Hasil tidak dapat dimuat."),
       );
   }, [imageId]);
 
   if (error) {
     return (
       <>
-        <ScreenHeading title="Hasil Deteksi" />
+        <h1 className="mb-3 text-[19px] font-bold">Hasil Deteksi</h1>
         <p
           role="alert"
           className="rounded-[10px] border border-[#f0c9c9] bg-[var(--red-bg)] px-[15px] py-3 text-[12.5px] text-[var(--red)]"
@@ -36,8 +34,8 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
           {error}
         </p>
         <Link
-          href="/"
-          className="mt-4 inline-block rounded-[9px] bg-[var(--green)] px-5 py-[10px] text-[13.5px] font-semibold text-white hover:bg-[var(--green-d)]"
+          href="/unggah"
+          className="mt-4 inline-block rounded-[9px] bg-[var(--green)] px-4 py-[9px] text-[13px] font-semibold text-white hover:bg-[var(--green-d)]"
         >
           Kembali ke unggah
         </Link>
@@ -53,125 +51,58 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
   const { summary } = result;
 
   return (
-    <>
-      <ScreenHeading
-        title="Hasil Deteksi"
-        subtitle={`${result.filename} · ${summary.total} pohon dianalisis, ${summary.infected} terindikasi bermasalah.`}
-      />
-
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+    <div className="space-y-[18px]">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="relative overflow-hidden rounded-[14px] border border-[var(--line)] bg-[#2f5a2f]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageFileUrl(imageId)}
-              alt={`Citra UAV ${result.filename}`}
-              className="block w-full"
-              onLoad={(event) =>
-                setSize({
-                  width: event.currentTarget.naturalWidth,
-                  height: event.currentTarget.naturalHeight,
-                })
-              }
-            />
-            {size.width > 0 && (
-              <svg
-                className="absolute inset-0 h-full w-full"
-                viewBox={`0 0 ${size.width} ${size.height}`}
-                preserveAspectRatio="none"
-              >
-                {result.detections.map((detection) => {
-                  const [x, y, w, h] = detection.bbox;
-                  const color = SEVERITY_COLOR[detection.severity];
-                  if (isHealthy(detection.severity)) {
-                    return (
-                      <circle
-                        key={detection.id}
-                        cx={x + w / 2}
-                        cy={y + h / 2}
-                        r={Math.max(3, size.width / 200)}
-                        fill={color}
-                        opacity={0.7}
-                      />
-                    );
-                  }
-                  const active = hovered === detection.id;
-                  const labelHeight = size.height / 32;
-                  return (
-                    <g
-                      key={detection.id}
-                      style={{ cursor: "pointer" }}
-                      onMouseEnter={() => setHovered(detection.id)}
-                      onMouseLeave={() => setHovered(null)}
-                    >
-                      <rect
-                        x={x}
-                        y={y}
-                        width={w}
-                        height={h}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth={active ? 5 : 2.5}
-                        rx={3}
-                      />
-                      <rect
-                        x={x}
-                        y={y - labelHeight}
-                        width={labelHeight * 2.6}
-                        height={labelHeight}
-                        fill={color}
-                      />
-                      <text
-                        x={x + labelHeight * 0.25}
-                        y={y - labelHeight * 0.25}
-                        fill="#fff"
-                        fontSize={labelHeight * 0.72}
-                        fontFamily="sans-serif"
-                      >
-                        {(detection.confidence * 100).toFixed(0)}%
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            )}
-          </div>
-
-          <Legend />
-
-          <div className="mt-4 flex flex-wrap gap-[10px]">
-            <Link
-              href="/dashboard"
-              className="rounded-[9px] bg-[var(--green)] px-5 py-[10px] text-[13.5px] font-semibold text-white hover:bg-[var(--green-d)]"
-            >
-              Lihat Dashboard →
-            </Link>
-            <a
-              href={exportUrl(imageId, "pdf")}
-              className="rounded-[9px] border border-[var(--green-l)] px-5 py-[10px] text-[13.5px] font-semibold text-[var(--green)]"
-            >
-              ⬇ Export PDF
-            </a>
-            <a
-              href={exportUrl(imageId, "csv")}
-              className="rounded-[9px] border border-[var(--green-l)] px-5 py-[10px] text-[13.5px] font-semibold text-[var(--green)]"
-            >
-              ⬇ Export CSV
-            </a>
-          </div>
+          <h1 className="text-[19px] font-bold">Hasil Deteksi</h1>
+          <p className="text-[13px] text-[var(--muted)]">
+            {result.filename} · {summary.total} pohon dianalisis
+            {result.gps &&
+              ` · ${result.gps.lat.toFixed(5)}, ${result.gps.lng.toFixed(5)}`}
+          </p>
         </div>
+        <div className="flex flex-wrap gap-[10px]">
+          <a
+            href={exportUrl(imageId, "pdf")}
+            className="rounded-[9px] border border-[var(--green-l)] px-4 py-[9px] text-[13px] font-semibold text-[var(--green)] hover:bg-[var(--green-bg)]"
+          >
+            ⬇ PDF
+          </a>
+          <a
+            href={exportUrl(imageId, "csv")}
+            className="rounded-[9px] border border-[var(--green-l)] px-4 py-[9px] text-[13px] font-semibold text-[var(--green)] hover:bg-[var(--green-bg)]"
+          >
+            ⬇ CSV
+          </a>
+        </div>
+      </div>
 
-        <div>
-          <h3 className="mb-[10px] text-sm font-bold">
-            {findings.length} temuan
-          </h3>
+      <div className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
+        <StatCard value={summary.total} label="Total Pohon" />
+        <StatCard value={summary.healthy} label="Sehat" tone="good" />
+        <StatCard value={summary.infected} label="Bermasalah" tone="warn" />
+        <StatCard value={summary.severe} label="Kasus Berat" tone="bad" />
+      </div>
 
+      <div className="grid gap-[18px] xl:grid-cols-[1.5fr_1fr]">
+        <Card title="Citra & Deteksi">
+          <AnnotatedImage
+            imageId={imageId}
+            filename={result.filename}
+            detections={result.detections}
+            highlighted={hovered}
+            onHighlight={setHovered}
+          />
+          <Legend />
+        </Card>
+
+        <Card title={`${findings.length} temuan`}>
           {findings.length === 0 ? (
             <p className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-[15px] py-3 text-[12.5px] text-[var(--green-d)]">
               Tidak ada pohon bermasalah pada citra ini.
             </p>
           ) : (
-            <div className="max-h-[560px] overflow-y-auto pr-1">
+            <div className="max-h-[520px] overflow-y-auto pr-1">
               {findings.map((detection, index) => {
                 const color = SEVERITY_COLOR[detection.severity];
                 const badge = SEVERITY_BADGE[detection.severity];
@@ -181,17 +112,17 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
                     key={detection.id}
                     onMouseEnter={() => setHovered(detection.id)}
                     onMouseLeave={() => setHovered(null)}
-                    className={`mb-[9px] cursor-pointer rounded-[9px] border border-l-4 border-[var(--line)] bg-[var(--card)] px-[13px] py-[11px] transition ${
+                    className={`mb-[9px] cursor-pointer rounded-[10px] border border-l-4 border-[var(--line)] bg-[var(--card)] px-[13px] py-[11px] transition ${
                       active
                         ? "outline outline-2 outline-offset-1 outline-[var(--green-l)]"
-                        : ""
+                        : "hover:shadow-[0_3px_10px_rgba(0,0,0,.05)]"
                     }`}
                     style={{ borderLeftColor: color }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <b className="text-[13.5px]">{detection.condition}</b>
+                      <b className="text-[13px]">{detection.condition}</b>
                       <span
-                        className="rounded-full px-2 py-[2px] text-[10.5px] font-semibold uppercase"
+                        className="rounded-full px-2 py-[2px] text-[10px] font-semibold uppercase"
                         style={{ background: badge.bg, color: badge.fg }}
                       >
                         {detection.severity}
@@ -200,10 +131,10 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
                     <div className="text-[11.5px] text-[var(--muted)]">
                       Pohon #{index + 1}
                       {detection.gps &&
-                        ` · GPS ${detection.gps.lat.toFixed(5)}, ${detection.gps.lng.toFixed(5)}`}
-                      {` · keyakinan ${(detection.confidence * 100).toFixed(1)}%`}
+                        ` · ${detection.gps.lat.toFixed(5)}, ${detection.gps.lng.toFixed(5)}`}
+                      {` · ${(detection.confidence * 100).toFixed(1)}%`}
                     </div>
-                    <div className="mt-2 h-[5px] overflow-hidden rounded-full bg-[var(--line)]">
+                    <div className="mt-2 h-[5px] overflow-hidden rounded-full bg-[var(--page)]">
                       <div
                         className="h-full rounded-full"
                         style={{
@@ -217,8 +148,8 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
               })}
             </div>
           )}
-        </div>
+        </Card>
       </div>
-    </>
+    </div>
   );
 }

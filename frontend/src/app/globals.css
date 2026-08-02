@@ -12,9 +12,21 @@
   --red-bg: #fcebeb;
   --ink: #1f2421;
   --muted: #5f5e5a;
-  --line: #e3e1d8;
+  --line: #e6ece9;
   --card: #ffffff;
-  --page: #f5f4ef;
+  --page: #eef6f1;
+
+  /* Sidebar */
+  --sidebar: #0e3b2e;
+  --sidebar-hover: #17513f;
+  --sidebar-active: #1c6650;
+  --sidebar-ink: #cfe3da;
+
+  /* Chart accents */
+  --chart-1: #0f6e56;
+  --chart-2: #1d9e75;
+  --chart-3: #e8a33d;
+  --chart-4: #d64545;
 }
 
 body {
@@ -38,6 +50,28 @@ body {
 
 .screen {
   animation: fade 0.3s ease;
+}
+
+/* Sidebar: off-canvas on small screens, docked from lg upwards. Written as plain
+   CSS rather than utility classes so the off-canvas offset is unambiguous. */
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+}
+.app-sidebar[data-open="true"] {
+  transform: translateX(0);
+}
+@media (min-width: 1024px) {
+  .app-sidebar {
+    position: sticky;
+    height: 100vh;
+    transform: none;
+  }
 }
 
 /* Leaflet's own stylesheet, inlined: the artifact CSP and offline dev both rule

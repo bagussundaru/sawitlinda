@@ -17,9 +17,15 @@ function bounds(points: MapPoint[]): [[number, number], [number, number]] {
   ];
 }
 
-export default function SpreadMap({ points }: { points: MapPoint[] }) {
+export default function SpreadMap({
+  points,
+  height = 420,
+}: {
+  points: MapPoint[];
+  height?: number;
+}) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[var(--line)]">
+    <div className="overflow-hidden rounded-[12px] border border-[var(--line)]">
       <MapContainer
         bounds={bounds(points)}
         boundsOptions={{ padding: [40, 40] }}
@@ -28,7 +34,7 @@ export default function SpreadMap({ points }: { points: MapPoint[] }) {
         // tile layer and the map renders blank behind the points.
         maxZoom={MAX_ZOOM}
         scrollWheelZoom
-        style={{ height: 420, width: "100%" }}
+        style={{ height, width: "100%" }}
       >
         <TileLayer
           attribution="&copy; OpenStreetMap"
