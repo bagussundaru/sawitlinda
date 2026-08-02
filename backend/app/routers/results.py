@@ -1,7 +1,7 @@
 from pathlib import Path
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -108,21 +108,28 @@ def get_image_file(image_id: UUID, db: Session = Depends(get_db)) -> FileRespons
 
 
 @router.get("/map", response_model=list[schemas.MapPoint])
-def list_map_points(db: Session = Depends(get_db)) -> list[schemas.MapPoint]:
+def list_map_points(
+    block: str | None = Query(None, description="Batasi ke satu blok kebun"),
+    db: Session = Depends(get_db),
+) -> list[schemas.MapPoint]:
     """Every geo-referenced detection across all images, for the spread map."""
-    rows = db.execute(
+    query = (
         select(models.Detection, models.Image)
         .join(models.Image, models.Detection.image_id == models.Image.id)
         .where(models.Detection.gps_lat.is_not(None))
         .where(models.Detection.gps_lng.is_not(None))
         .order_by(models.Detection.id)
-    ).all()
+    )
+    if block is not None:
+        query = query.where(models.Image.block == block)
+    rows = db.execute(query).all()
 
     return [
         schemas.MapPoint(
             detection_id=detection.id,
             image_id=image.id,
             filename=image.filename,
+            block=image.block,
             captured_at=image.captured_at,
             condition=detection.condition,
             severity=detection.severity,

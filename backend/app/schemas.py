@@ -41,6 +41,8 @@ class DetectionResult(BaseModel):
     image_id: UUID
     filename: str
     captured_at: datetime | None = None
+    block: str | None = None
+    area_ha: float | None = None
     gps: Gps | None = None
     summary: Summary
     detections: list[DetectionOut]
@@ -52,6 +54,8 @@ class ImageOut(BaseModel):
     image_id: UUID
     filename: str
     captured_at: datetime | None = None
+    block: str | None = None
+    area_ha: float | None = None
     gps: Gps | None = None
     status: ImageStatus
     created_at: datetime
@@ -75,6 +79,7 @@ class MapPoint(BaseModel):
     detection_id: int
     image_id: UUID
     filename: str
+    block: str | None = None
     #: When the source image was taken, so the map can show sortie dates.
     captured_at: datetime | None = None
     condition: str
@@ -109,6 +114,18 @@ class ConditionInfo(BaseModel):
 class NamedCount(BaseModel):
     label: str
     count: int
+
+
+class BlockInfo(BaseModel):
+    """One plantation block, as far as the uploaded images describe it."""
+
+    #: None mengumpulkan citra yang diunggah tanpa keterangan blok.
+    block: str | None = None
+    images: int
+    analyzed: int
+    trees: int
+    affected: int
+    area_ha: float | None = None
 
 
 class Dashboard(BaseModel):

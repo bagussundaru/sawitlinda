@@ -20,6 +20,7 @@ from app.inference.conditions import BY_LABEL, HEALTHY
 CSV_HEADERS = [
     "no",
     "nama_berkas",
+    "blok",
     "waktu_pemotretan",
     "kondisi",
     "keparahan",
@@ -57,6 +58,7 @@ def to_csv(result: schemas.DetectionResult) -> bytes:
             [
                 index,
                 result.filename,
+                result.block or "",
                 captured,
                 detection.condition,
                 detection.severity,
@@ -208,6 +210,12 @@ def to_pdf(result: schemas.DetectionResult) -> bytes:
         Paragraph("Laporan Kondisi Tanaman Kelapa Sawit", styles["Title"]),
         Spacer(1, 4 * mm),
         Paragraph(f"<b>Berkas:</b> {result.filename}", styles["Normal"]),
+        Paragraph(f"<b>Blok kebun:</b> {result.block or 'tidak dicatat'}", styles["Normal"]),
+        Paragraph(
+            "<b>Luas area tercakup:</b> "
+            + (f"{result.area_ha} ha" if result.area_ha else "tidak dicatat"),
+            styles["Normal"],
+        ),
         Paragraph(
             f"<b>Waktu pemotretan:</b> {_format_time(result.captured_at)}", styles["Normal"]
         ),

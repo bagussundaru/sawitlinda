@@ -57,6 +57,7 @@ export default function DronePanel({
           Citra Drone &amp; Deteksi AI
         </h3>
         <span className="mono rounded-[7px] bg-white/[.08] px-[9px] py-[5px] text-[10px]">
+          {result?.block ? `Blok ${result.block} · ` : ""}
           {selected ? `#${selected.detection_id}` : "—"}
         </span>
       </div>

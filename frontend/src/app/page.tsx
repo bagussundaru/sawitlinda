@@ -13,10 +13,12 @@ import {
   ApiError,
   getDashboard,
   getResult,
+  listBlocks,
   listMapPoints,
   listResults,
 } from "@/lib/api";
 import type {
+  BlockInfo,
   Dashboard,
   DetectionResult,
   MapPoint,
@@ -45,27 +47,43 @@ export default function HomePage() {
     berat: false,
   });
   const [focus, setFocus] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<BlockInfo[]>([]);
+  const [block, setBlock] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    listBlocks()
+      .then((list) => setBlocks(list.filter((item) => item.block)))
+      .catch(() => setBlocks([]));
+  }, []);
+
+  // Re-runs whenever the block filter changes, so every figure on screen —
+  // KPIs, bars and map — describes the same selection.
   useEffect(() => {
     (async () => {
       try {
         const [dashboard, mapPoints, list] = await Promise.all([
-          getDashboard(),
-          listMapPoints(),
+          getDashboard(block),
+          listMapPoints(block),
           listResults(),
         ]);
         setData(dashboard);
         setPoints(mapPoints);
-        setHistory(list);
+        setHistory(
+          block ? list.filter((item) => item.block === block) : list,
+        );
+        setSelected(null);
 
-        const analyzed = list.find((item) => item.status === "analyzed");
-        if (analyzed) setResult(await getResult(analyzed.image_id));
+        const analyzed = (block
+          ? list.filter((item) => item.block === block)
+          : list
+        ).find((item) => item.status === "analyzed");
+        setResult(analyzed ? await getResult(analyzed.image_id) : null);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Data gagal dimuat.");
       }
     })();
-  }, []);
+  }, [block]);
 
   // Clicking a point may belong to another image; load that image's result.
   async function selectPoint(point: MapPoint) {
@@ -122,7 +140,7 @@ export default function HomePage() {
             DASHBOARD OPERASIONAL
           </div>
           <h1 className="mt-[5px] text-[29px] font-extrabold tracking-[-0.035em]">
-            Sebaran Kondisi Tanaman
+            {block ? `Blok ${block} — Sebaran Kondisi` : "Sebaran Kondisi Tanaman"}
           </h1>
         </div>
         <div className="flex items-center gap-[10px]">
@@ -145,6 +163,40 @@ export default function HomePage() {
             Unggah citra pertama
           </Link>{" "}
           untuk mengisi dashboard ini.
+        </div>
+      )}
+
+      {blocks.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold tracking-[0.1em] text-[#83998b]">
+            BLOK
+          </span>
+          <div className="flex flex-wrap gap-[6px] rounded-[11px] bg-[#f1f5f2] p-1">
+            <button
+              onClick={() => setBlock(null)}
+              className="rounded-[8px] px-3 py-[7px] text-[11.5px] font-bold"
+              style={{
+                background: block === null ? "var(--brand)" : "transparent",
+                color: block === null ? "#fff" : "#5c7a6b",
+              }}
+            >
+              Semua
+            </button>
+            {blocks.map((item) => (
+              <button
+                key={item.block}
+                onClick={() => setBlock(item.block)}
+                title={`${item.images} citra · ${item.trees} pohon${item.area_ha ? ` · ${item.area_ha} ha` : ""}`}
+                className="rounded-[8px] px-3 py-[7px] text-[11.5px] font-bold"
+                style={{
+                  background: block === item.block ? "var(--brand)" : "transparent",
+                  color: block === item.block ? "#fff" : "#5c7a6b",
+                }}
+              >
+                {item.block}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

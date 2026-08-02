@@ -8,7 +8,7 @@ import { getSystemInfo } from "@/lib/api";
 import type { SystemInfo } from "@/types/detection";
 
 const NAV = [
-  { href: "/", label: "Rumah" },
+  { href: "/", label: "Dashboard" },
   { href: "/riwayat", label: "Hasil Deteksi" },
   { href: "/peta", label: "Peta" },
   { href: "/unggah", label: "Unggah" },

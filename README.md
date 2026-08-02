@@ -33,6 +33,8 @@ Tampilan mengikuti [`docs/SawitScan_Prototype.html`](docs/SawitScan_Prototype.ht
 | `GET /api/results` | Riwayat unggahan, terbaru dulu |
 | `GET /api/results/{image_id}` | Satu hasil deteksi lengkap |
 | `GET /api/dashboard` | Agregat lintas citra |
+| `GET /api/blocks` | Daftar blok kebun beserta jumlah citra, pohon, dan luas |
+| `GET /api/system` | Status sistem: mode inference, batas unggah, jumlah kelas |
 | `GET /api/conditions` | Tabel acuan kondisi pohon: ciri, interpretasi, tindakan |
 | `GET /api/images/{image_id}/file` | Berkas citra asli, untuk digambari bbox |
 | `GET /api/map` | Seluruh deteksi ber-GPS lintas citra, untuk peta |

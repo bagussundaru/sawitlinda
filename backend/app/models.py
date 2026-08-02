@@ -20,6 +20,11 @@ class Image(Base):
     filename: Mapped[str] = mapped_column(String(255))
     storage_path: Mapped[str] = mapped_column(String(512))
     captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    #: Plantation block the frame covers, e.g. "A-3". Entered at upload time —
+    #: it cannot be derived from the image or its metadata.
+    block: Mapped[str | None] = mapped_column(String(64), index=True)
+    #: Area the frame covers, in hectares.
+    area_ha: Mapped[float | None] = mapped_column(Float)
     gps_lat: Mapped[float | None] = mapped_column(Float)
     gps_lng: Mapped[float | None] = mapped_column(Float)
     # uploaded | analyzed

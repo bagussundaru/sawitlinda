@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -45,28 +45,100 @@ def list_conditions() -> list[schemas.ConditionInfo]:
     return [schemas.ConditionInfo(**vars(condition)) for condition in CONDITIONS]
 
 
+@router.get("/blocks", response_model=list[schemas.BlockInfo])
+def list_blocks(db: Session = Depends(get_db)) -> list[schemas.BlockInfo]:
+    """Plantation blocks as described by the uploads, for the block selector."""
+    rows = db.execute(
+        select(
+            models.Image.block,
+            func.count(func.distinct(models.Image.id)),
+            func.count(
+                func.distinct(
+                    case((models.Image.status == "analyzed", models.Image.id))
+                )
+            ),
+            func.sum(func.coalesce(models.Image.area_ha, 0.0)),
+        ).group_by(models.Image.block)
+    ).all()
+
+    # Tree counts need their own pass; joining detections would multiply the
+    # image-level figures above.
+    tree_rows = dict(
+        db.execute(
+            select(
+                models.Image.block,
+                func.count(models.Detection.id),
+            )
+            .join(models.Detection, models.Detection.image_id == models.Image.id)
+            .group_by(models.Image.block)
+        ).all()
+    )
+    affected_rows = dict(
+        db.execute(
+            select(
+                models.Image.block,
+                func.count(models.Detection.id),
+            )
+            .join(models.Detection, models.Detection.image_id == models.Image.id)
+            .where(models.Detection.severity != "sehat")
+            .group_by(models.Image.block)
+        ).all()
+    )
+
+    blocks = [
+        schemas.BlockInfo(
+            block=block,
+            images=images,
+            analyzed=analyzed,
+            trees=tree_rows.get(block, 0),
+            affected=affected_rows.get(block, 0),
+            area_ha=round(area, 2) if area else None,
+        )
+        for block, images, analyzed, area in rows
+    ]
+    # Named blocks first, alphabetically; the unlabelled bucket goes last.
+    blocks.sort(key=lambda b: (b.block is None, b.block or ""))
+    return blocks
+
+
 @router.get("/dashboard", response_model=schemas.Dashboard)
-def get_dashboard(db: Session = Depends(get_db)) -> schemas.Dashboard:
+def get_dashboard(
+    block: str | None = Query(None, description="Batasi agregat ke satu blok kebun"),
+    db: Session = Depends(get_db),
+) -> schemas.Dashboard:
     """Aggregate figures across every analysed image, for the statistics screen."""
-    images_total = db.scalar(select(func.count()).select_from(models.Image)) or 0
+    image_filter = [models.Image.block == block] if block is not None else []
+
+    images_total = (
+        db.scalar(select(func.count()).select_from(models.Image).where(*image_filter)) or 0
+    )
     images_analyzed = (
         db.scalar(
             select(func.count())
             .select_from(models.Image)
-            .where(models.Image.status == "analyzed")
+            .where(models.Image.status == "analyzed", *image_filter)
         )
         or 0
     )
 
+    def detections_of():
+        query = select(models.Detection)
+        if block is not None:
+            query = query.join(
+                models.Image, models.Detection.image_id == models.Image.id
+            ).where(models.Image.block == block)
+        return query.subquery()
+
+    scope = detections_of()
+
     severity_counts = dict(
         db.execute(
-            select(models.Detection.severity, func.count())
-            .group_by(models.Detection.severity)
+            select(scope.c.severity, func.count()).group_by(scope.c.severity)
         ).all()
     )
     condition_counts = db.execute(
-        select(models.Detection.condition, func.count())
-        .group_by(models.Detection.condition)
+        select(scope.c.condition, func.count())
+        .group_by(scope.c.condition)
         .order_by(func.count().desc())
     ).all()
 

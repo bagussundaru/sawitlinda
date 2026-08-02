@@ -1,7 +1,7 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app import mappers, models, schemas
@@ -40,13 +40,38 @@ def _store_file(upload: UploadFile, destination: Path, max_bytes: int) -> None:
 @router.post("/upload", response_model=schemas.UploadResponse, status_code=status.HTTP_201_CREATED)
 def upload_images(
     files: list[UploadFile] = File(..., description="Satu atau beberapa citra UAV"),
+    block: str | None = Form(None, description="Blok kebun, mis. A-3"),
+    area_ha: float | None = Form(None, description="Luas area yang tercakup (hektar)"),
+    lat: float | None = Form(None, description="Lintang, dipakai bila EXIF tidak memuatnya"),
+    lng: float | None = Form(None, description="Bujur, dipakai bila EXIF tidak memuatnya"),
     db: Session = Depends(get_db),
 ) -> schemas.UploadResponse:
     """Accept one or more UAV images, extract EXIF GPS/timestamp, and store them.
 
+    Block and covered area cannot be derived from the image or its metadata, so the
+    operator supplies them here; they apply to every file in the batch. Manual
+    coordinates are a fallback used only when the frame carries no EXIF GPS — real
+    metadata always wins, so a correct frame is never overwritten by a typo.
+
     Rejects the whole batch if any file has an unsupported extension, so the user
     is never left guessing which of their files made it through.
     """
+    if (lat is None) != (lng is None):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Lintang dan bujur harus diisi berpasangan.",
+        )
+    if lat is not None and not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Koordinat di luar rentang yang sah.",
+        )
+    if area_ha is not None and area_ha <= 0:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Luas area harus lebih besar dari nol."
+        )
+
+    block = block.strip() if block and block.strip() else None
     if not files:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Tidak ada berkas yang diunggah.")
 
@@ -81,8 +106,11 @@ def upload_images(
                 filename=upload.filename or destination.name,
                 storage_path=str(destination),
                 captured_at=metadata.captured_at,
-                gps_lat=metadata.lat,
-                gps_lng=metadata.lng,
+                block=block,
+                area_ha=area_ha,
+                # EXIF wins; the manual pair only fills a gap.
+                gps_lat=metadata.lat if metadata.lat is not None else lat,
+                gps_lng=metadata.lng if metadata.lng is not None else lng,
                 status="uploaded",
             )
             db.add(image)

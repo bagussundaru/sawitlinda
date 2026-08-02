@@ -57,7 +57,9 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
         <div>
           <h1 className="text-[19px] font-bold">Hasil Deteksi</h1>
           <p className="text-[13px] text-[var(--muted)]">
+            {result.block ? `Blok ${result.block} · ` : ""}
             {result.filename} · {summary.total} pohon dianalisis
+            {result.area_ha ? ` · ${result.area_ha} ha` : ""}
             {result.gps &&
               ` · ${result.gps.lat.toFixed(5)}, ${result.gps.lng.toFixed(5)}`}
           </p>
