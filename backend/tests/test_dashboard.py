@@ -21,7 +21,7 @@ def test_dashboard_is_empty_without_data(client):
     assert body["images_total"] == 0
     assert body["images_analyzed"] == 0
     assert body["summary"]["total"] == 0
-    assert body["by_disease"] == []
+    assert body["by_condition"] == []
 
 
 def test_dashboard_keeps_every_severity_level_even_when_unused(client):
@@ -53,5 +53,5 @@ def test_dashboard_totals_match_the_sum_of_each_image(client):
 
     assert body["summary"]["total"] == first["summary"]["total"] + second["summary"]["total"]
     assert body["summary"]["severe"] == first["summary"]["severe"] + second["summary"]["severe"]
-    assert sum(item["count"] for item in body["by_disease"]) == body["summary"]["total"]
+    assert sum(item["count"] for item in body["by_condition"]) == body["summary"]["total"]
     assert sum(item["count"] for item in body["by_severity"]) == body["summary"]["total"]

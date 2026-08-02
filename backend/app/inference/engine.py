@@ -11,7 +11,7 @@ from app.inference import mock
 def run_inference(image_path: str, gps: tuple[float, float] | None = None) -> dict:
     """Detect and classify palm trees in one image.
 
-    Returns ``{"detections": [...]}`` where each detection carries `bbox`, `disease`,
+    Returns ``{"detections": [...]}`` where each detection carries `bbox`, `condition`,
     `severity`, `confidence` and `gps` — the model-derived half of the JSON contract
     in CLAUDE.md. Identity fields (`image_id`, `filename`, `captured_at`) and the
     `summary` are added by the caller, which owns that data; the model cannot know them.

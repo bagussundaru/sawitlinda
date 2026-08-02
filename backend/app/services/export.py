@@ -10,18 +10,18 @@ from datetime import datetime, timezone
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app import schemas
-from app.inference.diseases import BY_LABEL, HEALTHY
+from app.inference.conditions import BY_LABEL, HEALTHY
 
 CSV_HEADERS = [
     "no",
     "nama_berkas",
     "waktu_pemotretan",
-    "penyakit",
+    "kondisi",
     "keparahan",
     "kepercayaan",
     "bbox_x",
@@ -58,7 +58,7 @@ def to_csv(result: schemas.DetectionResult) -> bytes:
                 index,
                 result.filename,
                 captured,
-                detection.disease,
+                detection.condition,
                 detection.severity,
                 f"{detection.confidence:.2f}",
                 x,
@@ -77,7 +77,7 @@ def _summary_table(result: schemas.DetectionResult) -> Table:
     summary = result.summary
     table = Table(
         [
-            ["Total pohon", "Sehat", "Terinfeksi", "Keparahan berat"],
+            ["Total pohon", "Sehat", "Bermasalah", "Keparahan berat"],
             [summary.total, summary.healthy, summary.infected, summary.severe],
         ],
         colWidths=[42 * mm] * 4,
@@ -103,7 +103,7 @@ def _summary_table(result: schemas.DetectionResult) -> Table:
 
 
 def _detection_table(result: schemas.DetectionResult) -> Table:
-    rows = [["No", "Penyakit", "Keparahan", "Kepercayaan", "Koordinat"]]
+    rows = [["No", "Kondisi", "Keparahan", "Kepercayaan", "Koordinat"]]
     severity_rows: list[tuple[int, str]] = []
 
     for index, detection in enumerate(result.detections, start=1):
@@ -113,7 +113,7 @@ def _detection_table(result: schemas.DetectionResult) -> Table:
         rows.append(
             [
                 str(index),
-                detection.disease,
+                detection.condition,
                 detection.severity,
                 f"{detection.confidence:.0%}",
                 coordinate,
@@ -146,21 +146,25 @@ def _action_table(result: schemas.DetectionResult) -> Table | None:
     """
     counts: dict[str, int] = {}
     for detection in result.detections:
-        if detection.disease != HEALTHY:
-            counts[detection.disease] = counts.get(detection.disease, 0) + 1
+        if detection.condition != HEALTHY:
+            counts[detection.condition] = counts.get(detection.condition, 0) + 1
 
     if not counts:
         return None
+
+    # Interpretation and action are full sentences; as Paragraphs they wrap inside
+    # the cell instead of overflowing into the next column.
+    cell = ParagraphStyle("cell", fontName="Helvetica", fontSize=8, leading=10)
 
     rows = [["Kondisi", "Jumlah", "Interpretasi", "Tindakan"]]
     for label, count in sorted(counts.items(), key=lambda item: -item[1]):
         condition = BY_LABEL.get(label)
         rows.append(
             [
-                label,
+                Paragraph(label, cell),
                 str(count),
-                condition.interpretation if condition else "-",
-                condition.action if condition else "-",
+                Paragraph(condition.interpretation if condition else "-", cell),
+                Paragraph(condition.action if condition else "-", cell),
             ]
         )
 
@@ -201,7 +205,7 @@ def to_pdf(result: schemas.DetectionResult) -> bytes:
     generated = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     story = [
-        Paragraph("Laporan Deteksi Penyakit Kelapa Sawit", styles["Title"]),
+        Paragraph("Laporan Kondisi Tanaman Kelapa Sawit", styles["Title"]),
         Spacer(1, 4 * mm),
         Paragraph(f"<b>Berkas:</b> {result.filename}", styles["Normal"]),
         Paragraph(

@@ -38,8 +38,8 @@ Referensi wajib dibaca sebelum mulai:
     {
       "id": 1,
       "bbox": [x, y, w, h],
-      "disease": "Ganoderma (busuk pangkal)",
-      "severity": "berat",           // ringan | sedang | berat
+      "condition": "Mati/stres",     // label kondisi, bukan diagnosis penyakit
+      "severity": "berat",           // sehat | ringan | sedang | berat
       "confidence": 0.94,
       "gps": { "lat": -0.78915, "lng": 101.41240 }
     }
@@ -48,8 +48,15 @@ Referensi wajib dibaca sebelum mulai:
 ```
 Frontend menggambar bbox + label dari array `detections`; dashboard & peta memakai `summary` + `gps`.
 
-## Daftar penyakit (contoh awal — konfirmasi ke klien)
-Ganoderma (busuk pangkal batang), Karat daun, Bercak daun (Curvularia), Defisiensi hara.
+## Daftar kondisi tanaman (mengikuti dataset klien)
+Dataset Roboflow `heras-workspace/oil-palm-central-kalimantan` berisi 4 kelas
+**kondisi tanaman**, bukan nama penyakit:
+`healthy` (Sehat), `yellow` (Menguning), `dead` (Mati/stres), `small` (Kerdil).
+
+Daftar penyakit di proposal (Ganoderma, karat daun, bercak daun Curvularia,
+defisiensi hara) TIDAK ada di dataset — hanya "defisiensi hara" yang bersinggungan
+dengan `yellow`. Karena itu istilah di kode & UI memakai **kondisi**, bukan penyakit.
+Keparahan (`severity`) juga belum ada labelnya di dataset. Lihat `docs/SWAP_MODEL.md`.
 
 ## Prinsip kerja
 - Jelaskan rencana sebelum menulis banyak kode. Tunggu konfirmasi untuk keputusan besar.

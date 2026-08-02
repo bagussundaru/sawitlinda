@@ -26,7 +26,7 @@ def detection_out(detection: models.Detection) -> schemas.DetectionOut:
     return schemas.DetectionOut(
         id=detection.id,
         bbox=[detection.bbox_x, detection.bbox_y, detection.bbox_w, detection.bbox_h],
-        disease=detection.disease,
+        condition=detection.condition,
         severity=detection.severity,
         confidence=detection.confidence,
         gps=gps_of(detection.gps_lat, detection.gps_lng),

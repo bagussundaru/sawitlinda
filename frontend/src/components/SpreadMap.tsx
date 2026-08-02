@@ -51,7 +51,7 @@ export default function SpreadMap({ points }: { points: MapPoint[] }) {
               }}
             >
               <Popup>
-                <b>{point.disease}</b>
+                <b>{point.condition}</b>
                 <br />
                 Keparahan: {point.severity}
                 <br />

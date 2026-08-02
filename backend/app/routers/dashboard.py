@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.db import get_db
-from app.inference.diseases import CONDITIONS, SEVERITIES
+from app.inference.conditions import CONDITIONS, SEVERITIES
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
@@ -35,9 +35,9 @@ def get_dashboard(db: Session = Depends(get_db)) -> schemas.Dashboard:
             .group_by(models.Detection.severity)
         ).all()
     )
-    disease_counts = db.execute(
-        select(models.Detection.disease, func.count())
-        .group_by(models.Detection.disease)
+    condition_counts = db.execute(
+        select(models.Detection.condition, func.count())
+        .group_by(models.Detection.condition)
         .order_by(func.count().desc())
     ).all()
 
@@ -53,8 +53,8 @@ def get_dashboard(db: Session = Depends(get_db)) -> schemas.Dashboard:
             infected=total - healthy,
             severe=severity_counts.get("berat", 0),
         ),
-        by_disease=[
-            schemas.NamedCount(label=disease, count=count) for disease, count in disease_counts
+        by_condition=[
+            schemas.NamedCount(label=condition, count=count) for condition, count in condition_counts
         ],
         # Fixed order so the chart keeps a stable axis even when a level is absent.
         by_severity=[

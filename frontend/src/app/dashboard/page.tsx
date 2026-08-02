@@ -67,7 +67,7 @@ export default function DashboardPage() {
   }
 
   const { summary } = data;
-  const maxDisease = Math.max(1, ...data.by_disease.map((d) => d.count));
+  const maxDisease = Math.max(1, ...data.by_condition.map((d) => d.count));
   const infectedPct =
     summary.total > 0 ? (summary.infected / summary.total) * 100 : 0;
 
@@ -87,13 +87,13 @@ export default function DashboardPage() {
 
       <div className="grid gap-[18px] lg:grid-cols-2">
         <div className="rounded-[13px] border border-[var(--line)] bg-[var(--card)] p-[18px]">
-          <h3 className="mb-4 text-sm font-bold">Distribusi kondisi pohon</h3>
-          {data.by_disease.length === 0 ? (
+          <h3 className="mb-4 text-sm font-bold">Distribusi kondisi tanaman</h3>
+          {data.by_condition.length === 0 ? (
             <p className="text-[12.5px] text-[var(--muted)]">
               Belum ada data. Analisis sebuah citra terlebih dahulu.
             </p>
           ) : (
-            data.by_disease.map((item) => (
+            data.by_condition.map((item) => (
               <div
                 key={item.label}
                 className="mb-3 flex items-center gap-[10px] text-[12.5px]"

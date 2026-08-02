@@ -1,4 +1,4 @@
-from app.inference.diseases import CONDITIONS, HEALTHY_CLASS
+from app.inference.conditions import CONDITIONS, HEALTHY_CLASS
 
 
 def test_conditions_endpoint_lists_every_class(client):

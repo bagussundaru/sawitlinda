@@ -1,4 +1,4 @@
-"""Vocabulary of tree conditions, with the agronomic reading of each one.
+"""Vocabulary of plant conditions, with the agronomic reading of each one.
 
 Kept in one module so that swapping in the real model means aligning names with the
 trained label set in exactly one place.
@@ -41,24 +41,24 @@ CONDITIONS: tuple[Condition, ...] = (
     ),
     Condition(
         key="yellow",
-        label="Daun menguning",
-        appearance="Tajuk dominan kuning/hijau pucat",
+        label="Menguning",
+        appearance="Tajuk didominasi warna kuning atau hijau pucat",
         interpretation="Dugaan defisiensi nutrisi",
-        action="Cek unsur hara, pemupukan N/Mg/K",
+        action="Periksa unsur hara, lakukan pemupukan susulan (N/Mg/K)",
     ),
     Condition(
         key="dead",
-        label="Pohon mati",
-        appearance="Tajuk kering, coklat, pelepah mati",
-        interpretation="Pelepah mati atau tanaman mengalami stres",
-        action="Pemangkasan/inspeksi lebih lanjut",
+        label="Mati/stres",
+        appearance="Tajuk mengering, berwarna cokelat, pelepah mati",
+        interpretation="Pelepah telah mati atau tanaman mengalami stres berat",
+        action="Lakukan pemangkasan atau inspeksi lapangan lebih lanjut",
     ),
     Condition(
         key="small",
-        label="Pertumbuhan kerdil",
-        appearance="Tajuk kecil dibanding tanaman sekitar",
-        interpretation="Pertumbuhan terhambat",
-        action="Evaluasi pemupukan dan kondisi tanah",
+        label="Kerdil",
+        appearance="Tajuk berukuran lebih kecil dibanding tanaman sekitar",
+        interpretation="Pertumbuhan tanaman terhambat",
+        action="Review kembali pemupukan dan evaluasi kondisi tanah",
     ),
 )
 

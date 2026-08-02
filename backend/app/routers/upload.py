@@ -1,4 +1,3 @@
-import shutil
 import uuid
 from pathlib import Path
 
@@ -15,9 +14,27 @@ router = APIRouter(prefix="/api", tags=["upload"])
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff"}
 
 
-def _store_file(upload: UploadFile, destination: Path) -> None:
+CHUNK_SIZE = 1024 * 1024
+
+
+def _store_file(upload: UploadFile, destination: Path, max_bytes: int) -> None:
+    """Stream the upload to disk, stopping if it exceeds the configured limit.
+
+    Streaming in chunks keeps a large UAV frame from being held in memory whole,
+    and the running total means an oversized file is rejected part-way rather than
+    after the whole thing has landed on disk.
+    """
+    written = 0
     with destination.open("wb") as target:
-        shutil.copyfileobj(upload.file, target)
+        while chunk := upload.file.read(CHUNK_SIZE):
+            written += len(chunk)
+            if written > max_bytes:
+                raise HTTPException(
+                    status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    f"Berkas {upload.filename or '(tanpa nama)'} melebihi batas "
+                    f"{max_bytes // (1024 * 1024)} MB.",
+                )
+            target.write(chunk)
 
 
 @router.post("/upload", response_model=schemas.UploadResponse, status_code=status.HTTP_201_CREATED)
@@ -42,7 +59,8 @@ def upload_images(
                 f"Gunakan: {', '.join(sorted(ALLOWED_EXTENSIONS))}.",
             )
 
-    storage_path = get_settings().storage_path
+    settings = get_settings()
+    storage_path = settings.storage_path
     created: list[models.Image] = []
     written: list[Path] = []
 
@@ -52,8 +70,10 @@ def upload_images(
             extension = Path(upload.filename or "").suffix.lower()
             destination = storage_path / f"{image_id}{extension}"
 
-            _store_file(upload, destination)
+            # Recorded before writing: a file rejected part-way through still
+            # exists on disk and has to be cleaned up.
             written.append(destination)
+            _store_file(upload, destination, settings.max_upload_bytes)
 
             metadata = exif.extract(destination)
             image = models.Image(

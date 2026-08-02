@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SawitScan AI",
-  description: "Deteksi & klasifikasi penyakit kelapa sawit dari citra UAV",
+  description: "Deteksi & klasifikasi kondisi tanaman kelapa sawit dari citra UAV",
 };
 
 export default function RootLayout({

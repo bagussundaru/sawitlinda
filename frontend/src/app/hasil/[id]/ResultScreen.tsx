@@ -189,7 +189,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
                     style={{ borderLeftColor: color }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <b className="text-[13.5px]">{detection.disease}</b>
+                      <b className="text-[13.5px]">{detection.condition}</b>
                       <span
                         className="rounded-full px-2 py-[2px] text-[10.5px] font-semibold uppercase"
                         style={{ background: badge.bg, color: badge.fg }}

@@ -39,7 +39,7 @@ def test_csv_content_matches_the_api_result(client, analyzed):
 
     rows = list(csv.DictReader(io.StringIO(response.content.decode("utf-8-sig"))))
     for row, detection in zip(rows, analyzed["detections"]):
-        assert row["penyakit"] == detection["disease"]
+        assert row["kondisi"] == detection["condition"]
         assert row["keparahan"] == detection["severity"]
         assert row["nama_berkas"] == "blok_a3_001.jpg"
 
@@ -69,16 +69,16 @@ def test_pdf_is_a_valid_document(client, analyzed):
 def test_pdf_lists_the_recommended_action_for_each_condition_found(client, analyzed):
     from pypdf import PdfReader
 
-    from app.inference.diseases import BY_LABEL, HEALTHY
+    from app.inference.conditions import BY_LABEL, HEALTHY
 
     response = client.get(f"/api/results/{analyzed['image_id']}/export.pdf")
     text = "".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(response.content)).pages)
 
-    found = {d["disease"] for d in analyzed["detections"] if d["disease"] != HEALTHY}
+    found = {d["condition"] for d in analyzed["detections"] if d["condition"] != HEALTHY}
     assert found, "citra contoh seharusnya memuat setidaknya satu temuan"
     assert "Rekomendasi tindakan" in text
     for label in found:
-        assert BY_LABEL[label].action.split(",")[0] in text
+        assert " ".join(BY_LABEL[label].action.split()[:2]) in text
 
 
 def test_pdf_is_offered_as_a_named_download(client, analyzed):

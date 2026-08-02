@@ -1,7 +1,7 @@
 // Mirrors the JSON contract defined in CLAUDE.md. Keep in sync with
 // backend/app/schemas.py — these two are the single source of truth.
 
-// "sehat" marks a detected tree with no disease — healthy trees are part of the
+// "sehat" marks a detected tree with no condition — healthy trees are part of the
 // detections array too, since the result screen and map draw every tree.
 export type Severity = "sehat" | "ringan" | "sedang" | "berat";
 
@@ -14,7 +14,7 @@ export interface Detection {
   id: number;
   /** [x, y, w, h] in image pixel coordinates */
   bbox: [number, number, number, number];
-  disease: string;
+  condition: string;
   severity: Severity;
   confidence: number;
   gps: Gps | null;
@@ -57,7 +57,7 @@ export interface MapPoint {
   detection_id: number;
   image_id: string;
   filename: string;
-  disease: string;
+  condition: string;
   severity: Severity;
   confidence: number;
   gps: Gps;
@@ -81,6 +81,6 @@ export interface Dashboard {
   images_total: number;
   images_analyzed: number;
   summary: DetectionSummary;
-  by_disease: NamedCount[];
+  by_condition: NamedCount[];
   by_severity: NamedCount[];
 }

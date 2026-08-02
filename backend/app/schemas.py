@@ -9,7 +9,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-#: "sehat" marks a detected tree with no disease — those trees are part of the
+#: "sehat" marks a detected tree with no condition — those trees are part of the
 #: detections array too, since the result screen and map draw every tree.
 Severity = Literal["sehat", "ringan", "sedang", "berat"]
 ImageStatus = Literal["uploaded", "analyzed"]
@@ -24,7 +24,7 @@ class DetectionOut(BaseModel):
     id: int
     #: [x, y, w, h] in image pixel coordinates
     bbox: list[float] = Field(min_length=4, max_length=4)
-    disease: str
+    condition: str
     severity: Severity
     confidence: float
     gps: Gps | None = None
@@ -75,7 +75,7 @@ class MapPoint(BaseModel):
     detection_id: int
     image_id: UUID
     filename: str
-    disease: str
+    condition: str
     severity: Severity
     confidence: float
     gps: Gps
@@ -102,5 +102,5 @@ class Dashboard(BaseModel):
     images_total: int
     images_analyzed: int
     summary: Summary
-    by_disease: list[NamedCount]
+    by_condition: list[NamedCount]
     by_severity: list[NamedCount]

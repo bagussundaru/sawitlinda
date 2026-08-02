@@ -12,7 +12,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.inference.diseases import AFFECTED_CLASSES, CLASS_LABELS, HEALTHY_CLASS
+from app.inference.conditions import AFFECTED_CLASSES, CLASS_LABELS, HEALTHY_CLASS
 
 #: Palms are planted on a roughly triangular grid ~9 m apart; at typical UAV
 #: altitude that lands somewhere around this many trees per frame.
@@ -86,7 +86,7 @@ def generate(image_path: str, gps: tuple[float, float] | None = None) -> dict:
         else:
             condition = rng.choice(AFFECTED_CLASSES)
         severity = _severity_for(condition, rng)
-        disease = CLASS_LABELS[condition]
+        condition = CLASS_LABELS[condition]
 
         detection_gps = None
         if gps is not None:
@@ -104,7 +104,7 @@ def generate(image_path: str, gps: tuple[float, float] | None = None) -> dict:
                     round(box_w, 1),
                     round(box_h, 1),
                 ],
-                "disease": disease,
+                "condition": condition,
                 "severity": severity,
                 "confidence": round(rng.uniform(0.71, 0.98), 2),
                 "gps": detection_gps,

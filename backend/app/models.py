@@ -46,7 +46,7 @@ class Detection(Base):
     bbox_y: Mapped[float] = mapped_column(Float)
     bbox_w: Mapped[float] = mapped_column(Float)
     bbox_h: Mapped[float] = mapped_column(Float)
-    disease: Mapped[str] = mapped_column(String(128))
+    condition: Mapped[str] = mapped_column(String(128))
     # ringan | sedang | berat
     severity: Mapped[str] = mapped_column(String(16))
     confidence: Mapped[float] = mapped_column(Float)

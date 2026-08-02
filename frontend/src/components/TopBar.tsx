@@ -25,7 +25,7 @@ export default function TopBar() {
         <span className="text-[17px] font-bold leading-tight text-[var(--green)]">
           SawitScan AI
           <small className="block text-[11px] font-normal text-[var(--muted)]">
-            Deteksi penyakit kelapa sawit — citra UAV
+            Pemantauan kondisi tanaman — citra UAV
           </small>
         </span>
       </Link>

@@ -12,8 +12,8 @@ Spesifikasi teknis & urutan pengerjaan: [`SPEC.md`](SPEC.md).
 
 ## Status
 
-Tahap **1–6 selesai** — MVP lengkap: unggah citra → hasil deteksi (mock) → dashboard
-& peta → export laporan. Tersisa tahap 7 (perapian).
+**Tahap 1–7 selesai** — MVP lengkap: unggah citra → hasil deteksi (mock) → dashboard
+& peta → export laporan.
 
 Tampilan mengikuti [`docs/SawitScan_Prototype.html`](docs/SawitScan_Prototype.html).
 
@@ -145,9 +145,45 @@ frontend/
 docs/                    proposal, prototype UI, panduan swap model
 ```
 
+## Konfigurasi
+
+Seluruh kredensial lewat environment variable — tidak ada yang di-hardcode.
+Salin `backend/.env.example` ke `backend/.env`.
+
+| Variabel | Default | Keterangan |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL lokal | Koneksi database. **Wajib diganti di produksi.** |
+| `CORS_ORIGINS` | `http://localhost:3000` | Asal frontend yang diizinkan, dipisah koma. **Wajib diganti di produksi.** |
+| `STORAGE_DIR` | `storage` | Lokasi citra terunggah, relatif terhadap `backend/`. |
+| `MAX_UPLOAD_MB` | `50` | Batas ukuran satu citra. |
+| `MODEL_PATH` | kosong | Berkas model terlatih; belum dipakai selama inference mock. |
+
+Frontend: `NEXT_PUBLIC_API_URL` di `frontend/.env.local` (default `http://localhost:8000`).
+
+## Penanganan galat
+
+Setiap kegagalan API mengembalikan bentuk yang sama — `{"detail": "<pesan>"}` —
+dengan pesan berbahasa Indonesia yang bisa ditindaklanjuti operator. Rincian teknis
+(stack trace, galat validasi Pydantic) masuk ke log, bukan ke layar pengguna.
+
+| Kode | Kapan muncul |
+| --- | --- |
+| `400` | Format berkas tidak didukung |
+| `404` | Citra tidak ditemukan |
+| `409` | Citra belum dianalisis |
+| `410` | Berkas citra hilang dari penyimpanan |
+| `413` | Ukuran citra melebihi `MAX_UPLOAD_MB` |
+| `422` | Permintaan tidak valid |
+| `503` | Database tidak dapat diakses |
+
+`GET /health` melakukan kueri nyata ke database, bukan sekadar menjawab "ok".
+
 ## Konvensi
 
 - Seluruh label & teks UI berbahasa **Indonesia**; komentar kode & nama variabel berbahasa Inggris.
 - Kredensial selalu lewat environment variable — jangan pernah di-hardcode.
 - Kontrak JSON hasil deteksi didefinisikan di `CLAUDE.md` dan dicerminkan di
   `backend/app/schemas.py` serta `frontend/src/types/detection.ts`. Ubah ketiganya bersamaan.
+- Yang dideteksi sistem adalah **kondisi tanaman** (sehat, menguning, mati/stres,
+  kerdil), bukan diagnosis penyakit — itulah isi dataset klien. Istilah
+  "penyakit" hanya dipakai untuk judul proyek. Lihat `docs/SWAP_MODEL.md`.
