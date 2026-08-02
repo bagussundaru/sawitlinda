@@ -9,7 +9,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-Severity = Literal["ringan", "sedang", "berat"]
+#: "sehat" marks a detected tree with no disease — those trees are part of the
+#: detections array too, since the result screen and map draw every tree.
+Severity = Literal["sehat", "ringan", "sedang", "berat"]
 ImageStatus = Literal["uploaded", "analyzed"]
 
 
@@ -59,3 +61,24 @@ class UploadResponse(BaseModel):
     """Result of a batch upload: one entry per accepted file."""
 
     images: list[ImageOut]
+
+
+class ResultListItem(ImageOut):
+    """History entry. `summary` is null while the image has not been analysed."""
+
+    summary: Summary | None = None
+
+
+class NamedCount(BaseModel):
+    label: str
+    count: int
+
+
+class Dashboard(BaseModel):
+    """Aggregate across every analysed image."""
+
+    images_total: int
+    images_analyzed: int
+    summary: Summary
+    by_disease: list[NamedCount]
+    by_severity: list[NamedCount]

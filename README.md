@@ -12,9 +12,18 @@ Spesifikasi teknis & urutan pengerjaan: [`SPEC.md`](SPEC.md).
 
 ## Status
 
-Tahap **1 — scaffold** dan **2 — model DB, migrasi, endpoint upload** selesai.
-`POST /api/upload` menerima batch citra, mengekstrak GPS & waktu pemotretan dari EXIF,
-lalu menyimpannya. Endpoint analyze/results/dashboard dan layar frontend menyusul.
+Tahap **1–3** selesai: seluruh backend MVP sudah berjalan. Layar frontend menyusul.
+
+| Endpoint | Keterangan |
+| --- | --- |
+| `POST /api/upload` | Unggah batch citra; GPS & waktu pemotretan diambil dari EXIF |
+| `POST /api/analyze/{image_id}` | Jalankan inference, simpan hasil (analisis ulang menimpa hasil lama) |
+| `GET /api/results` | Riwayat unggahan, terbaru dulu |
+| `GET /api/results/{image_id}` | Satu hasil deteksi lengkap |
+| `GET /api/dashboard` | Agregat lintas citra |
+
+> **Inference masih MOCK.** `run_inference()` menghasilkan deteksi acak yang realistis
+> dan deterministik per citra. Lihat [`docs/SWAP_MODEL.md`](docs/SWAP_MODEL.md).
 
 > Tes memakai SQLite sehingga tidak butuh Docker. Target produksi tetap PostgreSQL —
 > tipe kolom sengaja dipilih yang portabel.

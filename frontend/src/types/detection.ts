@@ -1,7 +1,9 @@
 // Mirrors the JSON contract defined in CLAUDE.md. Keep in sync with
 // backend/app/schemas.py — these two are the single source of truth.
 
-export type Severity = "ringan" | "sedang" | "berat";
+// "sehat" marks a detected tree with no disease — healthy trees are part of the
+// detections array too, since the result screen and map draw every tree.
+export type Severity = "sehat" | "ringan" | "sedang" | "berat";
 
 export interface Gps {
   lat: number;
@@ -32,4 +34,33 @@ export interface DetectionResult {
   gps: Gps | null;
   summary: DetectionSummary;
   detections: Detection[];
+}
+
+export type ImageStatus = "uploaded" | "analyzed";
+
+export interface ImageItem {
+  image_id: string;
+  filename: string;
+  captured_at: string | null;
+  gps: Gps | null;
+  status: ImageStatus;
+  created_at: string;
+}
+
+/** History entry; `summary` is null while the image has not been analysed. */
+export interface ResultListItem extends ImageItem {
+  summary: DetectionSummary | null;
+}
+
+export interface NamedCount {
+  label: string;
+  count: number;
+}
+
+export interface Dashboard {
+  images_total: number;
+  images_analyzed: number;
+  summary: DetectionSummary;
+  by_disease: NamedCount[];
+  by_severity: NamedCount[];
 }
