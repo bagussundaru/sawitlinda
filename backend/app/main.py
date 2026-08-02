@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.routers import upload
 
 settings = get_settings()
 
@@ -25,4 +26,6 @@ def health() -> dict:
     return {"status": "ok", "version": app.version}
 
 
-# Routers are registered in stage 2 (upload) and stage 3 (analyze/results/dashboard).
+app.include_router(upload.router)
+
+# analyze / results / dashboard routers are registered in stage 3.

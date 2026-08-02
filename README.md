@@ -12,9 +12,12 @@ Spesifikasi teknis & urutan pengerjaan: [`SPEC.md`](SPEC.md).
 
 ## Status
 
-Tahap **1 — scaffold** selesai: struktur repo, konfigurasi, PostgreSQL via Docker,
-dan aplikasi kosong yang sudah bisa dijalankan di kedua sisi.
-Endpoint upload/analyze/results serta layar frontend dikerjakan pada tahap berikutnya.
+Tahap **1 — scaffold** dan **2 — model DB, migrasi, endpoint upload** selesai.
+`POST /api/upload` menerima batch citra, mengekstrak GPS & waktu pemotretan dari EXIF,
+lalu menyimpannya. Endpoint analyze/results/dashboard dan layar frontend menyusul.
+
+> Tes memakai SQLite sehingga tidak butuh Docker. Target produksi tetap PostgreSQL —
+> tipe kolom sengaja dipilih yang portabel.
 
 ## Prasyarat
 
@@ -50,6 +53,12 @@ Salin konfigurasi lalu sesuaikan bila perlu:
 
 ```bash
 cp .env.example .env
+```
+
+Terapkan migrasi database:
+
+```bash
+alembic upgrade head
 ```
 
 Jalankan:
