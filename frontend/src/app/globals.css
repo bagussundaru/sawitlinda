@@ -1,40 +1,71 @@
 @import "tailwindcss";
 
-/* Design tokens lifted from docs/SawitScan_Prototype.html — keep in sync. */
+/* Design tokens dari redesign klien — docs/SawitScan_Redesign.html. Jaga tetap sinkron. */
 :root {
-  --green: #0f6e56;
-  --green-d: #0a4a3a;
-  --green-l: #1d9e75;
-  --green-bg: #e1f5ee;
-  --amber: #ba7517;
-  --amber-bg: #faeeda;
-  --red: #a32d2d;
-  --red-bg: #fcebeb;
-  --ink: #1f2421;
-  --muted: #5f5e5a;
-  --line: #e6ece9;
+  /* Palet redesign — docs/SawitScan_Redesign.html */
+  --page: #eef2ee;
   --card: #ffffff;
-  --page: #eef6f1;
+  --line: #e2e9e3;
+  --line-soft: #edf2ee;
+  --ink: #12261c;
+  --muted: #65806f;
+  --muted-2: #71897a;
+  --muted-3: #93a79a;
 
-  /* Sidebar */
-  --sidebar: #0e3b2e;
-  --sidebar-hover: #17513f;
-  --sidebar-active: #1c6650;
-  --sidebar-ink: #cfe3da;
+  --sidebar: #0b3d2c;
+  --sidebar-ink: #9cc0ac;
+  --sidebar-sub: #5e9b7e;
+  --sidebar-mono: #7fb39a;
 
-  /* Chart accents */
-  --chart-1: #0f6e56;
-  --chart-2: #1d9e75;
-  --chart-3: #e8a33d;
-  --chart-4: #d64545;
+  --brand: #0b3d2c;
+  --brand-2: #0f8a55;
+  --accent: #2fbf71;
+
+  --panel-dark: #08301f;
+  --panel-dark-ink: #ddebe2;
+
+  /* Status pohon */
+  --healthy: #2fbf71;
+  --mild: #e8b93b;
+  --severe: #e2574c;
+
+  /* Alias lama agar komponen yang belum diperbarui tetap benar */
+  --green: #0f8a55;
+  --green-d: #0b3d2c;
+  --green-l: #2fbf71;
+  --green-bg: #e7f4ec;
+  --amber: #a9791a;
+  --amber-bg: #fbf1dc;
+  --red: #b8362c;
+  --red-bg: #fbeae8;
 }
 
 body {
   background: var(--page);
   color: var(--ink);
   line-height: 1.5;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7d2c8;
+  border-radius: 8px;
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(400%);
+  }
 }
 
 @keyframes fade {

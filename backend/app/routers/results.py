@@ -123,6 +123,7 @@ def list_map_points(db: Session = Depends(get_db)) -> list[schemas.MapPoint]:
             detection_id=detection.id,
             image_id=image.id,
             filename=image.filename,
+            captured_at=image.captured_at,
             condition=detection.condition,
             severity=detection.severity,
             confidence=detection.confidence,

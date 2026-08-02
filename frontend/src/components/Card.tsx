@@ -1,21 +1,34 @@
 export function Card({
   title,
+  subtitle,
   action,
   children,
   className = "",
 }: {
   title?: string;
+  subtitle?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section
-      className={`rounded-[14px] border border-[var(--line)] bg-[var(--card)] p-[18px] shadow-[0_1px_2px_rgba(16,40,32,.04)] ${className}`}
+      className={`flex flex-col gap-4 rounded-[18px] border border-[var(--line)] bg-[var(--card)] p-5 ${className}`}
     >
-      {title && (
-        <header className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-[14.5px] font-bold">{title}</h3>
+      {(title || action) && (
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            {title && (
+              <h3 className="text-[15px] font-extrabold tracking-[-0.02em]">
+                {title}
+              </h3>
+            )}
+            {subtitle && (
+              <p className="mt-[3px] text-[11.5px] text-[var(--muted-2)]">
+                {subtitle}
+              </p>
+            )}
+          </div>
           {action}
         </header>
       )}
@@ -24,27 +37,44 @@ export function Card({
   );
 }
 
+/** KPI tile: label, big figure, and a bar showing its share of the total. */
 export function StatCard({
-  value,
   label,
-  tone = "default",
+  value,
+  share,
+  color = "var(--brand)",
+  note,
 }: {
-  value: number | string;
   label: string;
-  tone?: "default" | "good" | "warn" | "bad";
+  value: number;
+  /** 0–1, drives the bar width. */
+  share: number;
+  color?: string;
+  note?: string;
 }) {
-  const color = {
-    default: "var(--ink)",
-    good: "var(--green)",
-    warn: "var(--chart-3)",
-    bad: "var(--chart-4)",
-  }[tone];
-
   return (
-    <div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-[18px] py-4 shadow-[0_1px_2px_rgba(16,40,32,.04)]">
-      <div className="text-[12.5px] text-[var(--muted)]">{label}</div>
-      <div className="mt-1 text-[26px] font-bold leading-tight" style={{ color }}>
-        {typeof value === "number" ? value.toLocaleString("id-ID") : value}
+    <div className="flex flex-col gap-3 rounded-[16px] border border-[var(--line)] bg-[var(--card)] px-[18px] pb-4 pt-[18px]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12px] font-semibold text-[var(--muted)]">
+          {label}
+        </span>
+        {note && (
+          <span className="mono rounded-md bg-[var(--line-soft)] px-[7px] py-[3px] text-[10.5px] font-bold text-[var(--muted)]">
+            {note}
+          </span>
+        )}
+      </div>
+      <div className="text-[31px] font-extrabold leading-none tracking-[-0.04em]">
+        {value.toLocaleString("id-ID")}
+      </div>
+      <div className="h-[5px] overflow-hidden rounded-[4px] bg-[var(--line-soft)]">
+        <div
+          className="h-full rounded-[4px]"
+          style={{
+            width: `${Math.max(6, Math.min(100, share * 100))}%`,
+            background: color,
+          }}
+        />
       </div>
     </div>
   );

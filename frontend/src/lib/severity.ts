@@ -1,28 +1,48 @@
 import type { Severity } from "@/types/detection";
 
-/** Colour per severity, taken from the prototype legend. */
+/** Colour per severity, from the client's redesign palette. */
 export const SEVERITY_COLOR: Record<Severity, string> = {
-  sehat: "#1D9E75",
-  ringan: "#BA7517",
-  sedang: "#BA7517",
-  berat: "#A32D2D",
+  sehat: "#2FBF71",
+  ringan: "#E8B93B",
+  sedang: "#E8B93B",
+  berat: "#E2574C",
 };
 
 /** Background/foreground pair for the severity badge. */
 export const SEVERITY_BADGE: Record<Severity, { bg: string; fg: string }> = {
-  sehat: { bg: "var(--green-bg)", fg: "var(--green-d)" },
-  ringan: { bg: "var(--amber-bg)", fg: "var(--amber)" },
-  sedang: { bg: "var(--amber-bg)", fg: "var(--amber)" },
-  berat: { bg: "var(--red-bg)", fg: "var(--red)" },
+  sehat: { bg: "rgba(47,191,113,.12)", fg: "#0F8A55" },
+  ringan: { bg: "rgba(232,185,59,.16)", fg: "#8A6A11" },
+  sedang: { bg: "rgba(232,185,59,.16)", fg: "#8A6A11" },
+  berat: { bg: "rgba(226,87,76,.12)", fg: "#B8362C" },
 };
 
-/** The three groups the prototype's legend shows. */
-export const LEGEND: { label: string; color: string }[] = [
-  { label: "Sehat", color: SEVERITY_COLOR.sehat },
-  { label: "Terinfeksi ringan–sedang", color: SEVERITY_COLOR.ringan },
-  { label: "Terinfeksi berat", color: SEVERITY_COLOR.berat },
+/** Map layers, matching the redesign's three-colour legend. */
+export const LAYERS: {
+  key: "sehat" | "ringan" | "berat";
+  label: string;
+  color: string;
+  covers: Severity[];
+}[] = [
+  { key: "sehat", label: "Hijau (Sehat)", color: "#2FBF71", covers: ["sehat"] },
+  {
+    key: "ringan",
+    label: "Kuning (Ringan–sedang)",
+    color: "#E8B93B",
+    covers: ["ringan", "sedang"],
+  },
+  { key: "berat", label: "Merah (Berat)", color: "#E2574C", covers: ["berat"] },
 ];
+
+/** The three groups the legend shows. */
+export const LEGEND = LAYERS.map(({ label, color }) => ({ label, color }));
 
 export function isHealthy(severity: Severity): boolean {
   return severity === "sehat";
+}
+
+/** Which layer a severity belongs to. */
+export function layerOf(severity: Severity): "sehat" | "ringan" | "berat" {
+  if (severity === "sehat") return "sehat";
+  if (severity === "berat") return "berat";
+  return "ringan";
 }

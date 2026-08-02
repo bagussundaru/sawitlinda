@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin:0; padding:0; background:#EEF2EE; }
+  * { box-sizing:border-box; }
+  a { color:#0F6B44; text-decoration:none; }
+  a:hover { color:#2FBF71; }
+  @keyframes pulseRing { 0%{ transform:scale(1); opacity:.55 } 70%{ transform:scale(2.6); opacity:0 } 100%{ transform:scale(2.6); opacity:0 } }
+  @keyframes sweep { 0%{ transform:translateY(-100%) } 100%{ transform:translateY(400%) } }
+  ::-webkit-scrollbar { width:8px; height:8px }
+  ::-webkit-scrollbar-thumb { background:#C7D2C8; border-radius:8px }
+</style>
+</helmet>
+<div style="display:grid; grid-template-columns:248px 1fr; min-height:100vh; font-family:'Plus Jakarta Sans',Helvetica,sans-serif; color:#12261C; background:#EEF2EE;">
+
+  <aside style="background:#0B3D2C; color:#CFE3D8; padding:26px 18px; display:flex; flex-direction:column; gap:34px; position:sticky; top:0; height:100vh;">
+    <div style="display:flex; align-items:center; gap:11px; padding:0 6px;">
+      <div style="width:34px; height:34px; border-radius:11px; background:linear-gradient(145deg,#2FBF71,#0F8A55); display:flex; align-items:center; justify-content:center; font-weight:800; color:#04231A; font-size:15px;">S</div>
+      <div>
+        <div style="font-size:16px; font-weight:800; color:#fff; letter-spacing:-.02em;">SawitScan AI</div>
+        <div style="font-size:10px; letter-spacing:.16em; color:#5E9B7E; font-weight:600;">UAV DISEASE INTEL</div>
+      </div>
+    </div>
+
+    <nav style="display:flex; flex-direction:column; gap:4px;">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="6">
+        <div onClick="{{ n.onClick }}" style="{{ n.style }}">
+          <span style="font-size:13px; font-weight:600;">{{ n.label }}</span>
+          <span style="{{ n.badgeStyle }}">{{ n.badge }}</span>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:14px;">
+      <div style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:14px; padding:14px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:9px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#2FBF71; box-shadow:0 0 0 3px rgba(47,191,113,.22);"></span>
+          <span style="font-size:11px; font-weight:700; color:#fff;">Model aktif</span>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; line-height:1.7; color:#7FB39A;">
+          YOLOv8-L · Swin-T<br />MTL head v2.4<br />mAP50 0.912
+        </div>
+      </div>
+      <div style="font-size:11.5px; color:#6FA98D; padding-left:6px;">Keluar</div>
+    </div>
+  </aside>
+
+  <main style="padding:26px 30px 40px; display:flex; flex-direction:column; gap:20px; min-width:0;">
+
+    <header style="display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+      <div>
+        <div style="font-size:11px; letter-spacing:.15em; font-weight:700; color:#5C7A6B;">DASHBOARD OPERASIONAL</div>
+        <h1 style="margin:5px 0 0; font-size:29px; font-weight:800; letter-spacing:-.035em;">Estate Riau Utara — Sebaran Penyakit</h1>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #DCE5DE; border-radius:11px; padding:10px 14px; width:250px;">
+          <span style="width:13px; height:13px; border:1.6px solid #93A79A; border-radius:50%;"></span>
+          <span style="font-size:12.5px; color:#93A79A;">Cari blok, pohon, atau tanggal…</span>
+        </div>
+        <div style="background:#0B3D2C; color:#fff; font-size:12.5px; font-weight:700; padding:11px 18px; border-radius:11px; cursor:pointer;" onClick="{{ runScan }}">{{ scanLabel }}</div>
+        <div style="width:40px; height:40px; border-radius:12px; background:#D9E5DC;"></div>
+      </div>
+    </header>
+
+    <section style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#fff; border:1px solid #E2E9E3; border-radius:16px; padding:18px 18px 16px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:12px; font-weight:600; color:#65806F;">{{ k.label }}</span>
+            <span style="{{ k.deltaStyle }}">{{ k.delta }}</span>
+          </div>
+          <div style="font-size:31px; font-weight:800; letter-spacing:-.04em; line-height:1;">{{ k.value }}</div>
+          <div style="height:5px; border-radius:4px; background:#EDF2EE; overflow:hidden;">
+            <div style="{{ k.barStyle }}"></div>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display:grid; grid-template-columns:1.35fr 1fr; gap:16px;">
+
+      <div style="background:#fff; border:1px solid #E2E9E3; border-radius:18px; padding:20px; display:flex; flex-direction:column; gap:16px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div>
+            <div style="font-size:15px; font-weight:800; letter-spacing:-.02em;">Peta Perkebunan</div>
+            <div style="font-size:11.5px; color:#71897A; margin-top:3px;">Klik satu titik pohon untuk membuka citra drone &amp; hasil deteksi</div>
+          </div>
+          <div style="display:flex; gap:6px; background:#F1F5F2; padding:4px; border-radius:11px;">
+            <sc-for list="{{ blocks }}" as="b" hint-placeholder-count="5">
+              <div onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position:relative; border-radius:14px; overflow:hidden; background:linear-gradient(180deg,#F4F8F4,#E9F1EA); border:1px solid #E2E9E3; height:372px;">
+          <div style="position:absolute; inset:0; background-image:linear-gradient(#DCE7DE 1px,transparent 1px),linear-gradient(90deg,#DCE7DE 1px,transparent 1px); background-size:38px 38px; opacity:.6;"></div>
+          <div style="{{ sweepStyle }}"></div>
+
+          <div style="position:absolute; inset:0;">
+            <sc-for list="{{ trees }}" as="t" hint-placeholder-count="40">
+              <div onClick="{{ t.onClick }}" title="{{ t.title }}" style="{{ t.style }}"></div>
+            </sc-for>
+          </div>
+
+          <div style="position:absolute; right:14px; bottom:14px; background:rgba(255,255,255,.92); border:1px solid #DCE5DE; border-radius:10px; padding:8px 11px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#4B6656;">{{ coordLabel }}</div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#83998B;">LAYER</span>
+          <sc-for list="{{ layers }}" as="l" hint-placeholder-count="3">
+            <div onClick="{{ l.onClick }}" style="{{ l.style }}">
+              <span style="{{ l.dotStyle }}"></span>
+              <span>{{ l.label }}</span>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:10px; opacity:.65;">{{ l.count }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="background:#08301F; border-radius:18px; padding:20px; color:#DDEBE2; display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:15px; font-weight:800; color:#fff; letter-spacing:-.02em;">Citra Drone &amp; Deteksi AI</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; background:rgba(255,255,255,.08); padding:5px 9px; border-radius:7px;">{{ selectedId }}</div>
+        </div>
+
+        <div style="position:relative; border-radius:13px; overflow:hidden; aspect-ratio:4/3; background:repeating-linear-gradient(135deg,#12503A 0 9px,#0E4531 9px 18px);">
+          <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10.5px; color:rgba(255,255,255,.34); letter-spacing:.08em;">UAV FRAME 4096×3072</div>
+          <sc-for list="{{ boxes }}" as="b" hint-placeholder-count="3">
+            <div style="{{ b.style }}">
+              <span style="{{ b.tagStyle }}">{{ b.tag }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px;">
+          <sc-for list="{{ facts }}" as="f" hint-placeholder-count="4">
+            <div style="background:rgba(255,255,255,.06); border-radius:11px; padding:10px 12px;">
+              <div style="font-size:10px; letter-spacing:.1em; color:#78A891; font-weight:700;">{{ f.label }}</div>
+              <div style="font-size:14.5px; font-weight:700; color:#fff; margin-top:4px;">{{ f.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <div style="flex:1; text-align:center; background:#2FBF71; color:#05271A; font-size:12px; font-weight:800; padding:11px; border-radius:11px; cursor:pointer;">Ekspor PDF</div>
+          <div style="flex:1; text-align:center; background:rgba(255,255,255,.08); color:#DDEBE2; font-size:12px; font-weight:700; padding:11px; border-radius:11px; cursor:pointer;">Riwayat pohon</div>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:grid; grid-template-columns:1.35fr 1fr; gap:16px;">
+      <div style="background:#fff; border:1px solid #E2E9E3; border-radius:18px; padding:20px; display:flex; flex-direction:column; gap:15px;">
+        <div style="font-size:15px; font-weight:800; letter-spacing:-.02em;">Distribusi Tipe Penyakit — {{ blockLabel }}</div>
+        <sc-for list="{{ diseases }}" as="d" hint-placeholder-count="4">
+          <div onClick="{{ d.onClick }}" style="display:flex; align-items:center; gap:14px; cursor:pointer;">
+            <div style="width:132px; font-size:12.5px; font-weight:600;">{{ d.name }}</div>
+            <div style="flex:1; height:9px; border-radius:6px; background:#F0F4F1; overflow:hidden;">
+              <div style="{{ d.barStyle }}"></div>
+            </div>
+            <div style="width:78px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#4B6656;">{{ d.stat }}</div>
+          </div>
+        </sc-for>
+        <div style="margin-top:4px; font-size:11.5px; color:#71897A;">Klik baris untuk menyorot titik penyakit tersebut di peta.</div>
+      </div>
+
+      <div style="background:#fff; border:1px solid #E2E9E3; border-radius:18px; padding:20px; display:flex; flex-direction:column; gap:14px;">
+        <div style="font-size:15px; font-weight:800; letter-spacing:-.02em;">Antrian Inference</div>
+        <sc-for list="{{ queue }}" as="q" hint-placeholder-count="4">
+          <div style="display:flex; align-items:center; gap:11px;">
+            <span style="{{ q.dotStyle }}"></span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ q.file }}</div>
+              <div style="font-size:10.5px; color:#7B917F; margin-top:2px;">{{ q.meta }}</div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#4B6656;">{{ q.state }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1180}}">
+const PALETTE = { healthy:'#2FBF71', mild:'#E8B93B', severe:'#E2574C' };
+const DISEASES = [
+  { name:'Ganoderma', key:'ganoderma', pct:45 },
+  { name:'Leaf Blight', key:'blight', pct:28 },
+  { name:'Stem Rot', key:'stemrot', pct:17 },
+  { name:'Rhinoceros Beetle', key:'beetle', pct:10 },
+];
+const BLOCKS = ['A','B','C','D','E'];
+
+function rng(seed) { let s = seed; return () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648; }
+
+class Component extends DCLogic {
+  state = { block:'A', selected:null, layerOff:{}, focusDisease:null, nav:'Rumah', scanning:false };
+
+  trees(block) {
+    const r = rng(block.charCodeAt(0) * 977);
+    const out = [];
+    const cols = 22, rows = 13;
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const v = r();
+      const status = v > 0.93 ? 'severe' : v > 0.82 ? 'mild' : 'healthy';
+      const d = DISEASES[Math.floor(r() * 4)];
+      out.push({
+        id: block + '-' + String(y * cols + x + 1).padStart(3, '0'),
+        left: 8 + (x / (cols - 1)) * 84 + (r() - 0.5) * 1.4,
+        top: 9 + (y / (rows - 1)) * 82 + (r() - 0.5) * 1.6,
+        status, disease: status === 'healthy' ? null : d,
+        conf: (0.72 + r() * 0.27),
+        lat: -0.4521 - y * 0.00042 + r() * 0.0001,
+        lng: 101.3388 + x * 0.00051,
+        date: '0' + (1 + Math.floor(r() * 8)) + ' Ags 2026',
+      });
+    }
+    return out;
+  }
+
+  renderVals() {
+    const st = this.state;
+    const all = this.trees(st.block);
+    const counts = { healthy:0, mild:0, severe:0 };
+    all.forEach(t => counts[t.status]++);
+    const sel = all.find(t => t.id === st.selected) || all.find(t => t.status === 'severe');
+
+    const navItems = ['Rumah','Hasil Deteksi','Peta','Unggah','Laporan','Pengaturan'].map(label => ({
+      label,
+      badge: label === 'Hasil Deteksi' ? '12' : '',
+      badgeStyle: { fontSize:'10px', fontWeight:700, background:'#2FBF71', color:'#05271A', borderRadius:'6px', padding: label === 'Hasil Deteksi' ? '2px 6px' : '0' },
+      onClick: () => this.setState({ nav: label }),
+      style: {
+        display:'flex', alignItems:'center', justifyContent:'space-between', gap:'8px',
+        padding:'11px 14px', borderRadius:'11px', cursor:'pointer',
+        background: st.nav === label ? 'rgba(47,191,113,.16)' : 'transparent',
+        color: st.nav === label ? '#fff' : '#9CC0AC',
+        boxShadow: st.nav === label ? 'inset 0 0 0 1px rgba(47,191,113,.3)' : 'none',
+      },
+    }));
+
+    const kpiDefs = [
+      ['Total Pohon Terdeteksi', all.length.toLocaleString('id-ID'), '+4,1%', 1, '#0B3D2C'],
+      ['Pohon Sehat', counts.healthy.toLocaleString('id-ID'), '+1,8%', counts.healthy / all.length, PALETTE.healthy],
+      ['Pohon Terinfeksi', (counts.mild + counts.severe).toLocaleString('id-ID'), '-2,3%', (counts.mild + counts.severe) / all.length, PALETTE.mild],
+      ['Kasus Parah', counts.severe.toLocaleString('id-ID'), '+0,6%', counts.severe / all.length, PALETTE.severe],
+    ];
+    const kpis = kpiDefs.map(([label, value, delta, frac, color]) => ({
+      label, value, delta,
+      deltaStyle: { fontSize:'10.5px', fontWeight:700, color: delta.startsWith('-') ? '#E2574C' : '#0F8A55', background: delta.startsWith('-') ? 'rgba(226,87,76,.1)' : 'rgba(15,138,85,.1)', padding:'3px 7px', borderRadius:'6px' },
+      barStyle: { width: Math.max(6, frac * 100) + '%', height:'100%', background:color, borderRadius:'4px' },
+    }));
+
+    const blocks = BLOCKS.map(b => ({
+      label:'Blok ' + b,
+      onClick: () => this.setState({ block:b, selected:null }),
+      style: { fontSize:'11.5px', fontWeight:700, padding:'7px 12px', borderRadius:'8px', cursor:'pointer',
+        background: st.block === b ? '#0B3D2C' : 'transparent', color: st.block === b ? '#fff' : '#5C7A6B' },
+    }));
+
+    const layerDefs = [['healthy','Hijau (Sehat)'],['mild','Kuning (Ringan)'],['severe','Merah (Parah)']];
+    const layers = layerDefs.map(([k, label]) => ({
+      label, count: counts[k],
+      onClick: () => this.setState(s => ({ layerOff: { ...s.layerOff, [k]: !s.layerOff[k] } })),
+      dotStyle: { width:'8px', height:'8px', borderRadius:'50%', background: PALETTE[k] },
+      style: { display:'flex', alignItems:'center', gap:'8px', background:'#F4F8F5', border:'1px solid #DCE5DE',
+        borderRadius:'9px', padding:'7px 11px', fontSize:'11px', fontWeight:600, color:'#2C4A39', cursor:'pointer',
+        textDecoration: st.layerOff[k] ? 'line-through' : 'none', opacity: st.layerOff[k] ? 0.45 : 1 },
+    }));
+
+    const trees = all.filter(t => !st.layerOff[t.status]).map(t => {
+      const active = sel && sel.id === t.id;
+      const dim = st.focusDisease && (!t.disease || t.disease.key !== st.focusDisease);
+      const size = t.status === 'healthy' ? 7 : 9;
+      return {
+        title: t.id + ' · ' + (t.disease ? t.disease.name : 'Sehat'),
+        onClick: () => this.setState({ selected: t.id }),
+        style: { position:'absolute', left:t.left + '%', top:t.top + '%',
+          width:(active ? 14 : size) + 'px', height:(active ? 14 : size) + 'px', marginLeft:'-4px', marginTop:'-4px',
+          borderRadius:'50%', background: PALETTE[t.status], cursor:'pointer',
+          opacity: dim ? 0.15 : 1,
+          border: active ? '3px solid #08301F' : '1.5px solid rgba(255,255,255,.75)',
+          boxShadow: active ? '0 0 0 6px rgba(11,61,44,.16)' : t.status === 'severe' ? '0 0 0 3px rgba(226,87,76,.18)' : 'none',
+          transition:'width .15s, height .15s, opacity .2s, box-shadow .2s', zIndex: active ? 5 : 1 },
+      };
+    });
+
+    const boxes = sel ? [
+      { x:12, y:16, w:34, h:38, tag: sel.disease ? sel.disease.name : 'Sehat', color: PALETTE[sel.status] },
+      { x:54, y:30, w:30, h:34, tag:'Sehat 0.96', color: PALETTE.healthy },
+      { x:26, y:62, w:26, h:28, tag: sel.status === 'severe' ? 'Parah 0.88' : 'Ringan 0.81', color: sel.status === 'severe' ? PALETTE.severe : PALETTE.mild },
+    ].map(b => ({
+      tag: b.tag,
+      style: { position:'absolute', left:b.x + '%', top:b.y + '%', width:b.w + '%', height:b.h + '%',
+        border:'2px solid ' + b.color, borderRadius:'5px', boxShadow:'0 0 22px ' + b.color + '33' },
+      tagStyle: { position:'absolute', top:'-19px', left:'-2px', background:b.color, color:'#052018',
+        fontSize:'9.5px', fontWeight:800, padding:'2px 6px', borderRadius:'4px', whiteSpace:'nowrap' },
+    })) : [];
+
+    const facts = sel ? [
+      { label:'PENYAKIT', value: sel.disease ? sel.disease.name : 'Tidak terdeteksi' },
+      { label:'KEPARAHAN', value: sel.status === 'severe' ? 'Parah' : sel.status === 'mild' ? 'Ringan' : 'Sehat' },
+      { label:'CONFIDENCE', value: (sel.conf * 100).toFixed(1) + '%' },
+      { label:'TANGGAL SORTIE', value: sel.date },
+    ] : [];
+
+    const diseases = DISEASES.map(d => ({
+      name:d.name, stat: d.pct + '% · ' + Math.round(counts.mild + counts.severe) * d.pct / 100 | 0,
+      onClick: () => this.setState(s => ({ focusDisease: s.focusDisease === d.key ? null : d.key })),
+      barStyle: { width:d.pct + '%', height:'100%', borderRadius:'6px',
+        background: st.focusDisease === d.key ? '#0B3D2C' : 'linear-gradient(90deg,#2FBF71,#0F8A55)',
+        transition:'width .3s' },
+    }));
+
+    const queue = [
+      ['DJI_0421.JPG','Blok A · 12,4 MB','selesai','#2FBF71'],
+      ['DJI_0422.JPG','Blok A · 12,1 MB','selesai','#2FBF71'],
+      ['batch_blokC_18.zip','48 citra · tiling','82%','#E8B93B'],
+      ['DJI_0512.JPG','Blok E · GPS hilang','antre','#93A79A'],
+    ].map(([file, meta, state, c]) => ({ file, meta, state, dotStyle:{ width:'9px', height:'9px', borderRadius:'50%', background:c, flex:'0 0 auto' } }));
+
+    return {
+      navItems, kpis, blocks, layers, trees, boxes, facts, diseases, queue,
+      blockLabel:'Blok ' + st.block,
+      selectedId: sel ? sel.id : '—',
+      coordLabel: sel ? sel.lat.toFixed(5) + ', ' + sel.lng.toFixed(5) : 'Pilih titik pohon',
+      scanLabel: st.scanning ? 'Memproses…' : 'Jalankan Inference',
+      runScan: () => { this.setState({ scanning:true }); setTimeout(() => this.setState({ scanning:false }), 1800); },
+      sweepStyle: { position:'absolute', left:0, right:0, height:'26%',
+        background:'linear-gradient(180deg,rgba(47,191,113,0),rgba(47,191,113,.22),rgba(47,191,113,0))',
+        animation: st.scanning ? 'sweep 1.8s linear' : 'none', opacity: st.scanning ? 1 : 0, pointerEvents:'none' },
+    };
+  }
+}
+</script>
+</body>
+</html>

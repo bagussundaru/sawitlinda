@@ -57,6 +57,7 @@ export interface MapPoint {
   detection_id: number;
   image_id: string;
   filename: string;
+  captured_at: string | null;
   condition: string;
   severity: Severity;
   confidence: number;
@@ -83,4 +84,15 @@ export interface Dashboard {
   summary: DetectionSummary;
   by_condition: NamedCount[];
   by_severity: NamedCount[];
+}
+
+/** What the backend actually runs right now. */
+export interface SystemInfo {
+  version: string;
+  inference_mode: "mock" | "model";
+  model_loaded: boolean;
+  model_name: string | null;
+  max_upload_mb: number;
+  condition_count: number;
+  severities: Severity[];
 }

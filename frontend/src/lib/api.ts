@@ -7,6 +7,7 @@ import type {
   ImageItem,
   MapPoint,
   ResultListItem,
+  SystemInfo,
 } from "@/types/detection";
 
 export const BASE_URL =
@@ -75,6 +76,10 @@ export function listConditions(): Promise<ConditionInfo[]> {
 
 export function listMapPoints(): Promise<MapPoint[]> {
   return apiFetch("/api/map");
+}
+
+export function getSystemInfo(): Promise<SystemInfo> {
+  return apiFetch("/api/system");
 }
 
 export function imageFileUrl(imageId: string): string {

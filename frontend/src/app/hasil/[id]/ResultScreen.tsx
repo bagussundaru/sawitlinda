@@ -49,6 +49,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
 
   const findings = result.detections.filter((d) => !isHealthy(d.severity));
   const { summary } = result;
+  const share = (n: number) => (summary.total > 0 ? n / summary.total : 0);
 
   return (
     <div className="space-y-[18px]">
@@ -78,10 +79,25 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
-        <StatCard value={summary.total} label="Total Pohon" />
-        <StatCard value={summary.healthy} label="Sehat" tone="good" />
-        <StatCard value={summary.infected} label="Bermasalah" tone="warn" />
-        <StatCard value={summary.severe} label="Kasus Berat" tone="bad" />
+        <StatCard label="Total Pohon" value={summary.total} share={1} />
+        <StatCard
+          label="Sehat"
+          value={summary.healthy}
+          share={share(summary.healthy)}
+          color="var(--healthy)"
+        />
+        <StatCard
+          label="Bermasalah"
+          value={summary.infected}
+          share={share(summary.infected)}
+          color="var(--mild)"
+        />
+        <StatCard
+          label="Kasus Berat"
+          value={summary.severe}
+          share={share(summary.severe)}
+          color="var(--severe)"
+        />
       </div>
 
       <div className="grid gap-[18px] xl:grid-cols-[1.5fr_1fr]">

@@ -1,57 +1,75 @@
 "use client";
 
-import { SEVERITY_COLOR } from "@/lib/severity";
 import type { NamedCount } from "@/types/detection";
 
 const BAR_COLORS: Record<string, string> = {
-  Sehat: "var(--chart-1)",
-  Menguning: "var(--chart-3)",
-  "Mati/stres": "var(--chart-4)",
-  Kerdil: "var(--chart-2)",
+  Sehat: "linear-gradient(90deg,#2FBF71,#0F8A55)",
+  Menguning: "linear-gradient(90deg,#F0CB63,#E8B93B)",
+  "Mati/stres": "linear-gradient(90deg,#EC7A71,#E2574C)",
+  Kerdil: "linear-gradient(90deg,#8FD3AC,#4FA37B)",
 };
 
-/** Horizontal bars with a share-of-total figure, one row per condition. */
-export function ConditionBars({ items }: { items: NamedCount[] }) {
+/** One row per condition, click to focus that condition on the map. */
+export function ConditionBars({
+  items,
+  focused,
+  onFocus,
+}: {
+  items: NamedCount[];
+  focused?: string | null;
+  onFocus?: (label: string | null) => void;
+}) {
   const total = items.reduce((sum, item) => sum + item.count, 0);
+
   if (total === 0) {
     return (
-      <p className="text-[12.5px] text-[var(--muted)]">
+      <p className="text-[12.5px] text-[var(--muted-2)]">
         Belum ada data. Analisis sebuah citra terlebih dahulu.
       </p>
     );
   }
 
   return (
-    <div className="space-y-[14px]">
+    <>
       {items.map((item) => {
         const percent = (item.count / total) * 100;
+        const active = focused === item.label;
         return (
-          <div key={item.label} className="flex items-center gap-3 text-[12.5px]">
-            <div className="w-[92px] flex-shrink-0 text-right text-[var(--muted)]">
+          <div
+            key={item.label}
+            onClick={() => onFocus?.(active ? null : item.label)}
+            className="flex cursor-pointer items-center gap-[14px]"
+          >
+            <div className="w-[132px] text-[12.5px] font-semibold">
               {item.label}
             </div>
-            <div className="h-[18px] flex-1 overflow-hidden rounded-[5px] bg-[var(--page)]">
+            <div className="h-[9px] flex-1 overflow-hidden rounded-[6px] bg-[#F0F4F1]">
               <div
-                className="flex h-full items-center justify-end rounded-[5px] pr-2 text-[10.5px] font-semibold text-white"
+                className="h-full rounded-[6px] transition-[width] duration-300"
                 style={{
-                  width: `${Math.max(percent, 7)}%`,
-                  background: BAR_COLORS[item.label] ?? "var(--chart-2)",
+                  width: `${Math.max(percent, 3)}%`,
+                  background: active
+                    ? "var(--brand)"
+                    : BAR_COLORS[item.label] ?? "var(--accent)",
                 }}
-              >
-                {percent.toFixed(0)}%
-              </div>
+              />
             </div>
-            <div className="w-[52px] text-right tabular-nums text-[var(--muted)]">
-              {item.count}
+            <div className="mono w-[78px] text-right text-[11.5px] text-[#4b6656]">
+              {percent.toFixed(0)}% · {item.count}
             </div>
           </div>
         );
       })}
-    </div>
+      {onFocus && (
+        <p className="mt-1 text-[11.5px] text-[var(--muted-2)]">
+          Klik baris untuk menyorot kondisi tersebut di peta.
+        </p>
+      )}
+    </>
   );
 }
 
-/** Ring chart: healthy versus everything that needs attention. */
+/** Healthy versus everything needing attention. */
 export function HealthDonut({
   healthy,
   affected,
@@ -64,21 +82,14 @@ export function HealthDonut({
 
   return (
     <div className="flex flex-wrap items-center gap-6">
-      <svg width="148" height="148" viewBox="0 0 42 42" aria-hidden>
+      <svg width="140" height="140" viewBox="0 0 42 42" aria-hidden>
+        <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#2FBF71" strokeWidth="5.5" />
         <circle
           cx="21"
           cy="21"
           r="15.9155"
           fill="none"
-          stroke={SEVERITY_COLOR.sehat}
-          strokeWidth="5.5"
-        />
-        <circle
-          cx="21"
-          cy="21"
-          r="15.9155"
-          fill="none"
-          stroke="var(--chart-4)"
+          stroke="#E2574C"
           strokeWidth="5.5"
           strokeDasharray={`${percent} ${100 - percent}`}
           strokeDashoffset="25"
@@ -89,29 +100,23 @@ export function HealthDonut({
           y="20.4"
           textAnchor="middle"
           fontSize="6.5"
-          fontWeight="700"
-          fill="var(--green-d)"
+          fontWeight="800"
+          fill="#12261C"
         >
           {percent.toFixed(0)}%
         </text>
-        <text x="21" y="26" textAnchor="middle" fontSize="3.2" fill="var(--muted)">
+        <text x="21" y="26" textAnchor="middle" fontSize="3.2" fill="#65806F">
           bermasalah
         </text>
       </svg>
 
       <ul className="space-y-[10px] text-[12.5px]">
         <li className="flex items-center gap-[10px]">
-          <i
-            className="h-[10px] w-[10px] rounded-full"
-            style={{ background: SEVERITY_COLOR.sehat }}
-          />
+          <i className="h-[10px] w-[10px] rounded-full" style={{ background: "#2FBF71" }} />
           Sehat — <b>{healthy.toLocaleString("id-ID")}</b> pohon
         </li>
         <li className="flex items-center gap-[10px]">
-          <i
-            className="h-[10px] w-[10px] rounded-full"
-            style={{ background: "var(--chart-4)" }}
-          />
+          <i className="h-[10px] w-[10px] rounded-full" style={{ background: "#E2574C" }} />
           Bermasalah — <b>{affected.toLocaleString("id-ID")}</b> pohon
         </li>
       </ul>

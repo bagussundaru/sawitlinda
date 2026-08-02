@@ -1,12 +1,41 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.config import Settings, get_settings
 from app.db import get_db
 from app.inference.conditions import CONDITIONS, SEVERITIES
 
+#: Kept in step with the version declared on the FastAPI app in main.py.
+APP_VERSION = "0.1.0"
+
 router = APIRouter(prefix="/api", tags=["dashboard"])
+
+
+@router.get("/system", response_model=schemas.SystemInfo)
+def get_system_info(
+    settings: Settings = Depends(get_settings),
+) -> schemas.SystemInfo:
+    """Honest description of the running system.
+
+    The UI shows this where a mock-up would show model metrics — reporting an mAP
+    for a model that is not loaded would be inventing a number.
+    """
+    model_path = Path(settings.model_path) if settings.model_path else None
+    loaded = bool(model_path and model_path.is_file())
+
+    return schemas.SystemInfo(
+        version=APP_VERSION,
+        inference_mode="model" if loaded else "mock",
+        model_loaded=loaded,
+        model_name=model_path.name if loaded and model_path else None,
+        max_upload_mb=settings.max_upload_mb,
+        condition_count=len(CONDITIONS),
+        severities=SEVERITIES,
+    )
 
 
 @router.get("/conditions", response_model=list[schemas.ConditionInfo])

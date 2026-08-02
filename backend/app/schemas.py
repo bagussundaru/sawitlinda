@@ -75,10 +75,25 @@ class MapPoint(BaseModel):
     detection_id: int
     image_id: UUID
     filename: str
+    #: When the source image was taken, so the map can show sortie dates.
+    captured_at: datetime | None = None
     condition: str
     severity: Severity
     confidence: float
     gps: Gps
+
+
+class SystemInfo(BaseModel):
+    """What the system actually is right now — no invented model metrics."""
+
+    version: str
+    #: "mock" selama model asli belum dipasang.
+    inference_mode: Literal["mock", "model"]
+    model_loaded: bool
+    model_name: str | None = None
+    max_upload_mb: int
+    condition_count: int
+    severities: list[str]
 
 
 class ConditionInfo(BaseModel):
