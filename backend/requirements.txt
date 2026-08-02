@@ -12,3 +12,6 @@ reportlab==5.0.0
 # dev
 pytest==8.3.4
 httpx==0.28.1
+# PostgreSQL mandiri untuk scripts/check_postgres.py — tanpa Docker & tanpa
+# instalasi ke sistem. Tidak dipakai saat runtime.
+pgserver==0.1.4

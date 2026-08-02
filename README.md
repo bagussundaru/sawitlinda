@@ -28,8 +28,9 @@ Layar frontend (tahap 4–5) menunggu `docs/SawitScan_Prototype.html`.
 > **Inference masih MOCK.** `run_inference()` menghasilkan deteksi acak yang realistis
 > dan deterministik per citra. Lihat [`docs/SWAP_MODEL.md`](docs/SWAP_MODEL.md).
 
-> Tes memakai SQLite sehingga tidak butuh Docker. Target produksi tetap PostgreSQL —
-> tipe kolom sengaja dipilih yang portabel.
+> Tes memakai SQLite sehingga cepat dan tanpa dependensi. Untuk memastikan semuanya
+> juga benar di PostgreSQL, jalankan `python scripts/check_postgres.py` — skrip itu
+> menyalakan PostgreSQL sementara sendiri, tanpa Docker dan tanpa instalasi ke sistem.
 
 ## Prasyarat
 
@@ -98,6 +99,13 @@ Buka <http://localhost:3000>.
 ```bash
 cd backend
 pytest
+```
+
+Verifikasi terhadap PostgreSQL sungguhan (alur upload → analyze → results →
+dashboard → export):
+
+```bash
+python scripts/check_postgres.py
 ```
 
 ## Struktur

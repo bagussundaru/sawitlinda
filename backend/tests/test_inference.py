@@ -1,7 +1,7 @@
 from PIL import Image
 
 from app.inference import engine
-from app.inference.diseases import HEALTHY, SEVERITIES
+from app.inference.diseases import CLASS_LABELS, HEALTHY, SEVERITIES
 
 
 def _image(tmp_path, name="blok.jpg", size=(800, 600)):
@@ -18,7 +18,15 @@ def test_run_inference_returns_valid_detections(tmp_path):
         assert len(detection["bbox"]) == 4
         assert detection["severity"] in SEVERITIES
         assert 0 < detection["confidence"] <= 1
+        assert detection["disease"] in CLASS_LABELS.values()
         assert (detection["disease"] == HEALTHY) == (detection["severity"] == "sehat")
+
+
+def test_dead_trees_are_always_reported_as_severe(tmp_path):
+    result = engine.run_inference(_image(tmp_path))
+
+    dead = [d for d in result["detections"] if d["disease"] == CLASS_LABELS["dead"]]
+    assert all(d["severity"] == "berat" for d in dead)
 
 
 def test_bboxes_stay_inside_the_image(tmp_path):

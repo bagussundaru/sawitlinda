@@ -12,7 +12,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.inference.diseases import DISEASES, HEALTHY
+from app.inference.diseases import AFFECTED_CLASSES, CLASS_LABELS, HEALTHY_CLASS
 
 #: Palms are planted on a roughly triangular grid ~9 m apart; at typical UAV
 #: altitude that lands somewhere around this many trees per frame.
@@ -38,6 +38,18 @@ def _seed_for(image_path: str) -> int:
     # make a re-analysis after a restart return a different result.
     digest = hashlib.sha256(Path(image_path).stem.encode()).digest()
     return int.from_bytes(digest[:4], "big")
+
+
+def _severity_for(condition: str, rng: random.Random) -> str:
+    """Stand-in for the Swin + MTL severity head.
+
+    A dead tree is by definition the worst case; the rest are spread across levels.
+    """
+    if condition == HEALTHY_CLASS:
+        return "sehat"
+    if condition == "dead":
+        return "berat"
+    return rng.choices(["ringan", "sedang", "berat"], weights=[5, 3, 2])[0]
 
 
 def generate(image_path: str, gps: tuple[float, float] | None = None) -> dict:
@@ -69,12 +81,12 @@ def generate(image_path: str, gps: tuple[float, float] | None = None) -> dict:
         y = row * cell_h + (cell_h - box_h) / 2 + jitter_y
 
         # Most trees in a block are healthy; severe cases are rare.
-        roll = rng.random()
-        if roll < 0.72:
-            disease, severity = HEALTHY, "sehat"
+        if rng.random() < 0.72:
+            condition = HEALTHY_CLASS
         else:
-            disease = rng.choice(DISEASES)
-            severity = rng.choices(["ringan", "sedang", "berat"], weights=[5, 3, 2])[0]
+            condition = rng.choice(AFFECTED_CLASSES)
+        severity = _severity_for(condition, rng)
+        disease = CLASS_LABELS[condition]
 
         detection_gps = None
         if gps is not None:

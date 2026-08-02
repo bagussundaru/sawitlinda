@@ -1,8 +1,5 @@
 # Mengganti Model (Swap Model)
 
-> Dokumen ini diisi lengkap pada tahap 7. Kerangkanya sudah ditetapkan sejak awal
-> supaya batas tanggung jawab jelas.
-
 ## Prinsip
 Web **tidak** melatih model. Training & labeling adalah tanggung jawab klien
 (Roboflow + notebook). Web hanya menerima berkas model **final**.
@@ -11,15 +8,60 @@ Web **tidak** melatih model. Training & labeling adalah tanggung jawab klien
 Seluruh aplikasi memanggil `run_inference()` di
 [`backend/app/inference/engine.py`](../backend/app/inference/engine.py).
 Mengganti model = mengubah isi fungsi itu saja. Signature dan bentuk payload
-(lihat kontrak JSON di `CLAUDE.md`) **tidak boleh berubah** — kalau berubah,
-frontend dan endpoint lain ikut rusak.
+**tidak boleh berubah** — kalau berubah, frontend dan endpoint lain ikut rusak.
 
-## Langkah (ringkas)
+`run_inference()` mengembalikan bagian yang berasal dari model saja:
+
+```python
+{"detections": [
+    {"bbox": [x, y, w, h], "disease": str, "severity": str,
+     "confidence": float, "gps": {"lat": float, "lng": float} | None},
+]}
+```
+
+`image_id`, `filename`, `captured_at`, dan `summary` dirakit oleh pemanggil —
+model tidak mengetahui data itu.
+
+## Langkah
 1. Simpan berkas model (`.pt` / ONNX) di luar repo, mis. `backend/models/`.
 2. Set `MODEL_PATH` di `backend/.env`.
-3. Ubah isi `run_inference()`: load model → `predict` → petakan output ke kontrak JSON.
-4. Jalankan tes; endpoint dan frontend tidak perlu disentuh.
+3. Ubah isi `run_inference()`: load model → `predict` → petakan output ke bentuk di atas.
+4. Selaraskan `CLASS_LABELS` di
+   [`backend/app/inference/diseases.py`](../backend/app/inference/diseases.py)
+   dengan label model.
+5. `pytest` lalu `python scripts/check_postgres.py`. Endpoint dan frontend tidak disentuh.
 
-## Yang masih perlu dikonfirmasi ke klien
-- Daftar kelas penyakit final (harus sama persis dengan label dataset).
-- Cara model menyatakan tingkat keparahan (ringan | sedang | berat).
+---
+
+## ⚠️ Ketidakcocokan dataset vs daftar penyakit
+
+Dataset klien —
+[`heras-workspace/oil-palm-central-kalimantan`](https://universe.roboflow.com/heras-workspace/oil-palm-central-kalimantan),
+Object Detection, 1.007 citra, 3 versi — memiliki **4 kelas**:
+
+| Kelas model | Label di UI |
+| --- | --- |
+| `healthy` | Sehat |
+| `yellow` | Daun menguning |
+| `dead` | Pohon mati |
+| `small` | Pertumbuhan kerdil |
+
+Kelas-kelas ini adalah **kondisi pohon**, bukan diagnosis penyakit. Daftar penyakit
+di `CLAUDE.md` (Ganoderma, karat daun, bercak daun Curvularia, defisiensi hara)
+**tidak ada di dataset ini**, sehingga model yang dilatih atasnya tidak akan pernah
+mengeluarkan nama-nama tersebut.
+
+Konsekuensinya:
+
+- Sistem sekarang melaporkan kondisi pohon apa adanya. Kolom pada kontrak JSON tetap
+  bernama `disease` demi kompatibilitas, isinya label pada tabel di atas.
+- **Tingkat keparahan tidak ada di dataset.** Menurut `CLAUDE.md`, keparahan berasal
+  dari kepala klasifikasi terpisah (Swin + MTL) — label untuk itu harus disediakan
+  klien. Untuk sementara `dead` selalu dipetakan ke `berat`, sisanya diacak oleh mock.
+
+### Perlu keputusan klien
+1. Apakah cakupan memang deteksi **kondisi** pohon (bukan diagnosis penyakit)? Kalau
+   ya, istilah "penyakit" di UI dan proposal sebaiknya diganti jadi "kondisi".
+2. Kalau diagnosis penyakit tetap diinginkan, dataset baru dengan label penyakit
+   harus dibuat — itu pekerjaan labeling di sisi klien, bukan pekerjaan web.
+3. Bagaimana label keparahan (ringan/sedang/berat) akan disediakan?
