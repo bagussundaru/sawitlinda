@@ -32,6 +32,8 @@ def get_system_info(
         inference_mode="model" if loaded else "mock",
         model_loaded=loaded,
         model_name=model_path.name if loaded and model_path else None,
+        ai_enabled=settings.ai_enabled,
+        ai_model=settings.nebius_model if settings.ai_enabled else None,
         max_upload_mb=settings.max_upload_mb,
         condition_count=len(CONDITIONS),
         severities=SEVERITIES,

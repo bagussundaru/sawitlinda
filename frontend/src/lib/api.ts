@@ -78,6 +78,12 @@ export function analyzeImage(imageId: string): Promise<DetectionResult> {
   return apiFetch(`/api/analyze/${imageId}`, { method: "POST" });
 }
 
+/** Minta penilaian model vision untuk satu citra. Lambat (beberapa detik) dan
+ *  bisa gagal — karena itu terpisah dari analyze. */
+export function runAiReview(imageId: string): Promise<DetectionResult> {
+  return apiFetch(`/api/analyze/${imageId}/ai`, { method: "POST" });
+}
+
 export function getResult(imageId: string): Promise<DetectionResult> {
   return apiFetch(`/api/results/${imageId}`);
 }

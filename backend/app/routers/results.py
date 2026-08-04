@@ -1,3 +1,5 @@
+import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -7,10 +9,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app import mappers, models, schemas
+from app.config import Settings, get_settings
 from app.db import get_db
+from app.inference import nebius
 from app.inference.engine import run_inference
 
 router = APIRouter(prefix="/api", tags=["results"])
+
+logger = logging.getLogger("sawitscan")
 
 
 def _get_image(db: Session, image_id: UUID) -> models.Image:
@@ -68,6 +74,48 @@ def analyze_image(image_id: UUID, db: Session = Depends(get_db)) -> schemas.Dete
             )
         )
     image.status = "analyzed"
+    db.commit()
+    db.refresh(image)
+
+    return mappers.detection_result(image)
+
+
+@router.post("/analyze/{image_id}/ai", response_model=schemas.DetectionResult)
+def ai_review(
+    image_id: UUID,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> schemas.DetectionResult:
+    """Minta penilaian tingkat citra dari model vision.
+
+    Terpisah dari /analyze karena panggilan ke penyedia AI memakan waktu beberapa
+    detik dan bisa gagal; deteksi per pohon tidak boleh ikut tertahan olehnya.
+    """
+    if not settings.ai_enabled:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Analisis AI belum dikonfigurasi. Isi NEBIUS_API_KEY pada server.",
+        )
+
+    image = require_analyzed_image(db, image_id)
+
+    try:
+        hasil = nebius.assess_image(image.storage_path, settings)
+    except nebius.NebiusError as exc:
+        logger.warning("Analisis AI gagal untuk %s: %s", image_id, exc)
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            f"Analisis AI gagal: {exc}",
+        ) from exc
+
+    image.ai_summary = hasil.summary
+    image.ai_recommendation = hasil.recommendation
+    image.ai_dominant_condition = hasil.dominant_condition
+    image.ai_confidence = hasil.confidence
+    image.ai_affected_share = hasil.affected_share
+    image.ai_notes = "\n".join(hasil.notes)
+    image.ai_model = hasil.model
+    image.ai_created_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(image)
 

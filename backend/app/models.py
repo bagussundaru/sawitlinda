@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Uuid
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -30,6 +30,18 @@ class Image(Base):
     # uploaded | analyzed
     status: Mapped[str] = mapped_column(String(16), default="uploaded")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    # --- Penilaian tingkat citra dari model vision (opsional, lihat
+    #     app/inference/nebius.py). Semua nullable: fitur boleh dimatikan. ---
+    ai_summary: Mapped[str | None] = mapped_column(Text)
+    ai_recommendation: Mapped[str | None] = mapped_column(Text)
+    ai_dominant_condition: Mapped[str | None] = mapped_column(String(128))
+    ai_confidence: Mapped[float | None] = mapped_column(Float)
+    ai_affected_share: Mapped[float | None] = mapped_column(Float)
+    #: Catatan keterbatasan dari model, dipisah baris baru.
+    ai_notes: Mapped[str | None] = mapped_column(Text)
+    ai_model: Mapped[str | None] = mapped_column(String(128))
+    ai_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     detections: Mapped[list["Detection"]] = relationship(
         back_populates="image",

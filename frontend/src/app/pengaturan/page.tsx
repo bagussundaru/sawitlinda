@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 
 import { Card } from "@/components/Card";
-import { ApiError, BASE_URL, listConditions } from "@/lib/api";
+import { ApiError, BASE_URL, getSystemInfo, listConditions } from "@/lib/api";
 import { SEVERITY_COLOR } from "@/lib/severity";
-import type { ConditionInfo, Severity } from "@/types/detection";
+import type { ConditionInfo, Severity, SystemInfo } from "@/types/detection";
 
 const SEVERITIES: Severity[] = ["sehat", "ringan", "sedang", "berat"];
 
 export default function PengaturanPage() {
   const [conditions, setConditions] = useState<ConditionInfo[] | null>(null);
+  const [system, setSystem] = useState<SystemInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,6 +20,9 @@ export default function PengaturanPage() {
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Data gagal dimuat."),
       );
+    getSystemInfo()
+      .then(setSystem)
+      .catch(() => setSystem(null));
   }, []);
 
   return (
@@ -113,6 +117,18 @@ export default function PengaturanPage() {
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--muted)]">Status inference</dt>
               <dd className="font-semibold text-[var(--amber)]">Mock</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--muted)]">Analisis AI</dt>
+              <dd
+                className="truncate font-semibold"
+                style={{
+                  color: system?.ai_enabled ? "var(--brand-2)" : "var(--muted-3)",
+                }}
+                title={system?.ai_model ?? undefined}
+              >
+                {system ? (system.ai_enabled ? system.ai_model : "Belum dikonfigurasi") : "…"}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--muted)]">Autentikasi</dt>

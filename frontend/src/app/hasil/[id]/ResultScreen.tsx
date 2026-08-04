@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import AiPanel from "@/components/AiPanel";
 import AnnotatedImage from "@/components/AnnotatedImage";
 import { Card, StatCard } from "@/components/Card";
 import Legend from "@/components/Legend";
@@ -101,6 +102,8 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
           color="var(--severe)"
         />
       </div>
+
+      <AiPanel result={result} onUpdated={setResult} />
 
       <div className="grid gap-[18px] xl:grid-cols-[1.5fr_1fr]">
         <Card title="Citra & Deteksi">

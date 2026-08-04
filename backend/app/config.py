@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     #: guards against a runaway upload filling the disk.
     max_upload_mb: int = 50
 
+    # --- Nebius Token Factory (lapisan analisis AI) ---
+    #: Kosong berarti fitur analisis AI mati; aplikasi tetap berjalan penuh.
+    nebius_api_key: str = ""
+    nebius_base_url: str = "https://api.tokenfactory.nebius.com/v1"
+    #: Model dengan kemampuan vision.
+    nebius_model: str = "Qwen/Qwen2-VL-72B-Instruct"
+    nebius_timeout_s: float = 90.0
+
+    @property
+    def ai_enabled(self) -> bool:
+        return bool(self.nebius_api_key.strip())
+
     @property
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024

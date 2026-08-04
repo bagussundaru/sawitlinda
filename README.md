@@ -40,6 +40,7 @@ Tampilan mengikuti [`docs/SawitScan_Redesign.html`](docs/SawitScan_Redesign.html
 | `GET /api/conditions` | Tabel acuan kondisi pohon: ciri, interpretasi, tindakan |
 | `GET /api/images/{image_id}/file` | Berkas citra asli, untuk digambari bbox |
 | `GET /api/map` | Seluruh deteksi ber-GPS lintas citra, untuk peta |
+| `POST /api/analyze/{image_id}/ai` | Penilaian tingkat citra oleh model vision (opsional) |
 | `GET /api/results/{image_id}/export.csv` | Unduh CSV, satu baris per pohon |
 | `GET /api/results/{image_id}/export.pdf` | Unduh laporan PDF |
 
@@ -161,6 +162,8 @@ Salin `backend/.env.example` ke `backend/.env`.
 | `STORAGE_DIR` | `storage` | Lokasi citra terunggah, relatif terhadap `backend/`. |
 | `MAX_UPLOAD_MB` | `50` | Batas ukuran satu citra. |
 | `MODEL_PATH` | kosong | Berkas model terlatih; belum dipakai selama inference mock. |
+| `NEBIUS_API_KEY` | kosong | Kunci Nebius Token Factory. Kosong = analisis AI mati. |
+| `NEBIUS_MODEL` | `Qwen/Qwen2-VL-72B-Instruct` | Model vision yang dipakai. |
 
 Frontend: `NEXT_PUBLIC_API_URL` di `frontend/.env.local` (default `http://localhost:8000`).
 
@@ -192,6 +195,31 @@ Selalu jalankan survei (hanya membaca, tidak mengubah apa pun) sebelum memasang:
 
 ```bash
 bash deploy/survey.sh
+```
+
+## Analisis AI (opsional)
+
+Di samping deteksi per pohon, satu citra dapat dinilai secara keseluruhan oleh
+model vision lewat **Nebius Token Factory**: kondisi apa yang dominan, perkiraan
+bagian tanaman yang bermasalah, ringkasan, dan saran tindakan.
+
+Ini **pendamping, bukan pengganti** YOLOv8 + Swin. Model vision umum tidak dapat
+melokalisasi puluhan pohon satu per satu; yang dinilainya adalah citra secara
+utuh. Selisih antara perkiraannya dan hasil deteksi ditampilkan apa adanya —
+selisih besar berarti citra layak diperiksa manual.
+
+Aktifkan dengan mengisi `NEBIUS_API_KEY` di `backend/.env`, lalu tekan
+**Jalankan** pada kartu "Analisis AI" di layar hasil deteksi. Tanpa kunci,
+seluruh fitur lain tetap berjalan normal.
+
+## Data demo
+
+Untuk mengisi sistem dengan kebun contoh yang menyerupai keadaan sebenarnya —
+5 blok, 23 bingkai UAV bersebelahan, pola tanam segitiga 9 m, dan persoalan yang
+mengelompok seperti bercak di lapangan:
+
+```bash
+python scripts/seed_demo.py
 ```
 
 ## Presentasi

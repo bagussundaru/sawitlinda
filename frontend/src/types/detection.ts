@@ -27,6 +27,21 @@ export interface DetectionSummary {
   severe: number;
 }
 
+/** Penilaian tingkat citra dari model vision — pendapat kedua di samping
+ *  deteksi per pohon, bukan penggantinya. */
+export interface AiAssessment {
+  summary: string;
+  recommendation: string;
+  dominant_condition: string;
+  confidence: number;
+  affected_share: number;
+  notes: string[];
+  model: string;
+  created_at: string;
+  /** Selisih perkiraan model vision dengan hasil deteksi, dalam poin persen. */
+  disagreement_pp: number | null;
+}
+
 export interface DetectionResult {
   image_id: string;
   filename: string;
@@ -36,6 +51,7 @@ export interface DetectionResult {
   gps: Gps | null;
   summary: DetectionSummary;
   detections: Detection[];
+  ai: AiAssessment | null;
 }
 
 export type ImageStatus = "uploaded" | "analyzed";
@@ -49,6 +65,7 @@ export interface ImageItem {
   gps: Gps | null;
   status: ImageStatus;
   created_at: string;
+  has_ai: boolean;
 }
 
 /** History entry; `summary` is null while the image has not been analysed. */
@@ -107,6 +124,8 @@ export interface SystemInfo {
   inference_mode: "mock" | "model";
   model_loaded: boolean;
   model_name: string | null;
+  ai_enabled: boolean;
+  ai_model: string | null;
   max_upload_mb: number;
   condition_count: number;
   severities: Severity[];

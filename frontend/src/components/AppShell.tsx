@@ -47,7 +47,7 @@ function ModelPanel({ system }: { system: SystemInfo | null }) {
               Model belum dipasang
               <br />v{system.version} · {system.condition_count} kelas
               <br />
-              hasil belum representatif
+              {system.ai_enabled ? "analisis AI aktif" : "hasil belum representatif"}
             </>
           )
         ) : (

@@ -37,6 +37,23 @@ class Summary(BaseModel):
     severe: int
 
 
+class AiAssessmentOut(BaseModel):
+    """Penilaian tingkat citra dari model vision — pendapat kedua di samping
+    deteksi per pohon, bukan penggantinya."""
+
+    summary: str
+    recommendation: str
+    dominant_condition: str
+    confidence: float
+    affected_share: float
+    notes: list[str] = []
+    model: str
+    created_at: datetime
+    #: Selisih perkiraan model vision dengan hasil deteksi, dalam poin persen.
+    #: Nilai besar berarti keduanya tidak sepakat dan citra layak diperiksa manual.
+    disagreement_pp: float | None = None
+
+
 class DetectionResult(BaseModel):
     image_id: UUID
     filename: str
@@ -46,6 +63,7 @@ class DetectionResult(BaseModel):
     gps: Gps | None = None
     summary: Summary
     detections: list[DetectionOut]
+    ai: AiAssessmentOut | None = None
 
 
 class ImageOut(BaseModel):
@@ -59,6 +77,7 @@ class ImageOut(BaseModel):
     gps: Gps | None = None
     status: ImageStatus
     created_at: datetime
+    has_ai: bool = False
 
 
 class UploadResponse(BaseModel):
@@ -96,6 +115,9 @@ class SystemInfo(BaseModel):
     inference_mode: Literal["mock", "model"]
     model_loaded: bool
     model_name: str | None = None
+    #: Lapisan analisis AI (Nebius) aktif atau tidak.
+    ai_enabled: bool = False
+    ai_model: str | None = None
     max_upload_mb: int
     condition_count: int
     severities: list[str]
