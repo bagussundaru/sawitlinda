@@ -192,6 +192,12 @@ Selalu jalankan survei (hanya membaca, tidak mengubah apa pun) sebelum memasang:
 bash deploy/survey.sh
 ```
 
+## Presentasi
+
+Prompt siap pakai untuk membuat deck panduan penggunaan ada di
+[`docs/PROMPT_PRESENTASI.md`](docs/PROMPT_PRESENTASI.md), lengkap dengan screenshot
+tiap layar di [`docs/screenshots/`](docs/screenshots/).
+
 ## Konvensi
 
 - Seluruh label & teks UI berbahasa **Indonesia**; komentar kode & nama variabel berbahasa Inggris.
