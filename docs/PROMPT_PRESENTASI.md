@@ -158,6 +158,11 @@ Jalankan backend dan frontend, lalu gunakan Playwright:
 pip install playwright && playwright install chromium
 ```
 
-Skrip pengambilan gambar ada di riwayat commit; intinya membuka tiap rute dengan
-viewport 1440×960, `device_scale_factor=2`, menunggu ubin peta termuat
-(`.leaflet-tile-loaded`), lalu `full_page=True`.
+Lalu jalankan skripnya:
+
+```bash
+python scripts/capture_screenshots.py
+```
+
+Jalankan frontend dalam mode **produksi** (`npm run build && npm start`) — mode
+dev menempelkan lencana Next.js di pojok layar yang ikut terpotret.

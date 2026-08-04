@@ -15,16 +15,18 @@ Spesifikasi teknis & urutan pengerjaan: [`SPEC.md`](SPEC.md).
 **Tahap 1–7 selesai** — MVP lengkap: unggah citra → hasil deteksi (mock) → dashboard
 & peta → export laporan.
 
-Tampilan mengikuti [`docs/SawitScan_Prototype.html`](docs/SawitScan_Prototype.html).
+Tampilan mengikuti [`docs/SawitScan_Redesign.html`](docs/SawitScan_Redesign.html).
 
 | Layar | Rute |
 | --- | --- |
-| Upload | `/` |
-| Proses (animasi pipeline) | `/proses?ids=…` |
-| Hasil deteksi | `/hasil/{image_id}` |
-| Riwayat | `/riwayat` |
-| Dashboard | `/dashboard` |
+| Dashboard | `/` |
+| Hasil deteksi (riwayat) | `/riwayat` |
+| Hasil deteksi (satu citra) | `/hasil/{image_id}` |
 | Peta sebaran (Leaflet) | `/peta` |
+| Unggah | `/unggah` |
+| Proses (animasi pipeline) | `/proses?ids=…` |
+| Laporan | `/laporan` |
+| Pengaturan | `/pengaturan` |
 
 | Endpoint | Keterangan |
 | --- | --- |

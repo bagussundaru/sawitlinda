@@ -1,4 +1,14 @@
-"""Ambil screenshot tiap layar aplikasi untuk bahan presentasi."""
+"""Ambil screenshot tiap layar aplikasi untuk bahan presentasi.
+
+Butuh backend di :8000 dan frontend di :3000. Jalankan frontend dalam mode
+PRODUKSI (`npm run build && npm start`) — mode dev menempelkan lencana Next.js
+di pojok layar yang ikut terpotret.
+
+    pip install playwright && playwright install chromium
+    python scripts/capture_screenshots.py
+
+Hasil disimpan ke docs/screenshots/.
+"""
 import time
 from pathlib import Path
 
