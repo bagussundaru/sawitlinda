@@ -14,7 +14,7 @@ RUN apt-get update \
 
 COPY requirements.txt .
 # Dev-only packages are dropped from the image.
-RUN grep -viE '^(pytest|httpx|pgserver|pypdf)' requirements.txt > requirements.prod.txt \
+RUN grep -viE '^(pytest|pgserver|pypdf)' requirements.txt > requirements.prod.txt \
     && pip install --no-cache-dir -r requirements.prod.txt
 
 COPY alembic.ini ./
