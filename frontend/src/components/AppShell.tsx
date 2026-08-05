@@ -13,6 +13,7 @@ const NAV = [
   { href: "/peta", label: "Peta" },
   { href: "/unggah", label: "Unggah" },
   { href: "/laporan", label: "Laporan" },
+  { href: "/evaluasi", label: "Evaluasi" },
   { href: "/pengaturan", label: "Pengaturan" },
 ];
 

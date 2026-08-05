@@ -10,7 +10,7 @@ import logging
 from app import errors
 from app.config import get_settings
 from app.db import get_db
-from app.routers import dashboard, export, results, upload
+from app.routers import dashboard, evaluation, export, results, upload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,3 +55,4 @@ app.include_router(upload.router)
 app.include_router(results.router)
 app.include_router(dashboard.router)
 app.include_router(export.router)
+app.include_router(evaluation.router)

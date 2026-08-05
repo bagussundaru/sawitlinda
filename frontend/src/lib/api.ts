@@ -2,6 +2,7 @@
 
 import type {
   BlockInfo,
+  Evaluation,
   ConditionInfo,
   Dashboard,
   DetectionResult,
@@ -112,6 +113,20 @@ export function listMapPoints(block?: string | null): Promise<MapPoint[]> {
 
 export function getSystemInfo(): Promise<SystemInfo> {
   return apiFetch("/api/system");
+}
+
+export function runEvaluation(
+  file: File,
+  iouThreshold = 0.5,
+): Promise<Evaluation> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("iou_threshold", String(iouThreshold));
+  return apiFetch("/api/evaluate", { method: "POST", body: form });
+}
+
+export function listEvaluations(): Promise<Evaluation[]> {
+  return apiFetch("/api/evaluations");
 }
 
 export function imageFileUrl(imageId: string): string {

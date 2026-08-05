@@ -130,3 +130,37 @@ export interface SystemInfo {
   condition_count: number;
   severities: Severity[];
 }
+
+/** Metrik satu kelas kondisi pada evaluasi. */
+export interface ClassMetrics {
+  label: string;
+  support: number;
+  predicted: number;
+  true_positive: number;
+  false_positive: number;
+  false_negative: number;
+  precision: number;
+  recall: number;
+  f1: number;
+  average_precision: number;
+}
+
+/** Hasil satu kali evaluasi terhadap anotasi ground truth. */
+export interface Evaluation {
+  id: string;
+  created_at: string;
+  source_filename: string;
+  iou_threshold: number;
+  /** "mock" berarti angka ini tidak mengukur model apa pun. */
+  inference_mode: "mock" | "model";
+  model_name: string | null;
+  images: number;
+  ground_truths: number;
+  predictions: number;
+  map50: number;
+  micro_precision: number;
+  micro_recall: number;
+  micro_f1: number;
+  per_class: ClassMetrics[];
+  confusion: Record<string, Record<string, number>>;
+}

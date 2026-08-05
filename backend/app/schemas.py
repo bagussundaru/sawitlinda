@@ -158,3 +158,45 @@ class Dashboard(BaseModel):
     summary: Summary
     by_condition: list[NamedCount]
     by_severity: list[NamedCount]
+
+
+class ClassMetricsOut(BaseModel):
+    """Metrik satu kelas kondisi."""
+
+    label: str
+    #: Jumlah ground truth untuk kelas ini.
+    support: int
+    predicted: int
+    true_positive: int
+    false_positive: int
+    false_negative: int
+    precision: float
+    recall: float
+    f1: float
+    average_precision: float
+
+
+class EvaluationOut(BaseModel):
+    """Hasil satu kali evaluasi terhadap anotasi ground truth."""
+
+    id: UUID
+    created_at: datetime
+    source_filename: str
+    iou_threshold: float
+    #: Keadaan sistem saat evaluasi dijalankan; "mock" berarti angka ini TIDAK
+    #: mengukur model apa pun dan tidak boleh dilaporkan sebagai hasil.
+    inference_mode: Literal["mock", "model"]
+    model_name: str | None = None
+
+    images: int
+    ground_truths: int
+    predictions: int
+
+    map50: float
+    micro_precision: float
+    micro_recall: float
+    micro_f1: float
+
+    per_class: list[ClassMetricsOut]
+    #: confusion[aktual][prediksi]
+    confusion: dict[str, dict[str, int]]

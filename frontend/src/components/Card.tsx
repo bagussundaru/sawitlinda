@@ -44,6 +44,7 @@ export function StatCard({
   share,
   color = "var(--brand)",
   note,
+  suffix,
 }: {
   label: string;
   value: number;
@@ -51,6 +52,8 @@ export function StatCard({
   share: number;
   color?: string;
   note?: string;
+  /** Satuan yang menempel di belakang angka, mis. "%". */
+  suffix?: string;
 }) {
   return (
     <div className="flex flex-col gap-3 rounded-[16px] border border-[var(--line)] bg-[var(--card)] px-[18px] pb-4 pt-[18px]">
@@ -66,6 +69,7 @@ export function StatCard({
       </div>
       <div className="text-[31px] font-extrabold leading-none tracking-[-0.04em]">
         {value.toLocaleString("id-ID")}
+        {suffix && <span className="text-[18px]">{suffix}</span>}
       </div>
       <div className="h-[5px] overflow-hidden rounded-[4px] bg-[var(--line-soft)]">
         <div

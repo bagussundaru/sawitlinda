@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -71,3 +71,35 @@ class Detection(Base):
     gps_lng: Mapped[float | None] = mapped_column(Float)
 
     image: Mapped[Image] = relationship(back_populates="detections")
+
+
+class Evaluation(Base):
+    """Satu kali evaluasi terhadap anotasi ground truth.
+
+    Disimpan agar angkanya dapat dibuka kembali dan dibandingkan antarwaktu —
+    tanpa itu, metrik disertasi hanya ada di layar sekali jalan.
+    """
+
+    __tablename__ = "evaluations"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    source_filename: Mapped[str] = mapped_column(String(255))
+    iou_threshold: Mapped[float] = mapped_column(Float)
+
+    #: Keadaan sistem saat evaluasi dijalankan — supaya angka mock tidak pernah
+    #: tertukar dengan angka model sungguhan di kemudian hari.
+    inference_mode: Mapped[str] = mapped_column(String(16))
+    model_name: Mapped[str | None] = mapped_column(String(128))
+
+    images: Mapped[int] = mapped_column(Integer)
+    ground_truths: Mapped[int] = mapped_column(Integer)
+    predictions: Mapped[int] = mapped_column(Integer)
+
+    map50: Mapped[float] = mapped_column(Float)
+    micro_precision: Mapped[float] = mapped_column(Float)
+    micro_recall: Mapped[float] = mapped_column(Float)
+    micro_f1: Mapped[float] = mapped_column(Float)
+
+    per_class: Mapped[list] = mapped_column(JSON)
+    confusion: Mapped[dict] = mapped_column(JSON)

@@ -26,6 +26,7 @@ Tampilan mengikuti [`docs/SawitScan_Redesign.html`](docs/SawitScan_Redesign.html
 | Unggah | `/unggah` |
 | Proses (animasi pipeline) | `/proses?ids=…` |
 | Laporan | `/laporan` |
+| Evaluasi | `/evaluasi` |
 | Pengaturan | `/pengaturan` |
 
 | Endpoint | Keterangan |
@@ -41,6 +42,8 @@ Tampilan mengikuti [`docs/SawitScan_Redesign.html`](docs/SawitScan_Redesign.html
 | `GET /api/images/{image_id}/file` | Berkas citra asli, untuk digambari bbox |
 | `GET /api/map` | Seluruh deteksi ber-GPS lintas citra, untuk peta |
 | `POST /api/analyze/{image_id}/ai` | Penilaian tingkat citra oleh model vision (opsional) |
+| `POST /api/evaluate` | Evaluasi terhadap anotasi ground truth (YOLOv8 .zip / COCO .json) |
+| `GET /api/evaluations` | Riwayat evaluasi |
 | `GET /api/results/{image_id}/export.csv` | Unduh CSV, satu baris per pohon |
 | `GET /api/results/{image_id}/export.pdf` | Unduh laporan PDF |
 
@@ -202,6 +205,19 @@ bash deploy/survey.sh
 Pemeriksaan butir demi butir proposal klien terhadap sistem yang berjalan —
 apa yang sudah selesai, apa yang tertahan, dan apa yang masih perlu diputuskan:
 [`docs/AUDIT_PROPOSAL.md`](docs/AUDIT_PROPOSAL.md).
+
+## Evaluasi model
+
+Layar **Evaluasi** membandingkan deteksi yang tersimpan dengan anotasi acuan yang
+diunggah, lalu menghitung **mAP@50, presisi/recall/F1 per kelas, dan confusion
+matrix** — angka yang biasanya dituntut pada bab hasil.
+
+Menerima ekspor **YOLOv8** (`.zip` berisi `labels/` + `data.yaml`) maupun **COCO
+JSON**, langsung dari Roboflow. Pencocokan berdasarkan nama berkas citra.
+
+Tiap hasil menyimpan keadaan sistem saat dijalankan (`mock` atau `model`),
+sehingga angka dari inference mock tidak akan pernah tertukar dengan angka model
+sungguhan.
 
 ## Analisis AI (opsional)
 
