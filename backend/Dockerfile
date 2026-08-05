@@ -13,6 +13,17 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+
+# Torch DAN torchvision dipasang dari indeks CPU LEBIH DULU.
+#
+# torchvision wajib ikut disebut di sini: ultralytics menariknya, dan wheel
+# torchvision dari PyPI membawa serta seluruh tumpukan CUDA. Terukur di image
+# yang terlanjur dibangun: 2,7 GB pustaka nvidia + 691 MB triton, seluruhnya
+# tak terpakai di VM tanpa GPU. Memasangnya lebih dulu membuat pip menganggap
+# kebutuhan itu sudah terpenuhi saat ultralytics dipasang.
+RUN pip install --no-cache-dir torch==2.13.0 torchvision \
+        --index-url https://download.pytorch.org/whl/cpu
+
 # Dev-only packages are dropped from the image.
 RUN grep -viE '^(pytest|pgserver|pypdf)' requirements.txt > requirements.prod.txt \
     && pip install --no-cache-dir -r requirements.prod.txt
