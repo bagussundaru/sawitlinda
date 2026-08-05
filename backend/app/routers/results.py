@@ -13,6 +13,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.inference import nebius
 from app.inference.engine import run_inference
+from app.services import app_settings
 
 router = APIRouter(prefix="/api", tags=["results"])
 
@@ -91,10 +92,12 @@ def ai_review(
     Terpisah dari /analyze karena panggilan ke penyedia AI memakan waktu beberapa
     detik dan bisa gagal; deteksi per pohon tidak boleh ikut tertahan olehnya.
     """
+    # Kunci yang diisi lewat layar Pengaturan menimpa nilai dari environment.
+    settings = app_settings.effective_settings(db, settings)
     if not settings.ai_enabled:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Analisis AI belum dikonfigurasi. Isi NEBIUS_API_KEY pada server.",
+            "Analisis AI belum dikonfigurasi. Isi kunci Nebius di layar Pengaturan.",
         )
 
     image = require_analyzed_image(db, image_id)

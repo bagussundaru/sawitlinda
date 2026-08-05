@@ -151,7 +151,7 @@ def test_endpoint_menolak_saat_fitur_mati(client):
     response = client.post(f"/api/analyze/{image_id}/ai")
 
     assert response.status_code == 503
-    assert "NEBIUS_API_KEY" in response.json()["detail"]
+    assert "Pengaturan" in response.json()["detail"]
 
 
 def test_endpoint_menyimpan_penilaian(client, settings_ai, monkeypatch):

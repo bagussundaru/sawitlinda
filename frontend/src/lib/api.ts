@@ -1,6 +1,7 @@
 // All REST calls live here. Components never call fetch() directly.
 
 import type {
+  AiSettings,
   BlockInfo,
   Evaluation,
   ConditionInfo,
@@ -127,6 +128,22 @@ export function runEvaluation(
 
 export function listEvaluations(): Promise<Evaluation[]> {
   return apiFetch("/api/evaluations");
+}
+
+export function getAiSettings(): Promise<AiSettings> {
+  return apiFetch("/api/settings/ai");
+}
+
+export function saveAiKey(apiKey: string): Promise<AiSettings> {
+  return apiFetch("/api/settings/ai", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+}
+
+export function clearAiKey(): Promise<AiSettings> {
+  return apiFetch("/api/settings/ai", { method: "DELETE" });
 }
 
 export function imageFileUrl(imageId: string): string {

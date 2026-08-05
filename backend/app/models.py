@@ -103,3 +103,22 @@ class Evaluation(Base):
 
     per_class: Mapped[list] = mapped_column(JSON)
     confusion: Mapped[dict] = mapped_column(JSON)
+
+
+class AppSetting(Base):
+    """Pengaturan yang dapat diubah saat aplikasi berjalan.
+
+    Dipakai untuk nilai yang tidak boleh masuk repositori — mis. kunci API —
+    sehingga operator dapat mengisinya lewat layar Pengaturan tanpa menyunting
+    berkas .env dan tanpa restart container.
+
+    Nilai di sini menimpa environment variable dengan nama yang setara.
+    """
+
+    __tablename__ = "app_settings"
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
+    )

@@ -9,6 +9,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.inference import engine
 from app.inference.conditions import CONDITIONS, SEVERITIES
+from app.services import app_settings
 
 #: Kept in step with the version declared on the FastAPI app in main.py.
 APP_VERSION = "0.1.0"
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/api", tags=["dashboard"])
 
 @router.get("/system", response_model=schemas.SystemInfo)
 def get_system_info(
+    db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> schemas.SystemInfo:
     """Honest description of the running system.
@@ -25,6 +27,7 @@ def get_system_info(
     The UI shows this where a mock-up would show model metrics — reporting an mAP
     for a model that is not loaded would be inventing a number.
     """
+    settings = app_settings.effective_settings(db, settings)
     model_path = settings.model_file
     mode, galat = engine.engine_status()
     loaded = mode == "model"

@@ -164,3 +164,12 @@ export interface Evaluation {
   per_class: ClassMetrics[];
   confusion: Record<string, Record<string, number>>;
 }
+
+/** Keadaan lapisan analisis AI. Kunci API tidak pernah ikut dikembalikan. */
+export interface AiSettings {
+  configured: boolean;
+  source: "aplikasi" | "environment" | null;
+  /** Empat karakter terakhir kunci, sekadar penanda. */
+  key_hint: string | null;
+  model: string;
+}

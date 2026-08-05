@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import AiKeyCard from "@/components/AiKeyCard";
 import { Card } from "@/components/Card";
 import { ApiError, BASE_URL, getSystemInfo, listConditions } from "@/lib/api";
 import { SEVERITY_COLOR } from "@/lib/severity";
@@ -48,6 +49,8 @@ export default function PengaturanPage() {
           {error}
         </p>
       )}
+
+      <AiKeyCard />
 
       <Card title="Acuan Kondisi Tanaman">
         {conditions ? (

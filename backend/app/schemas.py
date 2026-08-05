@@ -207,3 +207,14 @@ class EvaluationOut(BaseModel):
     per_class: list[ClassMetricsOut]
     #: confusion[aktual][prediksi]
     confusion: dict[str, dict[str, int]]
+
+
+class AiSettingsOut(BaseModel):
+    """Keadaan lapisan analisis AI. Kunci API tidak pernah ikut dikembalikan."""
+
+    configured: bool
+    #: "aplikasi" bila diisi lewat layar Pengaturan, "environment" bila dari .env.
+    source: Literal["aplikasi", "environment"] | None = None
+    #: Empat karakter terakhir kunci, sekadar penanda kunci mana yang dipakai.
+    key_hint: str | None = None
+    model: str
