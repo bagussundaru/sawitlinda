@@ -44,8 +44,14 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS}
       STORAGE_DIR: storage
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+      # Kosong = pakai generator mock. Isi dengan mis. models/best.pt.
+      MODEL_PATH: ${MODEL_PATH:-}
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
     volumes:
       - sawitscan_storage:/app/storage
+      # Berkas model di-mount, bukan disalin ke dalam image: menggantinya cukup
+      # menaruh berkas baru lalu restart container, tanpa build ulang 2 GB.
+      - ./backend/models:/app/models:ro
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     networks:
