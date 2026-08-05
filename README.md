@@ -197,6 +197,12 @@ Selalu jalankan survei (hanya membaca, tidak mengubah apa pun) sebelum memasang:
 bash deploy/survey.sh
 ```
 
+## Audit terhadap proposal
+
+Pemeriksaan butir demi butir proposal klien terhadap sistem yang berjalan —
+apa yang sudah selesai, apa yang tertahan, dan apa yang masih perlu diputuskan:
+[`docs/AUDIT_PROPOSAL.md`](docs/AUDIT_PROPOSAL.md).
+
 ## Analisis AI (opsional)
 
 Di samping deteksi per pohon, satu citra dapat dinilai secara keseluruhan oleh

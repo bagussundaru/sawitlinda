@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError, analyzeImage } from "@/lib/api";
 
 const STAGES = [
-  { name: "Preprocessing", detail: "resize · tiling · GPS" },
+  { name: "Preprocessing", detail: "validasi · EXIF · GPS" },
   { name: "YOLOv8", detail: "deteksi area" },
   { name: "Swin + MTL", detail: "klasifikasi" },
   { name: "Hasil", detail: "label · severity" },
@@ -14,7 +14,7 @@ const STAGES = [
 
 const STATUSES = [
   "Memuat model…",
-  "Preprocessing citra…",
+  "Memvalidasi berkas & membaca EXIF…",
   "YOLOv8 mendeteksi area…",
   "Swin Transformer + MTL mengklasifikasi…",
   "Menyusun hasil…",
@@ -124,10 +124,16 @@ export default function ProcessingScreen() {
           </button>
         </>
       ) : (
-        <p className="mt-[14px] text-[13px] text-[var(--muted)]">
-          {STATUSES[Math.min(step, STATUSES.length - 1)]}
-          {ids.length > 1 && ` · citra ${done + 1} dari ${ids.length}`}
-        </p>
+        <>
+          <p className="mt-[14px] text-[13px] text-[var(--muted)]">
+            {STATUSES[Math.min(step, STATUSES.length - 1)]}
+            {ids.length > 1 && ` · citra ${done + 1} dari ${ids.length}`}
+          </p>
+          <p className="mt-2 text-[11px] leading-relaxed text-[var(--muted-3)]">
+            Tahap YOLOv8 dan Swin + MTL menggambarkan pipeline yang dituju.
+            Selama inference masih mock, keduanya belum benar-benar dijalankan.
+          </p>
+        </>
       )}
     </div>
   );
