@@ -166,7 +166,10 @@ export default function UnggahPage() {
             </datalist>
           </Field>
 
-          <Field label="Luas area tercakup (ha)" hint="Opsional. Angka desimal boleh.">
+          <Field
+            label="Luas area tercakup (ha)"
+            hint="Wajib diisi agar titik pohon muncul di peta — dari luas inilah skala tanah (meter per piksel) dihitung."
+          >
             <input
               className={inputClass}
               type="number"
@@ -196,9 +199,10 @@ export default function UnggahPage() {
                 placeholder="Bujur 101.41233"
               />
             </div>
-            <p className="mt-[6px] text-[10.5px] text-[var(--muted-3)]">
+            <p className="mt-[6px] text-[10.5px] leading-relaxed text-[var(--muted-3)]">
               Kosongkan bila citra membawa GPS di EXIF — metadata asli selalu
               dipakai lebih dulu, isian ini hanya menambal bila EXIF kosong.
+              Tanpa koordinat, citra tetap dianalisis tapi tidak muncul di peta.
             </p>
           </div>
 

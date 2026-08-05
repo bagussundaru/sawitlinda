@@ -51,8 +51,11 @@ export default function PetaPage() {
 
       {points && points.length === 0 && (
         <div className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-[15px] py-3 text-[12.5px] text-[var(--green-d)]">
-          Belum ada titik untuk dipetakan. Peta hanya menampilkan pohon dari
-          citra yang metadatanya memuat koordinat GPS.
+          Belum ada titik untuk dipetakan. Sebuah pohon baru muncul di peta bila
+          citranya memenuhi <b>dua</b> syarat: membawa <b>koordinat</b> (dari EXIF
+          atau diisi saat unggah) dan mencantumkan <b>luas area tercakup</b> —
+          luas itulah yang dipakai menghitung posisi tiap pohon dari kotak
+          deteksinya.
         </div>
       )}
 

@@ -236,6 +236,20 @@ Aktifkan dengan mengisi `NEBIUS_API_KEY` di `backend/.env`, lalu tekan
 **Jalankan** pada kartu "Analisis AI" di layar hasil deteksi. Tanpa kunci,
 seluruh fitur lain tetap berjalan normal.
 
+## Syarat titik muncul di peta
+
+Sebuah pohon hasil deteksi baru diplot di peta bila citranya memenuhi **dua**
+syarat sekaligus:
+
+1. **Koordinat citra** — dari EXIF GPS (foto drone asli yang belum diedit ulang),
+   atau diisi manual saat unggah. EXIF selalu menang bila keduanya ada.
+2. **Luas area tercakup (ha)** — dari sinilah skala tanah (meter per piksel)
+   dihitung untuk menempatkan tiap pohon dari kotak deteksinya.
+
+Tanpa luas area, citra tetap dianalisis dan bounding box tetap tampil di layar
+hasil, tapi deteksinya sengaja tidak diberi koordinat: peta kosong lebih baik
+daripada titik yang salah tempat.
+
 ## Data demo
 
 Untuk mengisi sistem dengan kebun contoh yang menyerupai keadaan sebenarnya —
