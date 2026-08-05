@@ -33,6 +33,18 @@ class Settings(BaseSettings):
     nebius_timeout_s: float = 90.0
 
     @property
+    def model_file(self) -> Path | None:
+        """Lokasi berkas model, tidak bergantung direktori kerja.
+
+        Path relatif diselesaikan terhadap backend/, karena uvicorn, pytest, dan
+        container menjalankan proses dari direktori yang berbeda-beda.
+        """
+        if not self.model_path.strip():
+            return None
+        path = Path(self.model_path)
+        return path if path.is_absolute() else BACKEND_ROOT / path
+
+    @property
     def ai_enabled(self) -> bool:
         return bool(self.nebius_api_key.strip())
 

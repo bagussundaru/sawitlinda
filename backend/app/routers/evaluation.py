@@ -117,7 +117,7 @@ def run_evaluation(
 
     hasil = evaluate(predictions, ground_truths, iou_threshold=iou_threshold)
 
-    model_path = Path(settings.model_path) if settings.model_path else None
+    model_path = settings.model_file
     loaded = bool(model_path and model_path.is_file())
 
     row = models.Evaluation(

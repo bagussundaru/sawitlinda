@@ -54,7 +54,7 @@ def analyze_image(image_id: UUID, db: Session = Depends(get_db)) -> schemas.Dete
     if image.gps_lat is not None and image.gps_lng is not None:
         gps = (image.gps_lat, image.gps_lng)
 
-    result = run_inference(image.storage_path, gps)
+    result = run_inference(image.storage_path, gps, image.area_ha)
 
     image.detections.clear()
     for item in result["detections"]:

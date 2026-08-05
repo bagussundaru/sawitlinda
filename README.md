@@ -47,8 +47,10 @@ Tampilan mengikuti [`docs/SawitScan_Redesign.html`](docs/SawitScan_Redesign.html
 | `GET /api/results/{image_id}/export.csv` | Unduh CSV, satu baris per pohon |
 | `GET /api/results/{image_id}/export.pdf` | Unduh laporan PDF |
 
-> **Inference masih MOCK.** `run_inference()` menghasilkan deteksi acak yang realistis
-> dan deterministik per citra. Lihat [`docs/SWAP_MODEL.md`](docs/SWAP_MODEL.md).
+> **Model terlatih sudah terintegrasi.** Isi `MODEL_PATH` dengan lokasi berkas
+> `.pt` dan sistem otomatis memakainya; tanpa berkas itu ia jatuh ke generator
+> mock dan tetap berjalan penuh. `GET /api/system` melaporkan mana yang aktif.
+> Lihat [`docs/SWAP_MODEL.md`](docs/SWAP_MODEL.md).
 
 > Tes memakai SQLite sehingga cepat dan tanpa dependensi. Untuk memastikan semuanya
 > juga benar di PostgreSQL, jalankan `python scripts/check_postgres.py` — skrip itu
@@ -164,7 +166,7 @@ Salin `backend/.env.example` ke `backend/.env`.
 | `CORS_ORIGINS` | `http://localhost:3000` | Asal frontend yang diizinkan, dipisah koma. **Wajib diganti di produksi.** |
 | `STORAGE_DIR` | `storage` | Lokasi citra terunggah, relatif terhadap `backend/`. |
 | `MAX_UPLOAD_MB` | `50` | Batas ukuran satu citra. |
-| `MODEL_PATH` | kosong | Berkas model terlatih; belum dipakai selama inference mock. |
+| `MODEL_PATH` | kosong | Berkas model terlatih, mis. `models/best.pt`. Kosong = pakai mock. |
 | `NEBIUS_API_KEY` | kosong | Kunci Nebius Token Factory. Kosong = analisis AI mati. |
 | `NEBIUS_MODEL` | `Qwen/Qwen2-VL-72B-Instruct` | Model vision yang dipakai. |
 

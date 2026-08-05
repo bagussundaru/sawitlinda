@@ -44,7 +44,7 @@ def test_map_points_carry_the_capture_time(client, monkeypatch):
     monkeypatch.setattr(
         results_router,
         "run_inference",
-        lambda path, gps=None: real(path, (-0.78912, 101.41233)),
+        lambda path, gps=None, area_ha=None: real(path, (-0.78912, 101.41233)),
     )
     client.post(f"/api/analyze/{image_id}")
 

@@ -12,6 +12,11 @@ reportlab==5.0.0
 # start. Jangan pindahkan ke bagian dev — image produksi menyaring bagian itu.
 httpx==0.28.1
 
+# Inference model terlatih. Versi disamakan dengan yang dipakai saat pelatihan.
+# CATATAN: torch dipasang TERPISAH dari indeks CPU di Dockerfile — wheel torch
+# dari PyPI membawa CUDA dan menambah lebih dari 2 GB tanpa guna di VM tanpa GPU.
+ultralytics==8.4.115
+
 # dev
 pytest==8.3.4
 pypdf==6.14.2

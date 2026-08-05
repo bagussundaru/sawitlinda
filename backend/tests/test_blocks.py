@@ -125,7 +125,7 @@ def test_map_can_be_narrowed_to_one_block(client, monkeypatch):
     monkeypatch.setattr(
         results_router,
         "run_inference",
-        lambda path, gps=None: real(path, (-0.78912, 101.41233)),
+        lambda path, gps=None, area_ha=None: real(path, (-0.78912, 101.41233)),
     )
     a = _upload(client, "a.jpg", block="A-3")
     b = _upload(client, "b.jpg", block="B-7")

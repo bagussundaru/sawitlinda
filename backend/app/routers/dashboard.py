@@ -24,7 +24,7 @@ def get_system_info(
     The UI shows this where a mock-up would show model metrics — reporting an mAP
     for a model that is not loaded would be inventing a number.
     """
-    model_path = Path(settings.model_path) if settings.model_path else None
+    model_path = settings.model_file
     loaded = bool(model_path and model_path.is_file())
 
     return schemas.SystemInfo(
@@ -32,6 +32,7 @@ def get_system_info(
         inference_mode="model" if loaded else "mock",
         model_loaded=loaded,
         model_name=model_path.name if loaded and model_path else None,
+        severity_source="rule",
         ai_enabled=settings.ai_enabled,
         ai_model=settings.nebius_model if settings.ai_enabled else None,
         max_upload_mb=settings.max_upload_mb,

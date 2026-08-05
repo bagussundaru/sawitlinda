@@ -115,6 +115,9 @@ class SystemInfo(BaseModel):
     inference_mode: Literal["mock", "model"]
     model_loaded: bool
     model_name: str | None = None
+    #: Dari mana nilai keparahan berasal. "rule" berarti diturunkan dari aturan
+    #: tetap, bukan diprediksi model — dataset belum memuat label keparahan.
+    severity_source: Literal["rule", "model"] = "rule"
     #: Lapisan analisis AI (Nebius) aktif atau tidak.
     ai_enabled: bool = False
     ai_model: str | None = None

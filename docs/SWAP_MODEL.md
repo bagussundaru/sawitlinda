@@ -25,14 +25,37 @@ Mengganti model = mengubah isi fungsi itu saja. Signature dan bentuk payload
 `image_id`, `filename`, `captured_at`, dan `summary` dirakit oleh pemanggil —
 model tidak mengetahui data itu.
 
-## Langkah
-1. Simpan berkas model (`.pt` / ONNX) di luar repo, mis. `backend/models/`.
-2. Set `MODEL_PATH` di `backend/.env`.
-3. Ubah isi `run_inference()`: load model → `predict` → petakan output ke bentuk di atas.
-4. Selaraskan `CLASS_LABELS` di
-   [`backend/app/inference/conditions.py`](../backend/app/inference/conditions.py)
-   dengan label model.
-5. `pytest` lalu `python scripts/check_postgres.py`. Endpoint dan frontend tidak disentuh.
+## Langkah — SUDAH DIKERJAKAN untuk model saat ini
+
+Model YOLOv8m klien (`best.pt`, 4 kelas, ultralytics 8.4.115) sudah terpasang.
+Untuk model berikutnya, langkahnya jauh lebih singkat dari rencana semula:
+
+1. Taruh berkas model di `backend/models/` (folder itu diabaikan git).
+2. Set `MODEL_PATH=models/best.pt` di `backend/.env`. Path relatif diselesaikan
+   terhadap `backend/`, jadi tidak bergantung direktori kerja.
+3. Selesai. `run_inference()` **tidak perlu diubah lagi** — ia memilih sendiri
+   antara model dan mock berdasarkan ada tidaknya berkas itu.
+
+Yang perlu diperiksa hanya bila daftar kelas berubah: selaraskan `CLASS_LABELS`
+di [`conditions.py`](../backend/app/inference/conditions.py). Nama kelas dibaca
+dari model (`model.names`), bukan diasumsikan urutannya — model saat ini memakai
+urutan alfabetis `dead, healthy, small, yellow`.
+
+Verifikasi: `pytest` lalu `python scripts/check_postgres.py`.
+
+### Dua hal yang BUKAN keluaran model
+
+**Keparahan.** Model ini detektor 4 kelas tanpa kepala keparahan, dan dataset
+belum memuat labelnya. `severity` diturunkan dari aturan tetap di
+[`yolo.py`](../backend/app/inference/yolo.py): `healthy`→sehat, `yellow`→ringan,
+`small`→sedang, `dead`→berat. `GET /api/system` melaporkannya sebagai
+`severity_source: "rule"`. Ganti aturan itu begitu label keparahan tersedia.
+
+**Koordinat per pohon.** Model mengembalikan kotak dalam piksel. Mengubahnya jadi
+lintang/bujur butuh skala tanah (meter per piksel), yang tidak ada di dalam citra.
+Skala dihitung dari **luas area yang diisi operator saat mengunggah**. Tanpa luas
+itu, deteksi sengaja tidak diberi koordinat — peta kosong lebih baik daripada
+titik yang salah tempat.
 
 ---
 
