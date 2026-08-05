@@ -186,3 +186,48 @@ class TestPemilihanMesin:
         assert berkas is not None
         assert berkas.is_absolute()
         assert berkas.parent.name == "models"
+
+
+class TestStatusMesin:
+    def test_tanpa_berkas_model_status_mock_tanpa_galat(self, settings):
+        settings.model_path = ""
+
+        assert engine.engine_status() == ("mock", None)
+
+    def test_berkas_ada_tapi_mesin_rusak_dilaporkan_apa_adanya(
+        self, settings, tmp_path, monkeypatch
+    ):
+        """Kegagalan mesin tidak boleh bersembunyi di balik status sehat.
+
+        Persis kasus yang terjadi di produksi: berkas model ada, tapi cv2 gagal
+        diimpor karena pustaka X11 tidak terpasang di container.
+        """
+        palsu = tmp_path / "best.pt"
+        palsu.write_bytes(b"bukan model")
+        settings.model_path = str(palsu)
+
+        def gagal(path):
+            raise yolo.ModelError("libxcb.so.1: cannot open shared object file")
+
+        monkeypatch.setattr(yolo, "load", gagal)
+
+        mode, galat = engine.engine_status()
+
+        assert mode == "mock"
+        assert "libxcb" in galat
+
+    def test_endpoint_system_ikut_melaporkan_galat_mesin(
+        self, client, settings, tmp_path, monkeypatch
+    ):
+        palsu = tmp_path / "best.pt"
+        palsu.write_bytes(b"bukan model")
+        settings.model_path = str(palsu)
+        monkeypatch.setattr(
+            yolo, "load", lambda path: (_ for _ in ()).throw(yolo.ModelError("rusak"))
+        )
+
+        body = client.get("/api/system").json()
+
+        assert body["inference_mode"] == "mock"
+        assert body["model_loaded"] is False
+        assert body["model_error"] == "rusak"

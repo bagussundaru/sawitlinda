@@ -22,8 +22,14 @@ def settings(tmp_path, monkeypatch) -> Settings:
         storage_dir=str(tmp_path / "storage"),
         cors_origins="http://localhost:3000",
     )
-    monkeypatch.setattr("app.config.get_settings", lambda: test_settings)
-    monkeypatch.setattr("app.routers.upload.get_settings", lambda: test_settings)
+    # Modul yang mengimpor get_settings langsung memegang rujukan sendiri, jadi
+    # menambal app.config saja tidak menjangkau mereka.
+    for modul in (
+        "app.config",
+        "app.routers.upload",
+        "app.inference.engine",
+    ):
+        monkeypatch.setattr(f"{modul}.get_settings", lambda: test_settings)
     return test_settings
 
 

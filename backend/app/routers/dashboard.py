@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 from app.config import Settings, get_settings
 from app.db import get_db
+from app.inference import engine
 from app.inference.conditions import CONDITIONS, SEVERITIES
 
 #: Kept in step with the version declared on the FastAPI app in main.py.
@@ -25,13 +26,15 @@ def get_system_info(
     for a model that is not loaded would be inventing a number.
     """
     model_path = settings.model_file
-    loaded = bool(model_path and model_path.is_file())
+    mode, galat = engine.engine_status()
+    loaded = mode == "model"
 
     return schemas.SystemInfo(
         version=APP_VERSION,
-        inference_mode="model" if loaded else "mock",
+        inference_mode=mode,
         model_loaded=loaded,
         model_name=model_path.name if loaded and model_path else None,
+        model_error=galat,
         severity_source="rule",
         ai_enabled=settings.ai_enabled,
         ai_model=settings.nebius_model if settings.ai_enabled else None,

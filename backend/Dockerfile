@@ -25,8 +25,16 @@ RUN pip install --no-cache-dir torch==2.13.0 torchvision \
         --index-url https://download.pytorch.org/whl/cpu
 
 # Dev-only packages are dropped from the image.
+#
+# opencv-python ditukar dengan varian headless setelah pemasangan. Ultralytics
+# menariknya sebagai `opencv-python`, yang menautkan pustaka X11 (libxcb, libGL)
+# — pustaka itu tidak ada di image slim, dan akibatnya `import cv2` gagal saat
+# inference dijalankan. Varian headless memakai nama modul yang sama, tidak
+# butuh X11, dan lebih kecil.
 RUN grep -viE '^(pytest|pgserver|pypdf)' requirements.txt > requirements.prod.txt \
-    && pip install --no-cache-dir -r requirements.prod.txt
+    && pip install --no-cache-dir -r requirements.prod.txt \
+    && pip uninstall -y opencv-python \
+    && pip install --no-cache-dir opencv-python-headless
 
 COPY alembic.ini ./
 COPY alembic ./alembic

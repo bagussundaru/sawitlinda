@@ -113,8 +113,12 @@ class SystemInfo(BaseModel):
     version: str
     #: "mock" selama model asli belum dipasang.
     inference_mode: Literal["mock", "model"]
+    #: True hanya bila mesin model benar-benar dapat dimuat, bukan sekadar
+    #: berkasnya ada di tempatnya.
     model_loaded: bool
     model_name: str | None = None
+    #: Terisi bila berkas model ada tapi mesinnya gagal dimuat.
+    model_error: str | None = None
     #: Dari mana nilai keparahan berasal. "rule" berarti diturunkan dari aturan
     #: tetap, bukan diprediksi model — dataset belum memuat label keparahan.
     severity_source: Literal["rule", "model"] = "rule"

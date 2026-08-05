@@ -19,6 +19,25 @@ def model_is_available() -> bool:
     return bool(berkas and berkas.is_file())
 
 
+def engine_status() -> tuple[str, str | None]:
+    """Mesin mana yang benar-benar akan dipakai, dan kenapa kalau bukan model.
+
+    Memeriksa keberadaan berkas saja tidak cukup: berkas model bisa ada sementara
+    mesinnya tidak dapat dimuat — pustaka sistem kurang, berkas rusak, paket
+    hilang. Melaporkan "model" dalam keadaan itu menyembunyikan kegagalan di
+    balik status yang terlihat sehat.
+
+    Mengembalikan ("model" | "mock", pesan galat bila ada).
+    """
+    if not model_is_available():
+        return "mock", None
+    try:
+        yolo.load(str(get_settings().model_file))
+    except yolo.ModelError as exc:
+        return "mock", str(exc)
+    return "model", None
+
+
 def run_inference(
     image_path: str,
     gps: tuple[float, float] | None = None,
