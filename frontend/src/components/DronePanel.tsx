@@ -62,6 +62,20 @@ export default function DronePanel({
         </span>
       </div>
 
+      {/* Nama berkas. Satu blok berisi banyak bingkai UAV yang saling
+          bertumpang tindih dan tampak serupa; tanpa ini tidak ada cara
+          membedakan bingkai yang berganti dari bingkai yang tetap. */}
+      <div className="-mt-[6px] flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="mono text-[11px] font-bold text-white/85">
+          {result?.filename ?? "—"}
+        </span>
+        {result && (
+          <span className="text-[10.5px] text-white/40">
+            {result.detections.length} pohon terdeteksi di bingkai ini
+          </span>
+        )}
+      </div>
+
       {result ? (
         <>
           <AnnotatedImage
