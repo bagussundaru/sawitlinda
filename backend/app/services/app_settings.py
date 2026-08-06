@@ -26,6 +26,7 @@ from app.config import Settings
 logger = logging.getLogger("sawitscan")
 
 NEBIUS_KEY = "nebius_api_key"
+NEBIUS_MODEL = "nebius_model"
 
 
 def get(db: Session, key: str) -> str | None:
@@ -69,7 +70,12 @@ def effective_settings(db: Session, settings: Settings) -> Settings:
     Dikembalikan sebagai salinan, bukan diubah di tempat: objek Settings
     di-cache lewat lru_cache dan dipakai bersama seluruh permintaan.
     """
+    perubahan = {}
     kunci = get(db, NEBIUS_KEY)
-    if not kunci:
-        return settings
-    return settings.model_copy(update={"nebius_api_key": kunci})
+    if kunci:
+        perubahan["nebius_api_key"] = kunci
+    model = get(db, NEBIUS_MODEL)
+    if model:
+        perubahan["nebius_model"] = model
+
+    return settings.model_copy(update=perubahan) if perubahan else settings

@@ -26,18 +26,25 @@ logger = logging.getLogger("sawitscan")
 
 class NebiusKeyIn(BaseModel):
     api_key: str = Field(min_length=8, max_length=4096)
+    #: Kosongkan untuk mempertahankan model yang sedang dipakai.
+    model: str | None = Field(default=None, max_length=128)
+
+
+class NebiusModelIn(BaseModel):
+    model: str = Field(min_length=1, max_length=128)
 
 
 def _status(db: Session, settings: Settings) -> schemas.AiSettingsOut:
     dari_db = app_settings.get(db, app_settings.NEBIUS_KEY)
     dari_env = settings.nebius_api_key.strip() or None
     berlaku = dari_db or dari_env
+    model = app_settings.get(db, app_settings.NEBIUS_MODEL) or settings.nebius_model
 
     return schemas.AiSettingsOut(
         configured=bool(berlaku),
         source="aplikasi" if dari_db else ("environment" if dari_env else None),
         key_hint=app_settings.mask(berlaku),
-        model=settings.nebius_model,
+        model=model,
     )
 
 
@@ -61,6 +68,24 @@ def set_ai_key(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Kunci tidak boleh kosong.")
 
     app_settings.set_value(db, app_settings.NEBIUS_KEY, body.api_key)
+    if body.model and body.model.strip():
+        app_settings.set_value(db, app_settings.NEBIUS_MODEL, body.model)
+    return _status(db, settings)
+
+
+@router.put("/ai/model", response_model=schemas.AiSettingsOut)
+def set_ai_model(
+    body: NebiusModelIn,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> schemas.AiSettingsOut:
+    """Ganti model yang dipakai tanpa menyentuh kunci.
+
+    Tidak semua model menerima gambar. Bila model yang dipilih hanya menerima
+    teks, penilaian tetap dibuat — dari ringkasan deteksi, bukan dari citra —
+    dan hasilnya ditandai supaya perbedaannya tidak tersamar.
+    """
+    app_settings.set_value(db, app_settings.NEBIUS_MODEL, body.model.strip())
     return _status(db, settings)
 
 

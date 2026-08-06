@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 
 import { Card } from "@/components/Card";
-import { ApiError, clearAiKey, getAiSettings, saveAiKey } from "@/lib/api";
+import {
+  ApiError,
+  clearAiKey,
+  getAiSettings,
+  saveAiKey,
+  saveAiModel,
+} from "@/lib/api";
 import type { AiSettings } from "@/types/detection";
 
 /** Form pengisian kunci API Nebius.
@@ -13,6 +19,7 @@ import type { AiSettings } from "@/types/detection";
 export default function AiKeyCard() {
   const [status, setStatus] = useState<AiSettings | null>(null);
   const [kunci, setKunci] = useState("");
+  const [model, setModel] = useState("");
   const [busy, setBusy] = useState(false);
   const [pesan, setPesan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +39,9 @@ export default function AiKeyCard() {
     setError(null);
     setPesan(null);
     try {
-      setStatus(await saveAiKey(kunci.trim()));
+      setStatus(await saveAiKey(kunci.trim(), model));
       setKunci("");
+      setModel("");
       setPesan("Kunci tersimpan dan langsung berlaku.");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Gagal menyimpan kunci.");
@@ -95,6 +103,20 @@ export default function AiKeyCard() {
           />
         </label>
 
+        <label className="flex min-w-[240px] flex-1 flex-col gap-[6px]">
+          <span className="text-[12px] font-semibold text-[var(--muted)]">
+            Model (opsional)
+          </span>
+          <input
+            autoComplete="off"
+            spellCheck={false}
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder={status?.model ?? "Qwen/Qwen2-VL-72B-Instruct"}
+            className="rounded-[10px] border border-[var(--line)] bg-white px-3 py-[9px] font-mono text-[12px] outline-none focus:border-[var(--accent)]"
+          />
+        </label>
+
         <button
           onClick={simpan}
           disabled={busy}
@@ -102,6 +124,32 @@ export default function AiKeyCard() {
         >
           {busy ? "Menyimpan…" : "Simpan"}
         </button>
+
+        {status?.configured && (
+          <button
+            onClick={async () => {
+              if (!model.trim()) {
+                setError("Isi nama model lebih dulu.");
+                return;
+              }
+              setBusy(true);
+              setError(null);
+              try {
+                setStatus(await saveAiModel(model.trim()));
+                setModel("");
+                setPesan("Model diganti.");
+              } catch (err) {
+                setError(err instanceof ApiError ? err.message : "Gagal mengganti model.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+            disabled={busy}
+            className="rounded-[10px] border border-[var(--line)] px-4 py-[10px] text-[12.5px] font-semibold text-[var(--brand)] disabled:opacity-60"
+          >
+            Ganti model saja
+          </button>
+        )}
 
         {status?.source === "aplikasi" && (
           <button
@@ -134,6 +182,13 @@ export default function AiKeyCard() {
         kuota Nebius Anda. Batasi aksesnya di reverse proxy sampai autentikasi
         dibangun.
       </div>
+
+      <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
+        Tidak semua model menerima gambar. Bila model yang dipilih hanya menerima
+        teks — DeepSeek dan sebagian besar model bahasa — penilaian tetap dibuat,
+        tapi dari <b>ringkasan hasil deteksi</b>, bukan dari citranya. Hasil
+        seperti itu ditandai jelas agar perbedaannya tidak tersamar.
+      </p>
 
       <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
         Kunci disimpan di server dan berlaku seketika tanpa restart. Setelah

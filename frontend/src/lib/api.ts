@@ -134,11 +134,19 @@ export function getAiSettings(): Promise<AiSettings> {
   return apiFetch("/api/settings/ai");
 }
 
-export function saveAiKey(apiKey: string): Promise<AiSettings> {
+export function saveAiKey(apiKey: string, model?: string): Promise<AiSettings> {
   return apiFetch("/api/settings/ai", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ api_key: apiKey }),
+    body: JSON.stringify({ api_key: apiKey, model: model?.trim() || null }),
+  });
+}
+
+export function saveAiModel(model: string): Promise<AiSettings> {
+  return apiFetch("/api/settings/ai/model", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model }),
   });
 }
 

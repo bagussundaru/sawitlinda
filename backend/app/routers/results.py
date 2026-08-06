@@ -102,8 +102,17 @@ def ai_review(
 
     image = require_analyzed_image(db, image_id)
 
+    ringkasan = mappers.summarise(image.detections)
+    per_kondisi: dict[str, int] = {}
+    for d in image.detections:
+        per_kondisi[d.condition] = per_kondisi.get(d.condition, 0) + 1
+
     try:
-        hasil = nebius.assess_image(image.storage_path, settings)
+        hasil = nebius.assess_image(
+            image.storage_path,
+            settings,
+            summary={**ringkasan.model_dump(), "per_kondisi": per_kondisi},
+        )
     except nebius.NebiusError as exc:
         logger.warning("Analisis AI gagal untuk %s: %s", image_id, exc)
         raise HTTPException(
@@ -117,7 +126,7 @@ def ai_review(
     image.ai_confidence = hasil.confidence
     image.ai_affected_share = hasil.affected_share
     image.ai_notes = "\n".join(hasil.notes)
-    image.ai_model = hasil.model
+    image.ai_model = f"{hasil.model} ({hasil.mode})" if hasil.mode == "teks" else hasil.model
     image.ai_created_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(image)

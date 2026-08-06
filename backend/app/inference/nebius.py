@@ -56,6 +56,9 @@ class AiAssessment:
     affected_share: float
     recommendation: str
     model: str
+    #: "vision" bila model membaca citranya sendiri; "teks" bila model tidak
+    #: menerima gambar dan penilaian dibuat dari ringkasan deteksi.
+    mode: str = "vision"
     notes: list[str] = field(default_factory=list)
 
 
@@ -80,6 +83,39 @@ def _prompt() -> str:
         "}\n\n"
         "Kalau citra tidak jelas, beriringan awan, atau bukan citra perkebunan, "
         'katakan itu di "notes" dan turunkan "confidence".'
+    )
+
+
+#: Petunjuk pada jawaban galat bahwa model tidak menerima gambar.
+TANDA_TANPA_VISI = ("image", "vision", "multimodal", "modality", "content type")
+
+
+def _prompt_teks(ringkasan: dict) -> str:
+    """Prompt untuk model yang tidak menerima gambar.
+
+    Dinilai dari hasil deteksi, bukan dari citra. Bedanya nyata, jadi ikut
+    ditandai pada hasil — supaya tidak dikira model melihat sendiri kebunnya.
+    """
+    per_kondisi = ringkasan.get("per_kondisi") or {}
+    daftar = "\n".join(f"- {k}: {v} pohon" for k, v in per_kondisi.items())
+
+    return (
+        "Anda agronom kelapa sawit. Di bawah ini HASIL DETEKSI otomatis pada satu "
+        "bingkai citra UAV. Anda TIDAK melihat citranya, hanya angkanya.\n\n"
+        f"Total pohon terdeteksi: {ringkasan.get('total', 0)}\n"
+        f"Sehat: {ringkasan.get('healthy', 0)}\n"
+        f"Bermasalah: {ringkasan.get('infected', 0)}\n"
+        f"Keparahan berat: {ringkasan.get('severe', 0)}\n"
+        f"{daftar}\n\n"
+        "Jawab HANYA dengan objek JSON, tanpa teks lain:\n"
+        "{\n"
+        '  "dominant_condition": kondisi terbanyak selain Sehat, atau "Sehat",\n'
+        '  "affected_share": angka 0..1,\n'
+        '  "confidence": angka 0..1,\n'
+        '  "summary": 2-3 kalimat Bahasa Indonesia menafsirkan angka di atas,\n'
+        '  "recommendation": 1-2 kalimat tindakan lapangan,\n'
+        '  "notes": daftar string berisi keterbatasan\n'
+        "}"
     )
 
 
@@ -121,8 +157,33 @@ def _clamp(value, low: float = 0.0, high: float = 1.0) -> float:
         return 0.0
 
 
-def assess_image(image_path: str, settings: Settings) -> AiAssessment:
-    """Minta penilaian tingkat citra dari model vision Nebius.
+def _panggil(settings: Settings, messages: list) -> httpx.Response:
+    url = settings.nebius_base_url.rstrip("/") + "/chat/completions"
+    try:
+        return httpx.post(
+            url,
+            json={
+                "model": settings.nebius_model,
+                "temperature": 0.2,
+                "max_tokens": 700,
+                "messages": messages,
+            },
+            headers={"Authorization": f"Bearer {settings.nebius_api_key}"},
+            timeout=settings.nebius_timeout_s,
+        )
+    except httpx.HTTPError as exc:
+        raise NebiusError(f"Tidak dapat menghubungi Nebius: {exc}") from exc
+
+
+def assess_image(
+    image_path: str, settings: Settings, summary: dict | None = None
+) -> AiAssessment:
+    """Minta penilaian tingkat citra dari model Nebius.
+
+    Model yang menerima gambar membaca citranya sendiri. Model yang hanya
+    menerima teks — DeepSeek dan sebagian besar model bahasa — tetap dapat
+    dipakai: penilaian dibuat dari ringkasan deteksi, lalu ditandai
+    `mode="teks"` agar tidak dikira model melihat sendiri kebunnya.
 
     Melempar NebiusError pada kegagalan apa pun; pemanggil menanganinya.
     """
@@ -133,11 +194,10 @@ def assess_image(image_path: str, settings: Settings) -> AiAssessment:
     if not path.is_file():
         raise NebiusError("Berkas citra tidak ditemukan.")
 
-    payload = {
-        "model": settings.nebius_model,
-        "temperature": 0.2,
-        "max_tokens": 700,
-        "messages": [
+    mode = "vision"
+    response = _panggil(
+        settings,
+        [
             {
                 "role": "user",
                 "content": [
@@ -146,24 +206,30 @@ def assess_image(image_path: str, settings: Settings) -> AiAssessment:
                 ],
             }
         ],
-    }
-
-    url = settings.nebius_base_url.rstrip("/") + "/chat/completions"
-    try:
-        response = httpx.post(
-            url,
-            json=payload,
-            headers={"Authorization": f"Bearer {settings.nebius_api_key}"},
-            timeout=settings.nebius_timeout_s,
-        )
-    except httpx.HTTPError as exc:
-        raise NebiusError(f"Tidak dapat menghubungi Nebius: {exc}") from exc
+    )
 
     if response.status_code != 200:
-        # Jangan pernah ikut menuliskan header Authorization ke log.
-        raise NebiusError(
-            f"Nebius menjawab {response.status_code}: {response.text[:200]}"
+        pesan = response.text[:400].lower()
+        tanpa_visi = response.status_code in (400, 415, 422) and any(
+            t in pesan for t in TANDA_TANPA_VISI
         )
+        if not (tanpa_visi and summary):
+            # Jangan pernah ikut menuliskan header Authorization ke log.
+            raise NebiusError(
+                f"Nebius menjawab {response.status_code}: {response.text[:200]}"
+            )
+
+        logger.info(
+            "Model %s tampaknya tidak menerima gambar; beralih ke penilaian "
+            "berbasis ringkasan deteksi.",
+            settings.nebius_model,
+        )
+        mode = "teks"
+        response = _panggil(settings, [{"role": "user", "content": _prompt_teks(summary)}])
+        if response.status_code != 200:
+            raise NebiusError(
+                f"Nebius menjawab {response.status_code}: {response.text[:200]}"
+            )
 
     try:
         content = response.json()["choices"][0]["message"]["content"]
@@ -182,6 +248,14 @@ def assess_image(image_path: str, settings: Settings) -> AiAssessment:
     if isinstance(notes, str):
         notes = [notes]
 
+    catatan = [str(n) for n in notes][:5]
+    if mode == "teks":
+        catatan.insert(
+            0,
+            "Model ini tidak menerima gambar. Penilaian dibuat dari ringkasan "
+            "hasil deteksi, bukan dari citranya.",
+        )
+
     return AiAssessment(
         summary=str(data.get("summary", "")).strip(),
         dominant_condition=dominant,
@@ -189,5 +263,6 @@ def assess_image(image_path: str, settings: Settings) -> AiAssessment:
         affected_share=_clamp(data.get("affected_share")),
         recommendation=str(data.get("recommendation", "")).strip(),
         model=settings.nebius_model,
-        notes=[str(n) for n in notes][:5],
+        mode=mode,
+        notes=catatan[:6],
     )
