@@ -202,6 +202,12 @@ Selalu jalankan survei (hanya membaca, tidak mengubah apa pun) sebelum memasang:
 bash deploy/survey.sh
 ```
 
+## Arsitektur
+
+Rancangan sistem lengkap — komponen, alur data, model data, keputusan rancangan
+beserta alasannya, kinerja terukur, dan batasan yang diketahui:
+[`docs/ARSITEKTUR.md`](docs/ARSITEKTUR.md).
+
 ## Audit terhadap proposal
 
 Pemeriksaan butir demi butir proposal klien terhadap sistem yang berjalan —
