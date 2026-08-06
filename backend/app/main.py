@@ -10,7 +10,17 @@ import logging
 from app import errors
 from app.config import get_settings
 from app.db import get_db
-from app.routers import dashboard, evaluation, export, results, settings as settings_router, upload
+from app.routers import (
+    auth as auth_router,
+    dashboard,
+    evaluation,
+    export,
+    results,
+    settings as settings_router,
+    training,
+    upload,
+)
+from app.services import auth
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,9 +61,22 @@ def health(db: Session = Depends(get_db)) -> dict:
 
 errors.register(app)
 
-app.include_router(upload.router)
-app.include_router(results.router)
-app.include_router(dashboard.router)
-app.include_router(export.router)
-app.include_router(evaluation.router)
-app.include_router(settings_router.router)
+# Login dan status autentikasi harus dapat dicapai tanpa sudah masuk.
+app.include_router(auth_router.router)
+
+# Sisanya tertutup. Dependency dipasang di titik pendaftaran, bukan di tiap
+# fungsi: route baru yang ditambahkan ke router mana pun ikut terlindungi tanpa
+# harus diingat satu per satu — dan yang terlupa adalah yang bocor.
+terlindungi = [
+    upload.router,
+    results.router,
+    dashboard.router,
+    export.router,
+    evaluation.router,
+    settings_router.router,
+]
+for r in terlindungi:
+    app.include_router(r, dependencies=[Depends(auth.current_user)])
+
+# Router training memakai objek pengguna, jadi ia meminta dependency-nya sendiri.
+app.include_router(training.router)

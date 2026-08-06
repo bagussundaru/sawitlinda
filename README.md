@@ -202,6 +202,18 @@ Selalu jalankan survei (hanya membaca, tidak mengubah apa pun) sebelum memasang:
 bash deploy/survey.sh
 ```
 
+## Training model
+
+Melatih ulang model dari menu **Training** — unggah dataset YOLOv8, pantau
+progres per epoch, lalu jadikan hasilnya model aktif. Training berjalan di GPU
+Modal; VM produksi tidak punya GPU. Penyiapan: [`docs/TRAINING.md`](docs/TRAINING.md).
+
+Seluruh API memerlukan login. Buat akun pertama dengan:
+
+```bash
+docker compose -p sawitscan -f docker-compose.prod.yml exec backend python scripts/create_user.py
+```
+
 ## Arsitektur
 
 Rancangan sistem lengkap — komponen, alur data, model data, keputusan rancangan

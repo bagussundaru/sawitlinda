@@ -2,6 +2,11 @@
 
 import type {
   AiSettings,
+  AuthState,
+  AuthUser,
+  TrainingConfig,
+  TrainingRun,
+  TrainingStatus,
   BlockInfo,
   Evaluation,
   ConditionInfo,
@@ -28,7 +33,15 @@ export class ApiError extends Error {
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${BASE_URL}${path}`, { cache: "no-store", ...init });
+    response = await fetch(`${BASE_URL}${path}`, {
+      cache: "no-store",
+      // Cookie sesi harus ikut terkirim. Tanpa ini setiap permintaan dijawab
+      // 401 walaupun pengguna sudah masuk — fetch() tidak mengirim cookie
+      // lintas asal secara bawaan, dan dev menjalankan frontend & backend di
+      // port yang berbeda.
+      credentials: "include",
+      ...init,
+    });
   } catch {
     throw new ApiError(
       "Tidak dapat menghubungi server. Pastikan backend berjalan.",
@@ -160,4 +173,63 @@ export function imageFileUrl(imageId: string): string {
 
 export function exportUrl(imageId: string, format: "pdf" | "csv"): string {
   return `${BASE_URL}/api/results/${imageId}/export.${format}`;
+}
+
+// --- Autentikasi -----------------------------------------------------------
+
+/** Status sesi. Tidak melempar saat 401 — "belum masuk" adalah jawaban yang
+ *  sah, bukan kegagalan. */
+export async function getAuthState(): Promise<AuthState> {
+  try {
+    return await apiFetch<AuthState>("/api/auth/state");
+  } catch {
+    return { authenticated: false, ready: true, user: null };
+  }
+}
+
+export function login(username: string, password: string): Promise<AuthUser> {
+  return apiFetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${BASE_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+}
+
+// --- Training --------------------------------------------------------------
+
+export function getTrainingConfig(): Promise<TrainingConfig> {
+  return apiFetch("/api/train/config");
+}
+
+export function listTrainingRuns(): Promise<TrainingRun[]> {
+  return apiFetch("/api/train/runs");
+}
+
+export function startTraining(
+  dataset: File,
+  epochs: number,
+  baseModel: string,
+  runName: string,
+): Promise<TrainingRun> {
+  const form = new FormData();
+  form.append("dataset", dataset);
+  form.append("epochs", String(epochs));
+  form.append("base_model", baseModel);
+  if (runName.trim()) form.append("run_name", runName.trim());
+  return apiFetch("/api/train", { method: "POST", body: form });
+}
+
+export function getTrainingStatus(jobId: string): Promise<TrainingStatus> {
+  return apiFetch(`/api/train/${jobId}/status`);
+}
+
+export function activateModel(jobId: string): Promise<TrainingRun> {
+  return apiFetch(`/api/train/${jobId}/activate`, { method: "POST" });
 }

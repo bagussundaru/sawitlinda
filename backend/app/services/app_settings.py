@@ -27,6 +27,9 @@ logger = logging.getLogger("sawitscan")
 
 NEBIUS_KEY = "nebius_api_key"
 NEBIUS_MODEL = "nebius_model"
+#: Berkas model yang sedang dipakai inference. Diisi tombol "Jadikan Model
+#: Aktif" pada layar Training, menimpa MODEL_PATH dari environment.
+MODEL_PATH = "model_path"
 
 
 def get(db: Session, key: str) -> str | None:
@@ -77,5 +80,8 @@ def effective_settings(db: Session, settings: Settings) -> Settings:
     model = get(db, NEBIUS_MODEL)
     if model:
         perubahan["nebius_model"] = model
+    berkas_model = get(db, MODEL_PATH)
+    if berkas_model:
+        perubahan["model_path"] = berkas_model
 
     return settings.model_copy(update=perubahan) if perubahan else settings

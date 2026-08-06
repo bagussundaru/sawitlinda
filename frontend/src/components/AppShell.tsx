@@ -4,14 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { getSystemInfo } from "@/lib/api";
-import type { SystemInfo } from "@/types/detection";
+import LoginScreen from "@/components/LoginScreen";
+import { getAuthState, getSystemInfo, logout } from "@/lib/api";
+import type { AuthState, SystemInfo } from "@/types/detection";
 
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/riwayat", label: "Hasil Deteksi" },
   { href: "/peta", label: "Peta" },
   { href: "/unggah", label: "Unggah" },
+  { href: "/training", label: "Training" },
   { href: "/laporan", label: "Laporan" },
   { href: "/evaluasi", label: "Evaluasi" },
   { href: "/pengaturan", label: "Pengaturan" },
@@ -63,15 +65,37 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [system, setSystem] = useState<SystemInfo | null>(null);
+  const [auth, setAuth] = useState<AuthState | null>(null);
 
   useEffect(() => {
+    getAuthState().then(setAuth);
+  }, []);
+
+  useEffect(() => {
+    // Ditunda sampai sesi ada: tanpa sesi permintaan ini hanya menghasilkan 401.
+    if (!auth?.authenticated) return;
     getSystemInfo()
       .then(setSystem)
       .catch(() => setSystem(null));
-  }, []);
+  }, [auth?.authenticated]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  // Layar kosong selama status sesi belum diketahui — menampilkan aplikasi
+  // lebih dulu akan memunculkan isinya sekejap sebelum berganti ke layar masuk.
+  if (auth === null) {
+    return <div className="min-h-screen bg-[var(--sidebar)]" />;
+  }
+
+  if (!auth.authenticated) {
+    return (
+      <LoginScreen
+        ready={auth.ready}
+        onSuccess={() => getAuthState().then(setAuth)}
+      />
+    );
+  }
 
   return (
     <div className="grid min-h-screen lg:grid-cols-[248px_1fr]">
@@ -121,12 +145,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="mt-auto flex flex-col gap-[14px]">
           <ModelPanel system={system} />
-          <span
-            title="Autentikasi belum tersedia"
-            className="cursor-not-allowed pl-[6px] text-[11.5px] text-[#6fa98d]/60"
-          >
-            Keluar
-          </span>
+          <div className="flex items-center justify-between gap-2 pl-[6px]">
+            <span className="truncate text-[11.5px] text-[var(--sidebar-sub)]">
+              {auth.user?.full_name || auth.user?.username}
+            </span>
+            <button
+              onClick={async () => {
+                await logout();
+                setAuth({ authenticated: false, ready: true, user: null });
+              }}
+              className="shrink-0 text-[11.5px] font-semibold text-[#6fa98d] hover:text-white"
+            >
+              Keluar
+            </button>
+          </div>
         </div>
       </aside>
 

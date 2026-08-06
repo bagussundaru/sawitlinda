@@ -47,6 +47,12 @@ services:
       # Kosong = pakai generator mock. Isi dengan mis. models/best.pt.
       MODEL_PATH: ${MODEL_PATH:-}
       NEBIUS_API_KEY: ${NEBIUS_API_KEY:-}
+      # Cookie sesi hanya lewat HTTPS. Setel false HANYA bila diakses via http://.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      SESSION_HOURS: ${SESSION_HOURS:-12}
+      # Mesin training GPU di Modal. Kosong = menu Training melapor belum siap.
+      MODAL_TRAINING_URL: ${MODAL_TRAINING_URL:-}
+      MODAL_TRAINING_TOKEN: ${MODAL_TRAINING_TOKEN:-}
     volumes:
       - sawitscan_storage:/app/storage
       # Berkas model di-mount, bukan disalin ke dalam image: menggantinya cukup

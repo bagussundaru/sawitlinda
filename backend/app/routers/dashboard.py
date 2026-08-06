@@ -29,7 +29,7 @@ def get_system_info(
     """
     settings = app_settings.effective_settings(db, settings)
     model_path = settings.model_file
-    mode, galat = engine.engine_status()
+    mode, galat = engine.engine_status(settings)
     loaded = mode == "model"
 
     return schemas.SystemInfo(

@@ -7,19 +7,28 @@ the returned payload shape must not change. See docs/SWAP_MODEL.md.
 
 import logging
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.inference import mock, yolo
 
 logger = logging.getLogger("sawitscan")
 
 
-def model_is_available() -> bool:
+def _settings(settings: Settings | None) -> Settings:
+    """Settings yang dipakai: yang diberikan pemanggil, atau dari environment.
+
+    Pemanggil memberikan salinan yang sudah ditimpa nilai dari database, karena
+    berkas model dapat diganti lewat tombol "Jadikan Model Aktif" tanpa restart.
+    """
+    return settings or get_settings()
+
+
+def model_is_available(settings: Settings | None = None) -> bool:
     """Apakah berkas model terlatih benar-benar ada di tempatnya."""
-    berkas = get_settings().model_file
+    berkas = _settings(settings).model_file
     return bool(berkas and berkas.is_file())
 
 
-def engine_status() -> tuple[str, str | None]:
+def engine_status(settings: Settings | None = None) -> tuple[str, str | None]:
     """Mesin mana yang benar-benar akan dipakai, dan kenapa kalau bukan model.
 
     Memeriksa keberadaan berkas saja tidak cukup: berkas model bisa ada sementara
@@ -29,10 +38,11 @@ def engine_status() -> tuple[str, str | None]:
 
     Mengembalikan ("model" | "mock", pesan galat bila ada).
     """
-    if not model_is_available():
+    settings = _settings(settings)
+    if not model_is_available(settings):
         return "mock", None
     try:
-        yolo.load(str(get_settings().model_file))
+        yolo.load(str(settings.model_file))
     except yolo.ModelError as exc:
         return "mock", str(exc)
     return "model", None
@@ -42,6 +52,7 @@ def run_inference(
     image_path: str,
     gps: tuple[float, float] | None = None,
     area_ha: float | None = None,
+    settings: Settings | None = None,
 ) -> dict:
     """Detect and classify palm trees in one image.
 
@@ -61,9 +72,9 @@ def run_inference(
     dan mencatatnya di log, supaya satu berkas model yang rusak tidak membuat
     seluruh aplikasi tak dapat dipakai.
     """
-    settings = get_settings()
+    settings = _settings(settings)
 
-    if model_is_available():
+    if model_is_available(settings):
         try:
             return yolo.run(
                 image_path,

@@ -35,6 +35,29 @@ class Settings(BaseSettings):
     nebius_model: str = "Qwen/Qwen2.5-VL-72B-Instruct"
     nebius_timeout_s: float = 90.0
 
+    # --- Autentikasi ---
+    #: Umur sesi login. Setelah ini pengguna harus masuk lagi.
+    session_hours: int = 12
+    #: Kirim cookie hanya lewat HTTPS. WAJIB true di produksi; false hanya untuk
+    #: pengembangan lokal yang berjalan di http://localhost.
+    cookie_secure: bool = False
+
+    # --- Mesin training (Modal) ---
+    #: URL endpoint web Modal, mis. https://<workspace>--sawitscan-training-web.modal.run
+    #: Kosong berarti menu Training melapor "belum dikonfigurasi"; sisa aplikasi
+    #: tetap berjalan penuh.
+    modal_training_url: str = ""
+    #: Token bearer yang sama dengan secret sawitscan-training-token di Modal.
+    #: JANGAN pernah sampai ke peramban — hanya dipakai server ke server.
+    modal_training_token: str = ""
+    #: Training memakan waktu lama, tapi permintaan HTTP ke Modal tidak: yang
+    #: lama adalah unggah dataset dan unduh bobot.
+    modal_timeout_s: float = 900.0
+
+    @property
+    def training_enabled(self) -> bool:
+        return bool(self.modal_training_url.strip() and self.modal_training_token.strip())
+
     @property
     def model_file(self) -> Path | None:
         """Lokasi berkas model, tidak bergantung direktori kerja.

@@ -173,3 +173,67 @@ export interface AiSettings {
   key_hint: string | null;
   model: string;
 }
+
+// --- Autentikasi ---
+export interface AuthUser {
+  username: string;
+  full_name: string | null;
+}
+
+export interface AuthState {
+  authenticated: boolean;
+  /** False berarti belum ada akun sama sekali di server. */
+  ready: boolean;
+  user: AuthUser | null;
+}
+
+// --- Training ---
+export interface TrainingConfig {
+  configured: boolean;
+  base_models: string[];
+  max_epochs: number;
+  max_dataset_mb: number;
+  active_model: string | null;
+}
+
+export interface TrainingRun {
+  id: string;
+  job_id: string;
+  run_name: string;
+  base_model: string;
+  epochs: number;
+  dataset_filename: string | null;
+  status: "queued" | "running" | "done" | "failed";
+  started_by: string | null;
+  created_at: string;
+  finished_at: string | null;
+  final_map50: number | null;
+  final_map50_95: number | null;
+  last_epoch: number | null;
+  error: string | null;
+  is_active: boolean;
+}
+
+/** Satu epoch. Nilai bisa null: metrik validasi tidak selalu ada tiap epoch. */
+export interface TrainingPoint {
+  epoch: number;
+  box_loss: number | null;
+  cls_loss: number | null;
+  dfl_loss: number | null;
+  map50: number | null;
+  map50_95: number | null;
+  precision?: number | null;
+  recall?: number | null;
+}
+
+export interface TrainingStatus {
+  job_id: string;
+  status: "queued" | "running" | "done" | "failed";
+  epoch: number | null;
+  total_epochs: number | null;
+  history: TrainingPoint[];
+  latest: TrainingPoint | null;
+  error: string | null;
+  run_name: string | null;
+  is_active: boolean;
+}

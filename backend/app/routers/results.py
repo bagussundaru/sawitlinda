@@ -43,7 +43,11 @@ def require_analyzed_image(db: Session, image_id: UUID) -> models.Image:
 
 
 @router.post("/analyze/{image_id}", response_model=schemas.DetectionResult)
-def analyze_image(image_id: UUID, db: Session = Depends(get_db)) -> schemas.DetectionResult:
+def analyze_image(
+    image_id: UUID,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> schemas.DetectionResult:
     """Run inference on an uploaded image and persist the detections.
 
     Re-analysing replaces previous detections, so a swapped-in model can be applied
@@ -55,7 +59,14 @@ def analyze_image(image_id: UUID, db: Session = Depends(get_db)) -> schemas.Dete
     if image.gps_lat is not None and image.gps_lng is not None:
         gps = (image.gps_lat, image.gps_lng)
 
-    result = run_inference(image.storage_path, gps, image.area_ha)
+    # Settings dari database: berkas model dapat diganti lewat layar Training
+    # tanpa restart container.
+    result = run_inference(
+        image.storage_path,
+        gps,
+        image.area_ha,
+        settings=app_settings.effective_settings(db, settings),
+    )
 
     image.detections.clear()
     for item in result["detections"]:

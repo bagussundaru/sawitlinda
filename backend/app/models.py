@@ -105,6 +105,75 @@ class Evaluation(Base):
     confusion: Mapped[dict] = mapped_column(JSON)
 
 
+class User(Base):
+    """Operator yang boleh memakai aplikasi.
+
+    Password tidak pernah disimpan, hanya turunannya (scrypt + salt acak).
+    Lihat app/services/auth.py.
+    """
+
+    __tablename__ = "users"
+
+    username: Mapped[str] = mapped_column(String(64), primary_key=True)
+    #: Format: scrypt$<n>$<r>$<p>$<salt_hex>$<hash_hex>
+    password_hash: Mapped[str] = mapped_column(String(512))
+    full_name: Mapped[str | None] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class SessionToken(Base):
+    """Sesi login yang sedang berjalan.
+
+    Yang disimpan adalah SHA-256 dari token, bukan tokennya. Bocornya isi tabel
+    ini karena itu tidak cukup untuk menyamar sebagai pengguna.
+    """
+
+    __tablename__ = "sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    username: Mapped[str] = mapped_column(
+        ForeignKey("users.username", ondelete="CASCADE"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class TrainingRun(Base):
+    """Satu kali training di mesin GPU Modal.
+
+    Disimpan di PostgreSQL, bukan hanya di modal.Dict: Dict tidak dirancang
+    sebagai penyimpanan permanen, sementara riwayat training adalah bagian dari
+    catatan penelitian yang harus bertahan.
+    """
+
+    __tablename__ = "training_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    #: job_id dari mesin Modal — kunci untuk menanyakan progres.
+    job_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    run_name: Mapped[str] = mapped_column(String(128))
+    base_model: Mapped[str] = mapped_column(String(64))
+    epochs: Mapped[int] = mapped_column(Integer)
+    dataset_filename: Mapped[str | None] = mapped_column(String(255))
+
+    # queued | running | done | failed
+    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+    started_by: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    #: Metrik epoch terakhir, diisi saat training selesai.
+    final_map50: Mapped[float | None] = mapped_column(Float)
+    final_map50_95: Mapped[float | None] = mapped_column(Float)
+    last_epoch: Mapped[int | None] = mapped_column(Integer)
+    error: Mapped[str | None] = mapped_column(Text)
+
+    #: Terisi setelah bobot diunduh dan dijadikan model aktif.
+    weights_path: Mapped[str | None] = mapped_column(String(512))
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AppSetting(Base):
     """Pengaturan yang dapat diubah saat aplikasi berjalan.
 

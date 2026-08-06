@@ -59,7 +59,7 @@ def test_map_returns_points_for_geo_referenced_detections(client, uploaded_id, m
     monkeypatch.setattr(
         results_router,
         "run_inference",
-        lambda path, gps=None, area_ha=None: real(path, (-0.78912, 101.41233)),
+        lambda path, gps=None, area_ha=None, **_: real(path, (-0.78912, 101.41233)),
     )
     analyzed = client.post(f"/api/analyze/{uploaded_id}").json()
 

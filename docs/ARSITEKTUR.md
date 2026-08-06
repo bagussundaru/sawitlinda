@@ -234,6 +234,7 @@ Enam migrasi Alembic, semuanya teruji naik dan turun:
 | `0004` | penilaian AI tingkat citra |
 | `0005` | tabel evaluations |
 | `0006` | app_settings (kunci API dari layar Pengaturan) |
+| `0007` | users, sessions, training_runs |
 
 **`evaluations` menyimpan `inference_mode`.** Angka yang dihasilkan mock tidak
 akan pernah tertukar dengan angka model — layar Evaluasi menandai tiap baris dan
@@ -430,6 +431,47 @@ tersendiri, termasuk kasus AP yang dihitung tangan.
 
 ---
 
+## 9b. Training model (Modal)
+
+Melatih ulang model dari dalam aplikasi. VM produksi tidak punya GPU, jadi
+training berjalan di Modal dan aplikasi bertindak sebagai perantara.
+
+```mermaid
+flowchart LR
+    U["menu Training"] -->|cookie sesi| BE["FastAPI /api/train"]
+    BE -->|Bearer token| MW["Modal: endpoint web"]
+    MW -->|".spawn()"| GPU["Modal: fungsi GPU<br/>YOLOv8"]
+    GPU -->|tiap epoch| D[("modal.Dict")]
+    MW --> D
+    GPU --> V[("Volume: best.pt")]
+    BE --> V
+    BE --> PG[("training_runs")]
+```
+
+Empat keputusan yang menentukan:
+
+**Token Modal berhenti di backend.** Peramban tidak pernah melihatnya. Satu
+permintaan training berarti biaya GPU nyata, jadi tokennya diperlakukan seperti
+kunci API — dan ada tes yang memastikan ia tidak pernah muncul di respons.
+
+**Progres ditulis lewat callback `on_fit_epoch_end`, bukan dibaca dari stdout.**
+stdout container GPU tidak terjangkau endpoint web yang berjalan di container
+lain, dan formatnya berubah antar versi ultralytics. Dipilih `on_fit_epoch_end`
+dan bukan `on_train_epoch_end` karena ia berjalan **setelah** validasi — pada
+callback yang lain, mAP yang tersedia masih milik epoch sebelumnya.
+
+**Riwayat disimpan di PostgreSQL, progres di modal.Dict.** Dict cepat dibaca
+tetapi tidak permanen; riwayat training adalah bagian catatan penelitian yang
+harus bertahan melewati restart. Karena itu angka akhir disalin ke
+`training_runs` begitu training selesai.
+
+**Bobot hasil training ditulis ke volume storage**, bukan ke `backend/models/`
+yang di-mount read-only — supaya model yang diserahkan klien tidak dapat
+tertimpa dari aplikasi. Penunjuk model aktif ada di `app_settings`, sehingga
+berganti model tidak memerlukan restart.
+
+Selengkapnya: [`TRAINING.md`](TRAINING.md).
+
 ## 10. Lapisan analisis AI (opsional)
 
 Penilaian **tingkat citra** oleh model vision eksternal, berdampingan dengan
@@ -583,9 +625,9 @@ hijau karena virtualenv dev memuat semuanya.
 
 ## 15. Batasan yang diketahui
 
-**Belum ada autentikasi.** Siapa pun yang dapat membuka alamatnya dapat
-mengunggah citra, melihat seluruh hasil, dan mengganti kunci API. Sampai
-autentikasi dibangun, akses harus dibatasi di reverse proxy.
+**Satu tingkat pengguna saja.** Autentikasi sudah ada (sesi + scrypt), tetapi
+semua akun punya hak yang sama: siapa pun yang dapat masuk dapat memicu training
+GPU berbayar dan mengganti kunci API. Belum ada peran atau audit per pengguna.
 
 **Keparahan tidak berdasar data.** Dataset tidak memuat labelnya; nilainya
 berasal dari aturan tetap. Ini memengaruhi `summary.severe`, warna titik peta,
@@ -610,6 +652,7 @@ Kepala klasifikasi terpisah untuk jenis dan keparahan belum menjadi bagian siste
 | Dokumen | Isi |
 | --- | --- |
 | [`SWAP_MODEL.md`](SWAP_MODEL.md) | Cara mengganti model; ketidakcocokan dataset vs proposal |
+| [`TRAINING.md`](TRAINING.md) | Menyiapkan mesin training Modal & memakai menu Training |
 | [`AUDIT_PROPOSAL.md`](AUDIT_PROPOSAL.md) | Pemeriksaan butir demi butir proposal |
 | [`DEPLOY.md`](DEPLOY.md) | Pemasangan di VM bersama aplikasi lain |
 | [`PROMPT_PRESENTASI.md`](PROMPT_PRESENTASI.md) | Bahan presentasi + screenshot |

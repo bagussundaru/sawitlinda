@@ -33,8 +33,41 @@ def settings(tmp_path, monkeypatch) -> Settings:
     return test_settings
 
 
+@pytest.fixture(autouse=True)
+def scrypt_cepat(monkeypatch):
+    """Turunkan biaya scrypt selama pengujian.
+
+    Parameter produksi sengaja mahal (±100 ms per hash). Dikalikan ratusan tes
+    yang masing-masing login, itu menambah menit ke waktu suite tanpa menguji
+    apa pun — yang diuji adalah alurnya, bukan kekuatan parameternya.
+    """
+    monkeypatch.setattr("app.services.auth._N", 2**8)
+
+
 @pytest.fixture
-def client(settings, tmp_path):
+def anon_client(settings, tmp_path):
+    """Klien tanpa sesi login. Untuk menguji route yang harus tertutup."""
+    yield from _bangun_client(settings, tmp_path)
+
+
+@pytest.fixture
+def client(anon_client):
+    """Klien yang sudah masuk sebagai pengguna uji.
+
+    Login dijalankan sungguhan, bukan dengan menambal dependency: kalau alur
+    autentikasi rusak, seluruh suite ikut merah — dan itu memang yang seharusnya
+    terjadi.
+    """
+    anon_client.post(
+        "/api/auth/login", json={"username": "tester", "password": "kata-sandi-uji"}
+    ).raise_for_status()
+    return anon_client
+
+
+def _bangun_client(settings, tmp_path):
+    from app import models
+    from app.services import auth
+
     engine = create_engine(
         f"sqlite:///{tmp_path / 'test.db'}",
         connect_args={"check_same_thread": False},
@@ -49,9 +82,15 @@ def client(settings, tmp_path):
         finally:
             db.close()
 
+    # Pengguna uji dibuat langsung, bukan lewat API: tidak ada endpoint
+    # pendaftaran, dan memang tidak boleh ada.
+    with TestingSession() as db:
+        auth.create_user(db, "tester", "kata-sandi-uji", "Penguji")
+
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_settings] = lambda: settings
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
     engine.dispose()
+
