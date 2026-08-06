@@ -32,11 +32,27 @@ _SALT_BYTES = 16
 _KEY_LEN = 32
 
 
+def _maxmem(n: int, r: int) -> int:
+    """Batas memori yang diizinkan OpenSSL untuk satu pemanggilan scrypt.
+
+    Wajib dinyatakan: bawaan OpenSSL 32 MiB, sementara n=2^15 r=8 membutuhkan
+    128*n*r = tepat 32 MiB ditambah ruang kerja — sehingga tanpa nilai ini
+    scrypt gagal dengan "memory limit exceeded" dan SETIAP login menjadi mustahil.
+    """
+    return 2 * 128 * n * r
+
+
 # --- Password ---------------------------------------------------------------
 def hash_password(password: str) -> str:
     salt = secrets.token_bytes(_SALT_BYTES)
     turunan = hashlib.scrypt(
-        password.encode("utf-8"), salt=salt, n=_N, r=_R, p=_P, dklen=_KEY_LEN
+        password.encode("utf-8"),
+        salt=salt,
+        n=_N,
+        r=_R,
+        p=_P,
+        dklen=_KEY_LEN,
+        maxmem=_maxmem(_N, _R),
     )
     return f"scrypt${_N}${_R}${_P}${salt.hex()}${turunan.hex()}"
 
@@ -53,6 +69,7 @@ def verify_password(password: str, disimpan: str) -> bool:
             r=int(r),
             p=int(p),
             dklen=len(hash_hex) // 2,
+            maxmem=_maxmem(int(n), int(r)),
         )
     except (ValueError, TypeError):
         # Hash rusak atau format tak dikenal: perlakukan sebagai gagal, jangan

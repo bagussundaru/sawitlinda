@@ -139,3 +139,23 @@ class TestPerlindunganRoute:
     def test_health_tetap_terbuka(self, anon_client):
         """Healthcheck Docker berjalan tanpa sesi."""
         assert anon_client.get("/health").status_code == 200
+
+
+class TestParameterProduksi:
+    """Dijalankan dengan parameter scrypt yang sebenarnya.
+
+    Sisa tes memakai parameter yang diperkecil agar suite tetap cepat — dan
+    justru itu yang pernah menyembunyikan kegagalan nyata: pada parameter
+    produksi OpenSSL menolak dengan "memory limit exceeded", sehingga setiap
+    login mustahil sementara seluruh tes tetap hijau.
+    """
+
+    @pytest.fixture(autouse=True)
+    def parameter_asli(self, monkeypatch):
+        monkeypatch.setattr("app.services.auth._N", 2**15)
+
+    def test_hash_dan_verifikasi_bekerja_pada_parameter_produksi(self):
+        tersimpan = auth.hash_password("kata-sandi-produksi")
+
+        assert auth.verify_password("kata-sandi-produksi", tersimpan)
+        assert not auth.verify_password("salah", tersimpan)
