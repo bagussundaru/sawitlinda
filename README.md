@@ -168,7 +168,7 @@ Salin `backend/.env.example` ke `backend/.env`.
 | `MAX_UPLOAD_MB` | `50` | Batas ukuran satu citra. |
 | `MODEL_PATH` | kosong | Berkas model terlatih, mis. `models/best.pt`. Kosong = pakai mock. |
 | `NEBIUS_API_KEY` | kosong | Kunci Nebius Token Factory. Kosong = analisis AI mati. |
-| `NEBIUS_MODEL` | `Qwen/Qwen2-VL-72B-Instruct` | Model vision yang dipakai. |
+| `NEBIUS_MODEL` | `Qwen/Qwen2.5-VL-72B-Instruct` | Model vision yang dipakai. |
 
 Frontend: `NEXT_PUBLIC_API_URL` di `frontend/.env.local` (default `http://localhost:8000`).
 

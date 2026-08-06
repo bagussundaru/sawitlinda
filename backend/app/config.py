@@ -28,8 +28,11 @@ class Settings(BaseSettings):
     #: Kosong berarti fitur analisis AI mati; aplikasi tetap berjalan penuh.
     nebius_api_key: str = ""
     nebius_base_url: str = "https://api.tokenfactory.nebius.com/v1"
-    #: Model dengan kemampuan vision.
-    nebius_model: str = "Qwen/Qwen2-VL-72B-Instruct"
+    #: Model bawaan. Harus ada di daftar model Nebius — Qwen2-VL (tanpa .5)
+    #: TIDAK tersedia di sana, dan memakainya membuat setiap analisis gagal.
+    #: Per Agustus 2026 satu-satunya model vision di Nebius adalah Qwen2.5-VL;
+    #: moonshotai/Kimi-K3 juga menerima gambar.
+    nebius_model: str = "Qwen/Qwen2.5-VL-72B-Instruct"
     nebius_timeout_s: float = 90.0
 
     @property
