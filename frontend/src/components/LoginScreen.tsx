@@ -59,10 +59,16 @@ export default function LoginScreen({
           <div className="rounded-[16px] border border-[#e5cfa6]/30 bg-[#3a2f16] p-6 text-[13px] leading-relaxed text-[#f0d79a]">
             <b className="mb-2 block text-white">Belum ada akun terdaftar</b>
             Aplikasi tidak dapat dipakai sampai akun pertama dibuat. Jalankan di
-            server:
-            <code className="mono mt-3 block rounded-[8px] bg-black/30 px-3 py-2 text-[11.5px] text-[#9fe3c0]">
-              docker compose exec backend python scripts/create_user.py
+            server, dari folder yang memuat <code className="mono">docker-compose.prod.yml</code>:
+            <code className="mono mt-3 block overflow-x-auto whitespace-pre rounded-[8px] bg-black/30 px-3 py-2 text-[11.5px] leading-relaxed text-[#9fe3c0]">
+              {`docker compose -p sawitscan \\
+  -f docker-compose.prod.yml \\
+  exec backend python scripts/create_user.py`}
             </code>
+            <span className="mt-3 block text-[11.5px] leading-relaxed opacity-80">
+              Nama proyek dan berkas compose harus disebutkan — tanpa keduanya,
+              perintah itu tidak menemukan stack yang sedang berjalan.
+            </span>
           </div>
         ) : (
           <form
