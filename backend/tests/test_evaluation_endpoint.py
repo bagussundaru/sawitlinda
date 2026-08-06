@@ -195,3 +195,28 @@ def test_citra_tanpa_anotasi_tidak_menekan_presisi(client, citra_dianalisis):
 
     assert body["images"] == 1
     assert body["micro_precision"] == pytest.approx(1.0)
+
+
+def test_berkas_bernama_sama_tidak_terhitung_ganda(client, citra_dianalisis):
+    """Unggahan berulang dengan nama sama pernah melipatgandakan prediksi.
+
+    Akibatnya presisi anjlok tanpa sebab: 501 anotasi acuan dibandingkan dengan
+    1410 prediksi, padahal deteksi sebenarnya 705.
+    """
+    ulang = client.post(
+        "/api/upload", files={"files": ("DJI_4101.jpg", _jpeg(), "image/jpeg")}
+    )
+    kedua = client.post(f"/api/analyze/{ulang.json()['images'][0]['image_id']}").json()
+
+    anotasi = _anotasi_dari_deteksi(citra_dianalisis)
+    body = client.post(
+        "/api/evaluate", files={"file": ("gt.zip", anotasi, "application/zip")}
+    ).json()
+
+    pertama = len(citra_dianalisis["detections"])
+    terbaru = len(kedua["detections"])
+
+    assert body["images"] == 1
+    # Yang dipakai unggahan terbaru saja, bukan jumlah keduanya.
+    assert body["predictions"] == terbaru
+    assert body["predictions"] < pertama + terbaru

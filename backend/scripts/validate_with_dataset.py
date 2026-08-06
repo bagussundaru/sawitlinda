@@ -14,14 +14,15 @@ kelas, dan confusion matrix — angka untuk bab hasil.
     # Pakai split lain (test paling sahih; valid juga di luar data latih)
     python scripts/validate_with_dataset.py dataset.zip --split valid
 
-Skrip ini mengunggah citra ke sistem, menganalisisnya, lalu mengirim arsip yang
-SAMA ke /api/evaluate. Label untuk citra yang tidak diunggah otomatis terlewat,
-jadi arsipnya tidak perlu dibongkar atau dikemas ulang.
+Skrip ini mengunggah citra ke sistem, menganalisisnya, lalu mengirim ANOTASINYA
+saja ke /api/evaluate — arsip Roboflow berisi citra beresolusi penuh dan bisa
+puluhan MB, padahal endpoint evaluasi hanya membutuhkan berkas label.
 """
 
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import mimetypes
 import sys
@@ -184,12 +185,32 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    print("\nMengevaluasi terhadap anotasi acuan dari arsip yang sama…")
+    # Kirim label saja, bukan seluruh arsip: citra beresolusi penuh membuat arsip
+    # Roboflow puluhan MB, sementara evaluasi hanya membutuhkan anotasinya.
+    diunggah = {Path(n).stem.lower() for n in citra}
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as keluaran:
+        for anggota in arsip.namelist():
+            akhiran = Path(anggota).name.lower()
+            if akhiran in {"data.yaml", "classes.txt"}:
+                keluaran.writestr(anggota, arsip.read(anggota))
+            elif (
+                anggota.lower().endswith(".txt")
+                and Path(anggota).stem.lower() in diunggah
+            ):
+                keluaran.writestr(anggota, arsip.read(anggota))
+    anotasi = buffer.getvalue()
+
+    print(
+        f"\nMengevaluasi terhadap anotasi acuan "
+        f"({len(anotasi) / 1024:.0f} KB label, disaring dari arsip "
+        f"{args.dataset.stat().st_size / 1024 / 1024:.0f} MB)…"
+    )
     try:
         evaluasi = _post(
             f"{base}/api/evaluate",
             {"iou_threshold": str(args.iou)},
-            [("file", args.dataset.name, args.dataset.read_bytes())],
+            [("file", "labels.zip", anotasi)],
         )
     except urllib.error.HTTPError as exc:
         print(f"Evaluasi gagal: {_galat(exc)}", file=sys.stderr)

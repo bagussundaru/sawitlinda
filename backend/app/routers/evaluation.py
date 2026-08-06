@@ -103,15 +103,24 @@ def run_evaluation(
     # tanpa anotasi akan menjadikan seluruh deteksinya positif palsu dan menekan
     # presisi secara keliru.
     beranotasi = {g.image for g in ground_truths}
+
+    # Satu berkas anotasi hanya boleh dipasangkan dengan SATU citra. Bila berkas
+    # dengan nama sama diunggah lebih dari sekali, deteksinya akan terhitung
+    # berlipat dan presisi anjlok tanpa sebab. Yang dipakai unggahan terbaru.
+    terpilih: dict[str, models.Image] = {}
+    for image in sorted(images, key=lambda i: i.created_at):
+        stem = Path(image.filename).stem.lower()
+        if stem in beranotasi:
+            terpilih[stem] = image
+
     predictions = [
         Prediction(
             box=(d.bbox_x, d.bbox_y, d.bbox_w, d.bbox_h),
             label=d.condition,
             confidence=d.confidence,
-            image=Path(image.filename).stem.lower(),
+            image=stem,
         )
-        for image in images
-        if Path(image.filename).stem.lower() in beranotasi
+        for stem, image in terpilih.items()
         for d in image.detections
     ]
 
