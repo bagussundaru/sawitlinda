@@ -250,6 +250,23 @@ Tanpa luas area, citra tetap dianalisis dan bounding box tetap tampil di layar
 hasil, tapi deteksinya sengaja tidak diberi koordinat: peta kosong lebih baik
 daripada titik yang salah tempat.
 
+## Membuktikan model bekerja
+
+Cara pembuktian paling kuat memakai dataset klien sendiri: split **test** berisi
+citra kebun sungguhan yang tidak pernah dilihat model saat pelatihan, lengkap
+dengan anotasi acuannya.
+
+Unduh dari Roboflow (versi 3, format **YOLOv8**), lalu:
+
+```bash
+python scripts/validate_with_dataset.py /path/dataset.zip
+```
+
+Skrip mengunggah citra split test, menganalisisnya, lalu mengirim arsip yang sama
+ke `/api/evaluate`. Label untuk citra yang tidak diunggah otomatis terlewat, jadi
+arsipnya tidak perlu dibongkar. Keluarannya mAP@50, presisi/recall per kelas, dan
+confusion matrix — tersimpan dan dapat dibuka kembali di layar Evaluasi.
+
 ## Data demo
 
 Untuk mengisi sistem dengan kebun contoh yang menyerupai keadaan sebenarnya —
