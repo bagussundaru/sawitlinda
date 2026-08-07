@@ -20,14 +20,16 @@ export default function LaporanPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listResults()
-      .then(setItems)
+    // Hanya citra yang sudah dianalisis yang dapat diekspor, jadi penyaringannya
+    // dikerjakan server — tidak ada gunanya mengangkut sisanya.
+    listResults({ status: "analyzed", limit: 200 })
+      .then((halaman) => setItems(halaman.items))
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : "Laporan gagal dimuat."),
       );
   }, []);
 
-  const analyzed = items?.filter((item) => item.status === "analyzed") ?? [];
+  const analyzed = items ?? [];
 
   return (
     <div className="space-y-[18px]">

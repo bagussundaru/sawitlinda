@@ -213,3 +213,20 @@ export interface TrainingStatus {
   run_name: string | null;
   is_active: boolean;
 }
+
+/** Kolom yang boleh dipakai mengurutkan riwayat. Harus sama dengan
+ *  SORT_COLUMNS di backend. */
+export type ResultSort =
+  | "created_at"
+  | "label"
+  | "captured_at"
+  | "trees"
+  | "affected";
+
+/** Satu halaman riwayat. `total` mengikuti penyaringan yang sedang aktif. */
+export interface ResultPage {
+  items: ResultListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}

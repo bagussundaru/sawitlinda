@@ -87,6 +87,45 @@ fi
 line "Firewall"
 if have ufw; then ufw status 2>/dev/null | head -12; fi
 
+line "Ketahanan reverse proxy"
+# Pertanyaannya bukan "apakah proxy jalan", tapi "apakah ia masih BISA start".
+# Konfigurasi dengan upstream statis ke container yang sudah mati membuat nginx
+# menolak start — dan sekali ia turun, SELURUH situs di VM ikut mati, termasuk
+# aplikasi yang tidak ada hubungannya. Ini ditemukan di VM sebelumnya.
+if have nginx; then
+  echo "nginx -t (host):"
+  sudo nginx -t 2>&1 | sed 's/^/  /'
+fi
+if have docker; then
+  for c in $(docker ps --format '{{.Names}}' 2>/dev/null | grep -iE 'nginx|caddy|traefik'); do
+    echo "nginx -t di container $c:"
+    docker exec "$c" nginx -t 2>&1 | sed 's/^/  /'
+  done
+fi
+
+line "Aplikasi lain di VM ini"
+echo "Layanan systemd yang aktif (di luar bawaan):"
+systemctl list-units --type=service --state=running --no-legend --no-pager 2>/dev/null   | awk '{print $1}'   | grep -viE '^(systemd|dbus|cron|ssh|rsyslog|snapd|polkit|networkd|resolved|udev|getty|unattended|multipathd|irqbalance|chrony|accounts|user@)'   | sed 's/^/  /'
+if have pm2; then
+  echo
+  echo "Proses PM2:"
+  pm2 list 2>/dev/null | sed 's/^/  /'
+fi
+
+line "Ruang untuk SawitScan"
+# Angka acuan dari deployment yang sudah berjalan: image backend 2,31 GB,
+# ketiga container memakai sekitar 153 MB memori saat menganggur, dan proses
+# build sendiri butuh beberapa GB sementara.
+mem_avail_mb=$(awk '/MemAvailable/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)
+disk_avail_gb=$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')
+echo "Memori tersedia : ${mem_avail_mb:-?} MB   (SawitScan idle ±153 MB)"
+echo "Disk tersedia   : ${disk_avail_gb:-?} GB   (image 2,31 GB + ruang build ±4 GB)"
+[ "${mem_avail_mb:-0}" -lt 600 ] 2>/dev/null && echo "  PERINGATAN: memori tipis — build bisa memicu OOM killer yang menyasar aplikasi lain."
+[ "${disk_avail_gb:-0}" -lt 8 ] 2>/dev/null && echo "  PERINGATAN: disk tipis — build image bisa memenuhi disk dan menjatuhkan aplikasi lain."
+echo
+echo "Swap:"
+swapon --show 2>/dev/null | sed 's/^/  /' || echo "  tidak ada swap"
+
 line "Ringkasan"
 echo "Periksa di atas: (1) Docker ada & bisa dipakai tanpa sudo,"
 echo "(2) port 8000/3000 bebas atau perlu diganti, (3) reverse proxy mana yang"

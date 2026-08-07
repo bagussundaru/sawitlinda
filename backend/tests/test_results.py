@@ -38,7 +38,7 @@ def test_analyze_returns_result_matching_the_contract(client, uploaded_id):
 def test_analyze_marks_the_image_analyzed(client, uploaded_id):
     client.post(f"/api/analyze/{uploaded_id}")
 
-    listed = client.get("/api/results").json()
+    listed = client.get("/api/results").json()["items"]
     assert listed[0]["status"] == "analyzed"
     assert listed[0]["summary"] is not None
 
@@ -74,11 +74,11 @@ def test_get_result_rejects_unknown_image(client):
 
 
 def test_results_list_is_empty_at_first(client):
-    assert client.get("/api/results").json() == []
+    assert client.get("/api/results").json() == {"items": [], "total": 0, "limit": 50, "offset": 0}
 
 
 def test_unanalyzed_image_has_no_summary(client, uploaded_id):
-    listed = client.get("/api/results").json()
+    listed = client.get("/api/results").json()["items"]
 
     assert listed[0]["status"] == "uploaded"
     assert listed[0]["summary"] is None

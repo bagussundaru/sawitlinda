@@ -12,7 +12,8 @@ import type {
   Dashboard,
   DetectionResult,
   ImageItem,
-  ResultListItem,
+  ResultPage,
+  ResultSort,
   SystemInfo,
 } from "@/types/detection";
 
@@ -90,8 +91,25 @@ export function getResult(imageId: string): Promise<DetectionResult> {
   return apiFetch(`/api/results/${imageId}`);
 }
 
-export function listResults(): Promise<ResultListItem[]> {
-  return apiFetch("/api/results");
+export interface ResultQuery {
+  /** Cari pada label atau nama berkas. */
+  q?: string;
+  status?: "uploaded" | "analyzed";
+  sort?: ResultSort;
+  order?: "asc" | "desc";
+  limit?: number;
+  offset?: number;
+}
+
+export function listResults(params: ResultQuery = {}): Promise<ResultPage> {
+  const cari = new URLSearchParams();
+  for (const [kunci, nilai] of Object.entries(params)) {
+    if (nilai !== undefined && nilai !== null && `${nilai}` !== "") {
+      cari.set(kunci, String(nilai));
+    }
+  }
+  const sisipan = cari.toString();
+  return apiFetch(`/api/results${sisipan ? `?${sisipan}` : ""}`);
 }
 
 /** `search` menyaring berdasarkan label yang diberikan pengunggah. */

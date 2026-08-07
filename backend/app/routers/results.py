@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app import mappers, models, schemas
@@ -145,25 +145,109 @@ def ai_review(
     return mappers.detection_result(image)
 
 
-@router.get("/results", response_model=list[schemas.ResultListItem])
-def list_results(db: Session = Depends(get_db)) -> list[schemas.ResultListItem]:
-    """Upload history, newest first."""
-    images = (
-        db.execute(
-            select(models.Image)
-            .options(selectinload(models.Image.detections))
-            .order_by(models.Image.created_at.desc())
+#: Kolom yang boleh dipakai mengurutkan. Daftar tertutup: nilai dari klien tidak
+#: pernah menjadi bagian kueri, hanya menjadi kunci pencarian di peta ini.
+SORT_COLUMNS = {"created_at", "label", "captured_at", "trees", "affected"}
+
+MAX_PAGE = 200
+
+
+@router.get("/results", response_model=schemas.ResultPage)
+def list_results(
+    q: str | None = Query(None, description="Cari pada label atau nama berkas"),
+    status_filter: str | None = Query(
+        None, alias="status", description="uploaded | analyzed"
+    ),
+    sort: str = Query("created_at", description=f"Salah satu dari: {sorted(SORT_COLUMNS)}"),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
+    limit: int = Query(50, ge=1, le=MAX_PAGE),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+) -> schemas.ResultPage:
+    """Riwayat unggahan, satu halaman sekaligus.
+
+    Ringkasan per citra dihitung lewat agregasi SQL, bukan dengan memuat seluruh
+    baris deteksi. Cara lama memuat setiap pohon dari setiap citra hanya untuk
+    menghitungnya — pada 187 citra itu berarti 15.422 baris per permintaan, dan
+    pada ribuan citra tidak lagi dapat dipakai.
+    """
+    if sort not in SORT_COLUMNS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Pengurutan tidak dikenal. Pilihan: {', '.join(sorted(SORT_COLUMNS))}.",
         )
-        .scalars()
-        .all()
+
+    ringkas = (
+        select(
+            models.Detection.image_id.label("image_id"),
+            func.count().label("total"),
+            func.sum(case((models.Detection.severity == "sehat", 1), else_=0)).label("healthy"),
+            func.sum(case((models.Detection.severity == "berat", 1), else_=0)).label("severe"),
+        )
+        .group_by(models.Detection.image_id)
+        .subquery()
     )
-    return [
+
+    saring = []
+    if q and q.strip():
+        kunci = q.strip().lower()
+        saring.append(
+            func.lower(
+                func.coalesce(models.Image.label, models.Image.filename)
+            ).contains(kunci)
+        )
+    if status_filter in {"uploaded", "analyzed"}:
+        saring.append(models.Image.status == status_filter)
+
+    total = db.scalar(
+        select(func.count()).select_from(models.Image).where(*saring)
+    ) or 0
+
+    jumlah_pohon = func.coalesce(ringkas.c.total, 0)
+    jumlah_bermasalah = func.coalesce(ringkas.c.total, 0) - func.coalesce(ringkas.c.healthy, 0)
+    kolom = {
+        "created_at": models.Image.created_at,
+        # coalesce: citra tanpa label diurutkan memakai nama berkasnya, bukan
+        # menggumpal di ujung daftar.
+        "label": func.lower(func.coalesce(models.Image.label, models.Image.filename)),
+        "captured_at": models.Image.captured_at,
+        "trees": jumlah_pohon,
+        "affected": jumlah_bermasalah,
+    }[sort]
+    arah = kolom.desc() if order == "desc" else kolom.asc()
+
+    baris = db.execute(
+        select(
+            models.Image,
+            ringkas.c.total,
+            ringkas.c.healthy,
+            ringkas.c.severe,
+        )
+        .outerjoin(ringkas, ringkas.c.image_id == models.Image.id)
+        .where(*saring)
+        # Kunci kedua yang unik: tanpa ini, baris dengan nilai urut sama dapat
+        # bertukar tempat antarhalaman dan satu citra muncul dua kali.
+        .order_by(arah, models.Image.id)
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    items = [
         schemas.ResultListItem(
             **mappers.image_out(image).model_dump(),
-            summary=mappers.summarise(image.detections) if image.status == "analyzed" else None,
+            summary=schemas.Summary(
+                total=jml or 0,
+                healthy=sehat or 0,
+                infected=(jml or 0) - (sehat or 0),
+                severe=berat or 0,
+            )
+            if image.status == "analyzed"
+            else None,
         )
-        for image in images
+        for image, jml, sehat, berat in baris
     ]
+
+    return schemas.ResultPage(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/images/{image_id}/file", response_class=FileResponse)

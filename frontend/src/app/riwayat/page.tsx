@@ -19,8 +19,8 @@ export default function RiwayatPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listResults()
-      .then(setItems)
+    listResults({ limit: 200 })
+      .then((halaman) => setItems(halaman.items))
       .catch((err) =>
         setError(
           err instanceof ApiError ? err.message : "Riwayat gagal dimuat.",

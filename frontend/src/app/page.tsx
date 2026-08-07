@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Card, StatCard } from "@/components/Card";
 import { ConditionBars, HealthDonut } from "@/components/Charts";
 import DronePanel from "@/components/DronePanel";
-import ImageStrip from "@/components/ImageStrip";
 import InferenceQueue from "@/components/InferenceQueue";
+import ResultTable, { type UrutanTabel } from "@/components/ResultTable";
 import { ApiError, getDashboard, getResult, listResults } from "@/lib/api";
 import type {
   Dashboard,
   DetectionResult,
   ResultListItem,
+  ResultSort,
 } from "@/types/detection";
+
+/** Baris per halaman. Cukup untuk satu layar tanpa menggulir jauh, dan jauh di
+ *  bawah batas 200 yang ditegakkan server. */
+const PER_HALAMAN = 25;
 
 /** Jeda sebelum pencarian dikirim. Tanpa ini setiap ketukan tombol menjadi satu
  *  permintaan, dan jawaban lama bisa tiba setelah jawaban baru. */
@@ -32,12 +37,19 @@ function KerangkaAngka() {
 export default function HomePage() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [history, setHistory] = useState<ResultListItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [halaman, setHalaman] = useState(0);
+  const [urutan, setUrutan] = useState<UrutanTabel>({
+    sort: "created_at",
+    order: "desc",
+  });
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [highlighted, setHighlighted] = useState<number | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
   const [cari, setCari] = useState("");
   const [kunci, setKunci] = useState("");
   const [memuat, setMemuat] = useState(true);
+  const [memuatCitra, setMemuatCitra] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Pencarian ditunda; `kunci` yang benar-benar dikirim ke server.
@@ -46,34 +58,34 @@ export default function HomePage() {
     return () => clearTimeout(t);
   }, [cari]);
 
+  // Pencarian atau pengurutan yang berubah mengembalikan daftar ke halaman
+  // pertama; bertahan di halaman 7 setelah menyaring hanya menampilkan layar
+  // kosong.
+  useEffect(() => {
+    setHalaman(0);
+  }, [kunci, urutan]);
+
   useEffect(() => {
     let dibatalkan = false;
     setMemuat(true);
     (async () => {
       try {
-        const [dashboard, daftar] = await Promise.all([
+        const [dashboard, halamanHasil] = await Promise.all([
           getDashboard(kunci),
-          listResults(),
+          listResults({
+            q: kunci,
+            sort: urutan.sort,
+            order: urutan.order,
+            limit: PER_HALAMAN,
+            offset: halaman * PER_HALAMAN,
+          }),
         ]);
         if (dibatalkan) return;
 
-        const cocok = kunci.trim()
-          ? daftar.filter((item) =>
-              (item.label ?? item.filename)
-                .toLowerCase()
-                .includes(kunci.trim().toLowerCase()),
-            )
-          : daftar;
-
         setData(dashboard);
-        setHistory(cocok);
+        setHistory(halamanHasil.items);
+        setTotal(halamanHasil.total);
         setError(null);
-
-        // Citra pertama yang sudah dianalisis dibuka otomatis, supaya panel
-        // kanan tidak pernah kosong ketika ada sesuatu untuk ditampilkan.
-        const pertama = cocok.find((item) => item.status === "analyzed");
-        setResult(pertama ? await getResult(pertama.image_id) : null);
-        setHighlighted(null);
       } catch (err) {
         if (!dibatalkan) {
           setError(err instanceof ApiError ? err.message : "Data gagal dimuat.");
@@ -85,22 +97,41 @@ export default function HomePage() {
     return () => {
       dibatalkan = true;
     };
-  }, [kunci]);
+  }, [kunci, urutan, halaman]);
 
+  /** Citra diambil di sini — bukan saat daftar dimuat.
+   *
+   *  Inilah yang menjaga daftar tetap ringan berapa pun banyaknya citra: satu
+   *  berkas diunduh ketika satu baris dipilih, bukan seluruhnya di muka. */
   async function pilihCitra(item: ResultListItem) {
-    if (item.status !== "analyzed" || item.image_id === result?.image_id) return;
+    if (item.image_id === result?.image_id) return;
+    if (item.status !== "analyzed") {
+      setResult(null);
+      setHighlighted(null);
+      return;
+    }
+    setMemuatCitra(true);
     try {
       setResult(await getResult(item.image_id));
       setHighlighted(null);
     } catch {
       /* panel tetap menampilkan citra sebelumnya */
+    } finally {
+      setMemuatCitra(false);
     }
   }
 
-  const dianalisis = useMemo(
-    () => history.filter((item) => item.status === "analyzed"),
-    [history],
-  );
+  function ubahUrutan(kolom: ResultSort) {
+    setUrutan((sekarang) =>
+      sekarang.sort === kolom
+        ? { sort: kolom, order: sekarang.order === "asc" ? "desc" : "asc" }
+        : // Kolom teks paling berguna menaik; kolom angka dan tanggal paling
+          // berguna menurun — terbaru dan terbanyak lebih dulu.
+          { sort: kolom, order: kolom === "label" ? "asc" : "desc" },
+    );
+  }
+
+  const halamanTerakhir = Math.max(0, Math.ceil(total / PER_HALAMAN) - 1);
 
   if (error) {
     return (
@@ -228,7 +259,11 @@ export default function HomePage() {
         <div className="muncul" style={{ ["--i" as string]: 2 }}>
           <Card
             title="Citra Terpindai"
-            subtitle="Klik satu citra untuk membuka hasil deteksinya"
+            subtitle={
+              total > 0
+                ? `${total} citra · klik satu baris untuk membuka hasilnya`
+                : "Klik satu baris untuk membuka hasilnya"
+            }
             action={
               <Link
                 href="/riwayat"
@@ -238,12 +273,41 @@ export default function HomePage() {
               </Link>
             }
           >
-            <ImageStrip
-              items={dianalisis}
+            <ResultTable
+              items={history}
+              urutan={urutan}
+              onUrut={ubahUrutan}
               selectedId={result?.image_id ?? null}
               onSelect={pilihCitra}
               loading={memuat}
             />
+
+            {halamanTerakhir > 0 && (
+              <div className="flex items-center justify-between gap-3 border-t border-[var(--line-soft)] pt-3">
+                <span className="mono text-[11px] text-[var(--muted-3)]">
+                  {halaman * PER_HALAMAN + 1}–
+                  {Math.min((halaman + 1) * PER_HALAMAN, total)} dari {total}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setHalaman((n) => Math.max(0, n - 1))}
+                    disabled={halaman === 0 || memuat}
+                    className="kartu-tekan rounded-[8px] border border-[var(--line)] px-[11px] py-[6px] text-[11.5px] font-semibold text-[var(--brand)] disabled:opacity-40"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button
+                    onClick={() =>
+                      setHalaman((n) => Math.min(halamanTerakhir, n + 1))
+                    }
+                    disabled={halaman >= halamanTerakhir || memuat}
+                    className="kartu-tekan rounded-[8px] border border-[var(--line)] px-[11px] py-[6px] text-[11.5px] font-semibold text-[var(--brand)] disabled:opacity-40"
+                  >
+                    Berikutnya
+                  </button>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
@@ -252,7 +316,7 @@ export default function HomePage() {
             result={result}
             highlighted={highlighted}
             onHighlight={setHighlighted}
-            loading={memuat}
+            loading={memuatCitra}
           />
         </div>
       </section>

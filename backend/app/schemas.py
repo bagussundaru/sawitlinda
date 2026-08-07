@@ -91,6 +91,20 @@ class ResultListItem(ImageOut):
     summary: Summary | None = None
 
 
+class ResultPage(BaseModel):
+    """Satu halaman riwayat.
+
+    Dikembalikan sebagai amplop, bukan daftar telanjang: tanpa `total`, tampilan
+    tidak dapat menunjukkan ada berapa citra seluruhnya maupun berapa halaman —
+    dan daftar telanjang mendorong pemanggil memuat semuanya sekaligus.
+    """
+
+    items: list[ResultListItem]
+    total: int
+    limit: int
+    offset: int
+
+
 class SystemInfo(BaseModel):
     """What the system actually is right now — no invented model metrics."""
 

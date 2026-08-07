@@ -56,7 +56,7 @@ class TestPelabelan:
         client.post(f"/api/analyze/{image_id}")
 
         assert client.get(f"/api/results/{image_id}").json()["label"] == "Petak Mawar"
-        assert client.get("/api/results").json()[0]["label"] == "Petak Mawar"
+        assert client.get("/api/results").json()["items"][0]["label"] == "Petak Mawar"
 
 
 class TestPencarianLabel:
