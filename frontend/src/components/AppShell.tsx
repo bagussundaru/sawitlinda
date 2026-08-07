@@ -11,7 +11,6 @@ import type { AuthState, SystemInfo } from "@/types/detection";
 const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/riwayat", label: "Hasil Deteksi" },
-  { href: "/peta", label: "Peta" },
   { href: "/unggah", label: "Unggah" },
   { href: "/training", label: "Training" },
   { href: "/laporan", label: "Laporan" },

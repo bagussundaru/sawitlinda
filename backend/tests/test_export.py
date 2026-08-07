@@ -42,7 +42,7 @@ def test_csv_content_matches_the_api_result(client, analyzed):
         assert row["kondisi"] == detection["condition"]
         assert row["keparahan"] == detection["severity"]
         assert row["nama_berkas"] == "blok_a3_001.jpg"
-        assert "blok" in row
+        assert "label" in row
 
 
 def test_csv_starts_with_a_bom_so_excel_reads_it(client, analyzed):

@@ -19,11 +19,14 @@ class Image(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     filename: Mapped[str] = mapped_column(String(255))
     storage_path: Mapped[str] = mapped_column(String(512))
+    #: Nama yang diberikan pengunggah — identitas citra di seluruh aplikasi.
+    #: Kosong hanya mungkin pada baris lama sebelum migrasi 0008.
+    label: Mapped[str | None] = mapped_column(String(200), index=True)
     captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    #: Plantation block the frame covers, e.g. "A-3". Entered at upload time —
-    #: it cannot be derived from the image or its metadata.
+    # --- Peninggalan konsep pemetaan. Tidak lagi diisi maupun ditampilkan,
+    #     tetapi sengaja dipertahankan: data yang sudah terkumpul tetap utuh dan
+    #     fitur peta dapat dihidupkan lagi tanpa memulihkan apa pun. ---
     block: Mapped[str | None] = mapped_column(String(64), index=True)
-    #: Area the frame covers, in hectares.
     area_ha: Mapped[float | None] = mapped_column(Float)
     gps_lat: Mapped[float | None] = mapped_column(Float)
     gps_lng: Mapped[float | None] = mapped_column(Float)

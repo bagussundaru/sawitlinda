@@ -7,13 +7,11 @@ import type {
   TrainingConfig,
   TrainingRun,
   TrainingStatus,
-  BlockInfo,
   Evaluation,
   ConditionInfo,
   Dashboard,
   DetectionResult,
   ImageItem,
-  MapPoint,
   ResultListItem,
   SystemInfo,
 } from "@/types/detection";
@@ -64,28 +62,17 @@ async function readError(response: Response): Promise<string> {
   return `Permintaan gagal (${response.status}).`;
 }
 
-export interface UploadFields {
-  /** Plantation block, e.g. "A-3". */
-  block?: string;
-  /** Area the frames cover, in hectares. */
-  areaHa?: string;
-  /** Only used when the frame carries no EXIF GPS. */
-  lat?: string;
-  lng?: string;
-}
-
+/** Unggah citra beserta labelnya.
+ *
+ * `labels` harus sejajar dengan `files`. Nilai kosong dibiarkan terkirim supaya
+ * urutannya tidak bergeser — server yang memutuskan memakai nama berkas. */
 export function uploadImages(
   files: File[],
-  fields: UploadFields = {},
+  labels: string[] = [],
 ): Promise<{ images: ImageItem[] }> {
   const form = new FormData();
   files.forEach((file) => form.append("files", file));
-  if (fields.block?.trim()) form.append("block", fields.block.trim());
-  if (fields.areaHa?.trim()) form.append("area_ha", fields.areaHa.trim());
-  if (fields.lat?.trim() && fields.lng?.trim()) {
-    form.append("lat", fields.lat.trim());
-    form.append("lng", fields.lng.trim());
-  }
+  files.forEach((file, i) => form.append("labels", labels[i] ?? ""));
   return apiFetch("/api/upload", { method: "POST", body: form });
 }
 
@@ -107,22 +94,14 @@ export function listResults(): Promise<ResultListItem[]> {
   return apiFetch("/api/results");
 }
 
-export function getDashboard(block?: string | null): Promise<Dashboard> {
-  const query = block ? `?block=${encodeURIComponent(block)}` : "";
-  return apiFetch(`/api/dashboard${query}`);
-}
-
-export function listBlocks(): Promise<BlockInfo[]> {
-  return apiFetch("/api/blocks");
+/** `search` menyaring berdasarkan label yang diberikan pengunggah. */
+export function getDashboard(search?: string | null): Promise<Dashboard> {
+  const q = search?.trim() ? `?q=${encodeURIComponent(search.trim())}` : "";
+  return apiFetch(`/api/dashboard${q}`);
 }
 
 export function listConditions(): Promise<ConditionInfo[]> {
   return apiFetch("/api/conditions");
-}
-
-export function listMapPoints(block?: string | null): Promise<MapPoint[]> {
-  const query = block ? `?block=${encodeURIComponent(block)}` : "";
-  return apiFetch(`/api/map${query}`);
 }
 
 export function getSystemInfo(): Promise<SystemInfo> {

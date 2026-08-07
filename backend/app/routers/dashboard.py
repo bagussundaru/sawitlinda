@@ -54,69 +54,26 @@ def list_conditions() -> list[schemas.ConditionInfo]:
     return [schemas.ConditionInfo(**vars(condition)) for condition in CONDITIONS]
 
 
-@router.get("/blocks", response_model=list[schemas.BlockInfo])
-def list_blocks(db: Session = Depends(get_db)) -> list[schemas.BlockInfo]:
-    """Plantation blocks as described by the uploads, for the block selector."""
-    rows = db.execute(
-        select(
-            models.Image.block,
-            func.count(func.distinct(models.Image.id)),
-            func.count(
-                func.distinct(
-                    case((models.Image.status == "analyzed", models.Image.id))
-                )
-            ),
-            func.sum(func.coalesce(models.Image.area_ha, 0.0)),
-        ).group_by(models.Image.block)
-    ).all()
 
-    # Tree counts need their own pass; joining detections would multiply the
-    # image-level figures above.
-    tree_rows = dict(
-        db.execute(
-            select(
-                models.Image.block,
-                func.count(models.Detection.id),
-            )
-            .join(models.Detection, models.Detection.image_id == models.Image.id)
-            .group_by(models.Image.block)
-        ).all()
-    )
-    affected_rows = dict(
-        db.execute(
-            select(
-                models.Image.block,
-                func.count(models.Detection.id),
-            )
-            .join(models.Detection, models.Detection.image_id == models.Image.id)
-            .where(models.Detection.severity != "sehat")
-            .group_by(models.Image.block)
-        ).all()
-    )
-
-    blocks = [
-        schemas.BlockInfo(
-            block=block,
-            images=images,
-            analyzed=analyzed,
-            trees=tree_rows.get(block, 0),
-            affected=affected_rows.get(block, 0),
-            area_ha=round(area, 2) if area else None,
-        )
-        for block, images, analyzed, area in rows
-    ]
-    # Named blocks first, alphabetically; the unlabelled bucket goes last.
-    blocks.sort(key=lambda b: (b.block is None, b.block or ""))
-    return blocks
 
 
 @router.get("/dashboard", response_model=schemas.Dashboard)
 def get_dashboard(
-    block: str | None = Query(None, description="Batasi agregat ke satu blok kebun"),
+    q: str | None = Query(None, description="Batasi ke citra yang labelnya memuat teks ini"),
     db: Session = Depends(get_db),
 ) -> schemas.Dashboard:
-    """Aggregate figures across every analysed image, for the statistics screen."""
-    image_filter = [models.Image.block == block] if block is not None else []
+    """Angka agregat lintas citra yang sudah dianalisis.
+
+    `q` menyaring berdasarkan label yang diberikan pengunggah. Pencocokan memakai
+    lower() + contains, bukan ILIKE, supaya perilakunya sama di PostgreSQL
+    (produksi) dan SQLite (pengujian).
+    """
+    kunci = q.strip().lower() if q and q.strip() else None
+    image_filter = (
+        [func.lower(func.coalesce(models.Image.label, models.Image.filename)).contains(kunci)]
+        if kunci
+        else []
+    )
 
     images_total = (
         db.scalar(select(func.count()).select_from(models.Image).where(*image_filter)) or 0
@@ -132,10 +89,10 @@ def get_dashboard(
 
     def detections_of():
         query = select(models.Detection)
-        if block is not None:
+        if image_filter:
             query = query.join(
                 models.Image, models.Detection.image_id == models.Image.id
-            ).where(models.Image.block == block)
+            ).where(*image_filter)
         return query.subquery()
 
     scope = detections_of()

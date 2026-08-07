@@ -41,31 +41,3 @@ def test_image_file_reports_a_missing_file_distinctly(client, uploaded_id, setti
     assert "tidak lagi tersedia" in response.json()["detail"]
 
 
-def test_map_is_empty_without_analysis(client, uploaded_id):
-    assert client.get("/api/map").json() == []
-
-
-def test_map_skips_detections_without_coordinates(client, uploaded_id):
-    # A generated image carries no EXIF, so the mock cannot geo-reference anything.
-    client.post(f"/api/analyze/{uploaded_id}")
-
-    assert client.get("/api/map").json() == []
-
-
-def test_map_returns_points_for_geo_referenced_detections(client, uploaded_id, monkeypatch):
-    import app.routers.results as results_router
-
-    real = results_router.run_inference
-    monkeypatch.setattr(
-        results_router,
-        "run_inference",
-        lambda path, gps=None, area_ha=None, **_: real(path, (-0.78912, 101.41233)),
-    )
-    analyzed = client.post(f"/api/analyze/{uploaded_id}").json()
-
-    points = client.get("/api/map").json()
-
-    assert len(points) == len(analyzed["detections"])
-    assert points[0]["filename"] == "blok_a3_001.jpg"
-    assert points[0]["image_id"] == uploaded_id
-    assert all(-90 <= p["gps"]["lat"] <= 90 for p in points)

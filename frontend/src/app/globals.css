@@ -105,197 +105,124 @@ body {
   }
 }
 
-/* Leaflet's own stylesheet, inlined: the artifact CSP and offline dev both rule
-   out fetching it from a CDN. Only the rules this app actually uses. */
-.leaflet-pane,
-.leaflet-tile,
-.leaflet-marker-icon,
-.leaflet-marker-shadow,
-.leaflet-tile-container,
-.leaflet-pane > svg,
-.leaflet-pane > canvas,
-.leaflet-zoom-box,
-.leaflet-image-layer,
-.leaflet-layer {
-  position: absolute;
-  left: 0;
-  top: 0;
+
+/* ==========================================================================
+   Gerak
+   --------------------------------------------------------------------------
+   Animasi di sini punya satu tugas: menjelaskan apa yang sedang terjadi —
+   apa yang baru muncul, apa yang sedang dikerjakan, apa yang berubah. Bukan
+   hiasan, sehingga durasinya pendek dan tidak menunda interaksi.
+
+   Seluruhnya dimatikan bagi pengguna yang meminta gerak dikurangi; lihat blok
+   prefers-reduced-motion di akhir berkas.
+   ========================================================================== */
+
+@keyframes naik {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
-.leaflet-container {
-  overflow: hidden;
-  background: #ddd;
-  outline-offset: 1px;
-  font-family: inherit;
+
+@keyframes masuk-skala {
+  from { opacity: 0; transform: scale(.96); }
+  to   { opacity: 1; transform: none; }
 }
-.leaflet-tile,
-.leaflet-marker-icon,
-.leaflet-marker-shadow {
-  user-select: none;
-  -webkit-user-drag: none;
+
+@keyframes kilau {
+  100% { transform: translateX(100%); }
 }
-.leaflet-tile::selection {
-  background: transparent;
+
+@keyframes denyut-titik {
+  0%, 100% { opacity: .25; transform: translateY(0); }
+  50%      { opacity: 1;   transform: translateY(-3px); }
 }
-.leaflet-safari .leaflet-tile {
-  image-rendering: -webkit-optimize-contrast;
+
+@keyframes putar {
+  to { transform: rotate(360deg); }
 }
-.leaflet-container {
-  -webkit-tap-highlight-color: transparent;
+
+@keyframes cincin {
+  0%   { box-shadow: 0 0 0 0 rgba(47,191,113,.45); }
+  70%  { box-shadow: 0 0 0 12px rgba(47,191,113,0); }
+  100% { box-shadow: 0 0 0 0 rgba(47,191,113,0); }
 }
-.leaflet-container a {
-  color: var(--green);
+
+/* Muncul berurutan. --i mengatur giliran, sehingga daftar tidak muncul
+   sekaligus dan mata sempat mengikuti urutannya. */
+.muncul {
+  animation: naik .42s cubic-bezier(.22,.9,.3,1) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
 }
-.leaflet-tile {
-  filter: inherit;
-  visibility: hidden;
+
+.muncul-skala {
+  animation: masuk-skala .34s cubic-bezier(.22,.9,.3,1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
 }
-.leaflet-tile-loaded {
-  visibility: inherit;
-}
-.leaflet-zoom-box {
-  width: 0;
-  height: 0;
-  box-sizing: border-box;
-  z-index: 800;
-}
-.leaflet-pane {
-  z-index: 400;
-}
-.leaflet-tile-pane {
-  z-index: 200;
-}
-.leaflet-overlay-pane {
-  z-index: 400;
-}
-.leaflet-shadow-pane {
-  z-index: 500;
-}
-.leaflet-marker-pane {
-  z-index: 600;
-}
-.leaflet-tooltip-pane {
-  z-index: 650;
-}
-.leaflet-popup-pane {
-  z-index: 700;
-}
-.leaflet-map-pane canvas {
-  z-index: 100;
-}
-.leaflet-map-pane svg {
-  z-index: 200;
-}
-.leaflet-control {
+
+/* Kerangka isi selama data dimuat. Lebih jujur daripada spinner: bentuknya
+   sudah menyerupai isi yang akan datang, jadi tata letak tidak melompat. */
+.kerangka {
   position: relative;
-  z-index: 800;
-  pointer-events: auto;
-  float: left;
-  clear: both;
-}
-.leaflet-top,
-.leaflet-bottom {
-  position: absolute;
-  z-index: 1000;
-  pointer-events: none;
-}
-.leaflet-top {
-  top: 0;
-}
-.leaflet-right {
-  right: 0;
-}
-.leaflet-bottom {
-  bottom: 0;
-}
-.leaflet-left {
-  left: 0;
-}
-.leaflet-right .leaflet-control {
-  float: right;
-  margin-right: 10px;
-}
-.leaflet-top .leaflet-control {
-  margin-top: 10px;
-}
-.leaflet-bottom .leaflet-control {
-  margin-bottom: 10px;
-}
-.leaflet-left .leaflet-control {
-  margin-left: 10px;
-}
-.leaflet-zoom-animated {
-  transform-origin: 0 0;
-}
-.leaflet-grab {
-  cursor: grab;
-}
-.leaflet-container {
-  cursor: grab;
-}
-.leaflet-control-zoom a {
-  display: block;
-  width: 26px;
-  height: 26px;
-  line-height: 26px;
-  text-align: center;
-  background: var(--card);
-  border-bottom: 1px solid var(--line);
-  text-decoration: none;
-  font-size: 18px;
-  font-weight: 700;
-}
-.leaflet-control-zoom {
-  border: 1px solid var(--line);
-  border-radius: 6px;
   overflow: hidden;
+  background: var(--line-soft);
+  border-radius: 12px;
 }
-.leaflet-control-attribution {
-  background: rgba(255, 255, 255, 0.8);
-  padding: 2px 6px;
-  font-size: 10px;
-  color: var(--muted);
-}
-.leaflet-popup {
+.kerangka::after {
+  content: "";
   position: absolute;
-  text-align: center;
-  margin-bottom: 20px;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, .55),
+    transparent
+  );
+  animation: kilau 1.4s infinite;
 }
-.leaflet-popup-content-wrapper {
-  background: var(--card);
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12);
+
+/* Tiga titik untuk pekerjaan yang sedang berjalan tanpa progres terukur. */
+.titik-sibuk span {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  animation: denyut-titik 1.1s infinite;
 }
-.leaflet-popup-content {
-  margin: 12px 14px;
-  font-size: 12.5px;
-  text-align: left;
-  line-height: 1.5;
+.titik-sibuk span:nth-child(2) { animation-delay: .15s; }
+.titik-sibuk span:nth-child(3) { animation-delay: .3s; }
+
+.berputar { animation: putar .9s linear infinite; }
+
+/* Menandai sesuatu yang baru saja berubah karena tindakan pengguna. */
+.berdenyut { animation: cincin 1.1s ease-out 2; }
+
+/* Kartu yang dapat diklik. Angkatannya kecil — cukup untuk terasa hidup,
+   tidak cukup untuk mengganggu saat menelusuri daftar panjang. */
+.kartu-tekan {
+  transition:
+    transform .18s cubic-bezier(.22,.9,.3,1),
+    box-shadow .18s ease,
+    border-color .18s ease;
 }
-.leaflet-popup-tip-container {
-  width: 40px;
-  height: 20px;
-  position: absolute;
-  left: 50%;
-  margin-left: -20px;
-  overflow: hidden;
-  pointer-events: none;
-}
-.leaflet-popup-tip {
-  width: 17px;
-  height: 17px;
-  padding: 1px;
-  margin: -10px auto 0;
-  transform: rotate(45deg);
-  background: var(--card);
-  border: 1px solid var(--line);
-}
-.leaflet-popup-close-button {
-  position: absolute;
-  top: 0;
-  right: 0;
-  padding: 4px 8px;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 16px;
+.kartu-tekan:hover { transform: translateY(-2px); }
+.kartu-tekan:active { transform: translateY(0) scale(.995); }
+
+/* Angka yang berubah saat penyaringan diganti. */
+.angka-halus { transition: color .25s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .muncul,
+  .muncul-skala,
+  .kerangka::after,
+  .titik-sibuk span,
+  .berputar,
+  .berdenyut {
+    animation: none !important;
+  }
+  .muncul,
+  .muncul-skala { opacity: 1; transform: none; }
+  .kartu-tekan { transition: none; }
+  .kartu-tekan:hover { transform: none; }
 }

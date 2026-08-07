@@ -68,7 +68,7 @@ export default function LaporanPage() {
               <thead>
                 <tr className="border-b border-[var(--line)] text-left text-[var(--muted)]">
                   <th className="pb-2 font-semibold">Berkas</th>
-                  <th className="pb-2 font-semibold">Blok</th>
+                  <th className="pb-2 font-semibold">Berkas</th>
                   <th className="pb-2 font-semibold">Waktu</th>
                   <th className="pb-2 text-right font-semibold">Pohon</th>
                   <th className="pb-2 text-right font-semibold">Bermasalah</th>
@@ -87,17 +87,13 @@ export default function LaporanPage() {
                         href={`/hasil/${item.image_id}`}
                         className="hover:text-[var(--green)] hover:underline"
                       >
-                        {item.filename}
+                        {item.label ?? item.filename}
                       </Link>
                     </td>
                     <td className="py-[10px]">
-                      {item.block ? (
-                        <span className="rounded-md bg-[var(--green-bg)] px-[7px] py-[2px] text-[11px] font-bold text-[var(--brand)]">
-                          {item.block}
-                        </span>
-                      ) : (
-                        <span className="text-[var(--muted-3)]">—</span>
-                      )}
+                      <span className="mono text-[11px] text-[var(--muted-3)]">
+                        {item.filename}
+                      </span>
                     </td>
                     <td className="py-[10px] text-[var(--muted)]">
                       {formatDate(item.captured_at ?? item.created_at)}

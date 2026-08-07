@@ -31,30 +31,3 @@ def test_berkas_model_palsu_tidak_dilaporkan_sebagai_model_siap(client, settings
     assert body["model_error"]
 
 
-def test_map_points_carry_the_capture_time(client, monkeypatch):
-    import io
-
-    from PIL import Image
-
-    import app.routers.results as results_router
-
-    buffer = io.BytesIO()
-    Image.new("RGB", (64, 48), "green").save(buffer, format="JPEG")
-    uploaded = client.post(
-        "/api/upload", files={"files": ("blok.jpg", buffer.getvalue(), "image/jpeg")}
-    )
-    image_id = uploaded.json()["images"][0]["image_id"]
-
-    real = results_router.run_inference
-    monkeypatch.setattr(
-        results_router,
-        "run_inference",
-        lambda path, gps=None, area_ha=None, **_: real(path, (-0.78912, 101.41233)),
-    )
-    client.post(f"/api/analyze/{image_id}")
-
-    points = client.get("/api/map").json()
-
-    assert points
-    # No EXIF on a generated image, so the field is present but empty.
-    assert "captured_at" in points[0]

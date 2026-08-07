@@ -13,18 +13,16 @@ perkiraan. Tanggal: 6 Agustus 2026 · 173 tes otomatis · terpasang di
 
 SawitScan AI adalah **lapisan inference & pelaporan** di atas model AI yang
 dilatih terpisah. Sistem menerima citra UAV, menjalankan deteksi kondisi tanaman
-kelapa sawit, lalu menyajikan hasilnya sebagai visualisasi, agregat, peta, dan
-laporan.
+kelapa sawit, lalu menyajikan hasilnya sebagai visualisasi, agregat, dan laporan.
 
 **Di dalam cakupan**
 
 | | |
 | --- | --- |
-| Unggah citra | Single & batch, validasi format, ekstraksi GPS/waktu dari EXIF |
+| Unggah citra | Single & batch, validasi format, **label per berkas**, ekstraksi waktu/GPS dari EXIF |
 | Inference | Menjalankan model final (`.pt`) yang diserahkan klien |
 | Visualisasi | Bounding box, label kondisi, keparahan, confidence |
-| Agregasi | Dashboard lintas citra, penyaringan per blok kebun |
-| Peta | Sebaran spasial berbasis GPS (Leaflet) |
+| Agregasi | Dashboard lintas citra, pencarian berdasarkan label |
 | Riwayat | Penyimpanan hasil, dapat dibuka kembali |
 | Laporan | Ekspor PDF & CSV |
 | Evaluasi | mAP@50, presisi/recall per kelas, confusion matrix |
@@ -40,7 +38,7 @@ Roboflow dan notebook. Sistem hanya menerima berkas model final.
 ```mermaid
 flowchart TB
     subgraph klien["Peramban"]
-        UI["Next.js 15 · React 19<br/>8 layar · Leaflet"]
+        UI["Next.js 15 · React 19<br/>8 layar"]
     end
 
     subgraph vm["VM Ubuntu — 2 vCPU, tanpa GPU"]
@@ -118,7 +116,7 @@ flowchart LR
 ```
 
 **Mengapa ada mock sama sekali.** Aplikasi dibangun berbulan sebelum model
-tersedia. Mock membuat seluruh alur — unggah, dashboard, peta, laporan — dapat
+tersedia. Mock membuat seluruh alur — unggah, dashboard, laporan — dapat
 dikembangkan dan diuji tanpa menunggu model. Sekarang ia berperan sebagai
 cadangan: satu berkas model rusak tidak melumpuhkan aplikasi.
 
@@ -146,19 +144,15 @@ tidak memuat labelnya. Nilainya diturunkan dari aturan tetap di `yolo.py`:
 
 `GET /api/system` melaporkan `severity_source: "rule"`.
 
-**Koordinat per pohon** — model mengembalikan kotak dalam piksel. Mengubahnya
-menjadi lintang/bujur memerlukan skala tanah (meter per piksel), yang tidak ada
-di dalam citra. Skala dihitung dari **luas area yang diisi operator saat
-mengunggah**:
+**Koordinat per pohon** — tidak lagi dihitung. Mengubah posisi piksel menjadi
+lintang/bujur memerlukan skala tanah yang tidak ada di dalam citra; nilainya dulu
+diturunkan dari luas area yang diisi operator. Sejak konsep bergeser ke
+pemindaian citra berlabel, luas area tidak lagi diminta, sehingga skala itu tidak
+dapat diketahui dan koordinat per pohon dibiarkan kosong.
 
-```
-luas_m2   = area_ha × 10.000
-lebar_m   = √(luas_m2 × rasio_sisi_bingkai)
-m_per_px  = lebar_m / lebar_piksel
-```
-
-Tanpa luas area, deteksi **sengaja tidak diberi koordinat**. Peta kosong lebih
-baik daripada titik yang salah tempat.
+Koordinat **tingkat citra** dari EXIF tetap dibaca dan disimpan. Kolomnya
+dipertahankan utuh: menghidupkan kembali fitur peta kelak tidak memerlukan
+pemulihan data apa pun.
 
 ---
 
@@ -235,6 +229,7 @@ Enam migrasi Alembic, semuanya teruji naik dan turun:
 | `0005` | tabel evaluations |
 | `0006` | app_settings (kunci API dari layar Pengaturan) |
 | `0007` | users, sessions, training_runs |
+| `0008` | label per citra (peran blok kebun digantikan) |
 
 **`evaluations` menyimpan `inference_mode`.** Angka yang dihasilkan mock tidak
 akan pernah tertukar dengan angka model — layar Evaluasi menandai tiap baris dan
@@ -252,7 +247,7 @@ sequenceDiagram
     participant M as YOLOv8m
     participant DB as PostgreSQL
 
-    O->>FE: pilih citra + blok + luas area
+    O->>FE: pilih citra + beri label tiap berkas
     FE->>BE: POST /api/upload
     BE->>BE: validasi format & ukuran
     BE->>BE: baca EXIF (GPS, waktu)
@@ -267,10 +262,10 @@ sequenceDiagram
     BE->>DB: simpan detections, status: analyzed
     BE-->>FE: hasil sesuai kontrak JSON
 
-    O->>FE: buka Dashboard / Peta / Laporan
+    O->>FE: buka Dashboard / Riwayat / Laporan
     FE->>BE: GET /api/dashboard?block=…
     BE->>DB: agregat
-    BE-->>FE: KPI, distribusi, titik peta
+    BE-->>FE: KPI, distribusi, daftar citra
 ```
 
 ### Kontrak JSON
@@ -354,12 +349,11 @@ Next.js 15 App Router, React 19, Tailwind 4. Delapan layar:
 
 | Rute | Isi |
 | --- | --- |
-| `/` | Dashboard: KPI, peta, panel citra, distribusi, antrian |
-| `/unggah` | Unggah + keterangan (blok, luas, koordinat) |
+| `/` | Dashboard: KPI, pencarian label, galeri citra, panel hasil, distribusi, antrian |
+| `/unggah` | Unggah + label per berkas, dengan pratinjau |
 | `/proses` | Animasi pipeline saat analisis berjalan |
 | `/hasil/{id}` | Bbox di atas citra, panel temuan, kartu Analisis AI |
 | `/riwayat` | Daftar citra |
-| `/peta` | Peta sebaran penuh (Leaflet) |
 | `/laporan` | Tabel unduhan PDF/CSV |
 | `/evaluasi` | mAP, metrik per kelas, confusion matrix |
 | `/pengaturan` | Kunci API, acuan kondisi, status sistem |
@@ -368,12 +362,14 @@ Next.js 15 App Router, React 19, Tailwind 4. Delapan layar:
 memanggil `fetch()` langsung — mengganti alamat API atau menambah header cukup
 di satu berkas.
 
-**Leaflet dimuat dinamis dengan `ssr: false`.** Ia menyentuh `window` saat impor.
+**Animasi dinyatakan di CSS global, bukan di tiap komponen.** Kelas `.muncul`,
+`.kerangka`, `.titik-sibuk`, dan `.kartu-tekan` dipakai bersama seluruh layar,
+sehingga geraknya konsisten dan seluruhnya dapat dimatikan sekaligus lewat
+`prefers-reduced-motion`. Animasi di sini bertugas menjelaskan apa yang sedang
+terjadi — apa yang baru muncul, apa yang sedang dikerjakan — bukan menghias.
 
-**`maxZoom` dikunci 19.** Pohon dalam satu blok berjarak beberapa meter, sehingga
-`fitBounds` memilih zoom melebihi batas ubin OpenStreetMap — pada keadaan itu
-Leaflet menyembunyikan seluruh lapisan peta dan hanya menyisakan titik di atas
-latar kosong.
+**Kerangka isi, bukan spinner, selama data dimuat.** Bentuknya sudah menyerupai
+isi yang akan datang, sehingga tata letak tidak melompat saat data tiba.
 
 ---
 
@@ -630,11 +626,13 @@ semua akun punya hak yang sama: siapa pun yang dapat masuk dapat memicu training
 GPU berbayar dan mengganti kunci API. Belum ada peran atau audit per pengguna.
 
 **Keparahan tidak berdasar data.** Dataset tidak memuat labelnya; nilainya
-berasal dari aturan tetap. Ini memengaruhi `summary.severe`, warna titik peta,
-dan kartu "Kasus Berat".
+berasal dari aturan tetap. Ini memengaruhi `summary.severe` dan kartu
+"Kasus Berat".
 
-**Peta memerlukan dua syarat.** Koordinat citra (EXIF atau isian manual) *dan*
-luas area. Tanpa keduanya, deteksi tidak diberi koordinat.
+**Tidak ada pemetaan spasial.** Konsepnya kini pemindaian citra berlabel:
+identitas citra berasal dari nama yang diberikan pengunggah, bukan dari
+koordinat. Kolom GPS dan blok masih ada di database beserta datanya, tetapi tidak
+diisi maupun ditampilkan lagi.
 
 **Tiling belum ada.** Proposal menyebut pemotongan citra bila diperlukan. Sistem
 saat ini menganggap satu berkas = satu bingkai UAV. Bila citra berupa

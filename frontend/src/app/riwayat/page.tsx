@@ -66,20 +66,13 @@ export default function RiwayatPage() {
           const card = (
             <div className="h-full rounded-[13px] border border-[var(--line)] bg-[var(--card)] p-4 transition hover:border-[var(--green-l)] hover:shadow-[0_6px_18px_rgba(15,110,86,.12)]">
               <div className="truncate text-[13.5px] font-semibold">
-                {item.filename}
+                {item.label ?? item.filename}
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-[var(--muted)]">
-                {item.block ? (
-                  <span className="rounded-md bg-[var(--green-bg)] px-[7px] py-[2px] font-bold text-[var(--brand)]">
-                    Blok {item.block}
-                  </span>
-                ) : (
-                  <span className="rounded-md bg-[var(--line-soft)] px-[7px] py-[2px] text-[var(--muted-3)]">
-                    Tanpa blok
-                  </span>
-                )}
+                <span className="mono rounded-md bg-[var(--line-soft)] px-[7px] py-[2px] text-[10.5px] text-[var(--muted-3)]">
+                  {item.filename}
+                </span>
                 <span>{formatDate(item.captured_at ?? item.created_at)}</span>
-                {item.area_ha && <span>· {item.area_ha} ha</span>}
                 {item.gps && (
                   <span className="mono">
                     · {item.gps.lat.toFixed(4)}, {item.gps.lng.toFixed(4)}

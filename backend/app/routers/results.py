@@ -178,39 +178,6 @@ def get_image_file(image_id: UUID, db: Session = Depends(get_db)) -> FileRespons
     return FileResponse(path, filename=image.filename)
 
 
-@router.get("/map", response_model=list[schemas.MapPoint])
-def list_map_points(
-    block: str | None = Query(None, description="Batasi ke satu blok kebun"),
-    db: Session = Depends(get_db),
-) -> list[schemas.MapPoint]:
-    """Every geo-referenced detection across all images, for the spread map."""
-    query = (
-        select(models.Detection, models.Image)
-        .join(models.Image, models.Detection.image_id == models.Image.id)
-        .where(models.Detection.gps_lat.is_not(None))
-        .where(models.Detection.gps_lng.is_not(None))
-        .order_by(models.Detection.id)
-    )
-    if block is not None:
-        query = query.where(models.Image.block == block)
-    rows = db.execute(query).all()
-
-    return [
-        schemas.MapPoint(
-            detection_id=detection.id,
-            image_id=image.id,
-            filename=image.filename,
-            block=image.block,
-            captured_at=image.captured_at,
-            condition=detection.condition,
-            severity=detection.severity,
-            confidence=detection.confidence,
-            gps=schemas.Gps(lat=detection.gps_lat, lng=detection.gps_lng),
-        )
-        for detection, image in rows
-    ]
-
-
 @router.get("/results/{image_id}", response_model=schemas.DetectionResult)
 def get_result(image_id: UUID, db: Session = Depends(get_db)) -> schemas.DetectionResult:
     return mappers.detection_result(require_analyzed_image(db, image_id))

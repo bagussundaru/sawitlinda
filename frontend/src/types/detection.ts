@@ -45,9 +45,9 @@ export interface AiAssessment {
 export interface DetectionResult {
   image_id: string;
   filename: string;
+  /** Nama yang diberikan pengunggah; identitas citra di seluruh aplikasi. */
+  label: string | null;
   captured_at: string | null;
-  block: string | null;
-  area_ha: number | null;
   gps: Gps | null;
   summary: DetectionSummary;
   detections: Detection[];
@@ -59,9 +59,8 @@ export type ImageStatus = "uploaded" | "analyzed";
 export interface ImageItem {
   image_id: string;
   filename: string;
+  label: string | null;
   captured_at: string | null;
-  block: string | null;
-  area_ha: number | null;
   gps: Gps | null;
   status: ImageStatus;
   created_at: string;
@@ -73,19 +72,6 @@ export interface ResultListItem extends ImageItem {
   summary: DetectionSummary | null;
 }
 
-/** One detected tree with coordinates, for the spread map. */
-export interface MapPoint {
-  detection_id: number;
-  image_id: string;
-  filename: string;
-  block: string | null;
-  captured_at: string | null;
-  condition: string;
-  severity: Severity;
-  confidence: number;
-  gps: Gps;
-}
-
 /** Reference entry: how to read a condition and what to do about it. */
 export interface ConditionInfo {
   key: string;
@@ -93,16 +79,6 @@ export interface ConditionInfo {
   appearance: string;
   interpretation: string;
   action: string;
-}
-
-/** One plantation block as described by the uploads. */
-export interface BlockInfo {
-  block: string | null;
-  images: number;
-  analyzed: number;
-  trees: number;
-  affected: number;
-  area_ha: number | null;
 }
 
 export interface NamedCount {

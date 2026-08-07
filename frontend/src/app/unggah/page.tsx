@@ -4,66 +4,83 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Card } from "@/components/Card";
-import { ApiError, listBlocks, uploadImages } from "@/lib/api";
-import type { BlockInfo } from "@/types/detection";
+import { ApiError, uploadImages } from "@/lib/api";
 
 const ACCEPT = ".jpg,.jpeg,.png,.tif,.tiff";
 
-function Field({
-  label,
-  hint,
-  children,
-}: {
+/** Satu berkas terpilih beserta label dan pratinjaunya. */
+interface Antrean {
+  file: File;
   label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex flex-col gap-[6px]">
-      <span className="text-[12px] font-semibold text-[var(--muted)]">{label}</span>
-      {children}
-      {hint && <span className="text-[10.5px] text-[var(--muted-3)]">{hint}</span>}
-    </label>
-  );
+  preview: string;
+  key: string;
 }
 
-const inputClass =
-  "rounded-[10px] border border-[var(--line)] bg-white px-3 py-[9px] text-[13px] outline-none focus:border-[var(--accent)]";
+/** Nama berkas tanpa ekstensi — tebakan awal yang masuk akal untuk label. */
+function labelAwal(nama: string): string {
+  return nama.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim() || nama;
+}
+
+function ukuran(bytes: number): string {
+  return bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
 export default function UnggahPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [files, setFiles] = useState<File[]>([]);
-  const [block, setBlock] = useState("");
-  const [areaHa, setAreaHa] = useState("");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
-  const [knownBlocks, setKnownBlocks] = useState<BlockInfo[]>([]);
+  const [antrean, setAntrean] = useState<Antrean[]>([]);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // URL objek pratinjau dilepas saat komponen dibongkar; tanpa ini setiap
+  // pemilihan berkas menahan memori gambar sampai halaman ditutup.
   useEffect(() => {
-    listBlocks()
-      .then((blocks) => setKnownBlocks(blocks.filter((b) => b.block)))
-      .catch(() => setKnownBlocks([]));
+    return () => antrean.forEach((item) => URL.revokeObjectURL(item.preview));
+    // Sengaja hanya saat unmount: pelepasan per-item ditangani hapus().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function tambah(daftar: FileList | File[]) {
+    const baru = Array.from(daftar).map((file, i) => ({
+      file,
+      label: labelAwal(file.name),
+      preview: URL.createObjectURL(file),
+      key: `${file.name}-${file.size}-${Date.now()}-${i}`,
+    }));
+    setAntrean((sekarang) => [...sekarang, ...baru]);
+    setError(null);
+  }
+
+  function hapus(key: string) {
+    setAntrean((sekarang) => {
+      const item = sekarang.find((x) => x.key === key);
+      if (item) URL.revokeObjectURL(item.preview);
+      return sekarang.filter((x) => x.key !== key);
+    });
+  }
+
+  function ubahLabel(key: string, nilai: string) {
+    setAntrean((sekarang) =>
+      sekarang.map((x) => (x.key === key ? { ...x, label: nilai } : x)),
+    );
+  }
+
   async function submit() {
-    if (files.length === 0) {
+    if (antrean.length === 0) {
       setError("Pilih dulu citra yang akan diunggah.");
       return;
     }
-    if ((lat.trim() === "") !== (lng.trim() === "")) {
-      setError("Lintang dan bujur harus diisi berpasangan.");
-      return;
-    }
-
     setBusy(true);
     setError(null);
     try {
-      const { images } = await uploadImages(files, { block, areaHa, lat, lng });
+      const { images } = await uploadImages(
+        antrean.map((x) => x.file),
+        antrean.map((x) => x.label),
+      );
       router.push(`/proses?ids=${images.map((i) => i.image_id).join(",")}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Unggahan gagal. Coba lagi.");
@@ -73,16 +90,20 @@ export default function UnggahPage() {
 
   return (
     <>
-      <header>
+      <header className="muncul">
         <div className="text-[11px] font-bold tracking-[0.15em] text-[#5c7a6b]">
           MASUKKAN DATA
         </div>
         <h1 className="mt-[5px] text-[29px] font-extrabold tracking-[-0.035em]">
-          Unggah Citra UAV
+          Unggah &amp; Beri Label
         </h1>
+        <p className="mt-2 max-w-[560px] text-[13px] text-[var(--muted)]">
+          Setiap citra diberi nama sendiri. Nama itulah yang muncul di dashboard,
+          riwayat, dan laporan — jadi tulis yang mudah Anda kenali kembali.
+        </p>
       </header>
 
-      <div className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
+      <div className="muncul" style={{ ["--i" as string]: 1 }}>
         <Card
           title="Berkas citra"
           subtitle="JPG / PNG / TIFF · satu atau beberapa sekaligus"
@@ -105,20 +126,26 @@ export default function UnggahPage() {
             onDrop={(event) => {
               event.preventDefault();
               setDragging(false);
-              setFiles(Array.from(event.dataTransfer.files));
+              tambah(event.dataTransfer.files);
             }}
-            className={`cursor-pointer rounded-[14px] border-2 border-dashed px-5 py-10 text-center transition ${
+            className={`cursor-pointer rounded-[14px] border-2 border-dashed px-5 py-10 text-center transition duration-200 ${
               dragging
-                ? "border-[var(--accent)] bg-[#dff2e7]"
+                ? "scale-[1.01] border-[var(--accent)] bg-[#dff2e7] shadow-[0_0_0_4px_rgba(47,191,113,.12)]"
                 : "border-[#b6d9c4] bg-[#f1f8f3] hover:bg-[#e7f4ec]"
             }`}
           >
-            <div className="text-[34px] leading-none">☁️</div>
+            <div
+              className={`text-[34px] leading-none transition-transform duration-300 ${
+                dragging ? "-translate-y-1 scale-110" : ""
+              }`}
+            >
+              ☁️
+            </div>
             <h3 className="mb-1 mt-3 text-[14px] font-bold text-[var(--brand)]">
-              Tarik &amp; letakkan citra di sini
+              {dragging ? "Lepaskan di sini" : "Tarik & letakkan citra di sini"}
             </h3>
             <p className="text-[12px] text-[var(--muted-2)]">
-              atau klik untuk memilih berkas
+              atau klik untuk memilih dari komputer
             </p>
             <input
               ref={inputRef}
@@ -127,89 +154,72 @@ export default function UnggahPage() {
               multiple
               hidden
               onChange={(event) => {
-                setFiles(Array.from(event.target.files ?? []));
+                if (event.target.files) tambah(event.target.files);
                 event.target.value = "";
               }}
             />
           </div>
 
-          {files.length > 0 && (
-            <ul className="space-y-1 text-[12px] text-[var(--muted)]">
-              {files.map((file) => (
-                <li key={file.name} className="flex justify-between gap-3">
-                  <span className="truncate">📄 {file.name}</span>
-                  <span className="mono flex-none text-[11px] text-[var(--muted-3)]">
-                    {(file.size / 1024 / 1024).toFixed(1)} MB
-                  </span>
-                </li>
+          {antrean.length > 0 && (
+            <div className="flex flex-col gap-[10px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] font-bold text-[var(--ink)]">
+                  {antrean.length} citra siap diunggah
+                </span>
+                <button
+                  onClick={() => {
+                    antrean.forEach((x) => URL.revokeObjectURL(x.preview));
+                    setAntrean([]);
+                  }}
+                  disabled={busy}
+                  className="text-[11.5px] font-semibold text-[var(--red)] disabled:opacity-50"
+                >
+                  Kosongkan
+                </button>
+              </div>
+
+              {antrean.map((item, i) => (
+                <div
+                  key={item.key}
+                  style={{ ["--i" as string]: i }}
+                  className="muncul flex items-center gap-3 rounded-[12px] border border-[var(--line)] bg-white p-[10px]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.preview}
+                    alt=""
+                    className="h-[52px] w-[68px] shrink-0 rounded-[8px] object-cover"
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
+                    <input
+                      value={item.label}
+                      onChange={(e) => ubahLabel(item.key, e.target.value)}
+                      disabled={busy}
+                      placeholder={item.file.name}
+                      aria-label={`Label untuk ${item.file.name}`}
+                      className="w-full rounded-[8px] border border-[var(--line)] bg-white px-[10px] py-[7px] text-[12.5px] font-semibold outline-none transition focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(47,191,113,.13)]"
+                    />
+                    <span className="mono truncate text-[10.5px] text-[var(--muted-3)]">
+                      {item.file.name} · {ukuran(item.file.size)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => hapus(item.key)}
+                    disabled={busy}
+                    aria-label={`Hapus ${item.file.name}`}
+                    className="shrink-0 rounded-[8px] px-[9px] py-[7px] text-[15px] leading-none text-[var(--muted-3)] transition hover:bg-[var(--red-bg)] hover:text-[var(--red)] disabled:opacity-40"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-        </Card>
-
-        <Card
-          title="Keterangan citra"
-          subtitle="Tidak bisa disimpulkan dari berkasnya, jadi diisi di sini"
-        >
-          <Field label="Blok kebun" hint="Misal A-3. Dipakai untuk mengelompokkan hasil.">
-            <input
-              className={inputClass}
-              list="blok-dikenal"
-              value={block}
-              onChange={(event) => setBlock(event.target.value)}
-              placeholder="A-3"
-            />
-            <datalist id="blok-dikenal">
-              {knownBlocks.map((item) => (
-                <option key={item.block} value={item.block ?? ""} />
-              ))}
-            </datalist>
-          </Field>
-
-          <Field
-            label="Luas area tercakup (ha)"
-            hint="Wajib diisi agar titik pohon muncul di peta — dari luas inilah skala tanah (meter per piksel) dihitung."
-          >
-            <input
-              className={inputClass}
-              type="number"
-              min="0"
-              step="0.1"
-              value={areaHa}
-              onChange={(event) => setAreaHa(event.target.value)}
-              placeholder="4.5"
-            />
-          </Field>
-
-          <div>
-            <div className="mb-[6px] text-[12px] font-semibold text-[var(--muted)]">
-              Titik koordinat
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                className={inputClass}
-                value={lat}
-                onChange={(event) => setLat(event.target.value)}
-                placeholder="Lintang −0.78912"
-              />
-              <input
-                className={inputClass}
-                value={lng}
-                onChange={(event) => setLng(event.target.value)}
-                placeholder="Bujur 101.41233"
-              />
-            </div>
-            <p className="mt-[6px] text-[10.5px] leading-relaxed text-[var(--muted-3)]">
-              Kosongkan bila citra membawa GPS di EXIF — metadata asli selalu
-              dipakai lebih dulu, isian ini hanya menambal bila EXIF kosong.
-              Tanpa koordinat, citra tetap dianalisis tapi tidak muncul di peta.
-            </p>
-          </div>
 
           {error && (
             <p
               role="alert"
-              className="rounded-[10px] border border-[#f0c9c9] bg-[var(--red-bg)] px-3 py-[10px] text-[12px] text-[var(--red)]"
+              className="muncul rounded-[10px] border border-[#f0c9c9] bg-[var(--red-bg)] px-3 py-[10px] text-[12px] text-[var(--red)]"
             >
               {error}
             </p>
@@ -217,11 +227,45 @@ export default function UnggahPage() {
 
           <button
             onClick={submit}
-            disabled={busy}
-            className="rounded-[11px] bg-[var(--brand)] px-5 py-[12px] text-[13px] font-bold text-white disabled:opacity-60"
+            disabled={busy || antrean.length === 0}
+            className="kartu-tekan flex items-center justify-center gap-2 rounded-[11px] bg-[var(--brand)] px-5 py-[12px] text-[13px] font-bold text-white disabled:opacity-50"
           >
-            {busy ? "Mengunggah…" : `Unggah & Analisis${files.length ? ` (${files.length})` : ""}`}
+            {busy ? (
+              <>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="berputar"
+                  aria-hidden
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    opacity=".25"
+                  />
+                  <path
+                    d="M21 12a9 9 0 0 0-9-9"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Mengunggah…
+              </>
+            ) : (
+              `Unggah ${antrean.length || ""} citra & analisis`.trim()
+            )}
           </button>
+
+          <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
+            Waktu pengambilan dibaca otomatis dari metadata EXIF bila ada. Label
+            yang dikosongkan akan memakai nama berkas.
+          </p>
         </Card>
       </div>
     </>

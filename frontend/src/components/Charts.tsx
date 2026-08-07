@@ -62,7 +62,7 @@ export function ConditionBars({
       })}
       {onFocus && (
         <p className="mt-1 text-[11.5px] text-[var(--muted-2)]">
-          Klik baris untuk menyorot kondisi tersebut di peta.
+          Klik baris untuk menyorot kondisi tersebut.
         </p>
       )}
     </>
