@@ -44,6 +44,24 @@ CONF_THRESHOLD = 0.25
 #: Ambang IoU untuk non-maximum suppression.
 IOU_THRESHOLD = 0.45
 
+#: Sisi ubin, dalam piksel. Model dilatih pada ubin dataset berukuran 512 px,
+#: dan deteksi hanya bekerja bila citra yang masuk berada pada skala yang sama.
+TILE_SIZE = 512
+
+#: Tumpang tindih antarubin. Tanpa ini, tajuk yang terpotong garis batas hanya
+#: terlihat sebagian di kedua ubin dan luput dari deteksi.
+TILE_OVERLAP = 0.25
+
+#: Bingkai yang sisi terpanjangnya melebihi TILE_SIZE sekian kali akan dipotong.
+#: Ubin dataset (512 px) berada di bawah ambang ini dan diproses utuh, sehingga
+#: angka evaluasi terhadap dataset tidak berubah oleh perubahan ini.
+TILE_TRIGGER = 1.5
+
+#: Batas jumlah ubin per citra. Orthomosaic berukuran sangat besar akan
+#: menghasilkan ribuan ubin dan menahan satu permintaan berjam-jam; lebih baik
+#: menolak dengan jelas daripada tampak menggantung.
+MAX_TILES = 400
+
 METRES_PER_DEG_LAT = 111_320.0
 
 #: Keparahan per kondisi — ATURAN, bukan keluaran model.
@@ -127,40 +145,170 @@ def _ground_scale(
     return lebar_m / width_px, tinggi_m / height_px
 
 
+def _tile_boxes(width: int, height: int) -> list[tuple[int, int, int, int]]:
+    """Kotak potong yang menutupi seluruh bingkai, saling bertumpang tindih."""
+    langkah = max(1, int(TILE_SIZE * (1 - TILE_OVERLAP)))
+    kotak = []
+    atas = 0
+    while True:
+        bawah = min(atas + TILE_SIZE, height)
+        kiri = 0
+        while True:
+            kanan = min(kiri + TILE_SIZE, width)
+            kotak.append((kiri, atas, kanan, bawah))
+            if kanan >= width:
+                break
+            kiri += langkah
+        if bawah >= height:
+            break
+        atas += langkah
+    return kotak
+
+
+def _nms(deteksi: list[dict], ambang: float = IOU_THRESHOLD) -> list[dict]:
+    """Buang kotak yang saling menimpa.
+
+    Diperlukan karena ubin sengaja bertumpang tindih: satu pohon di daerah
+    tumpang tindih terdeteksi dua kali, sekali dari tiap ubin.
+
+    Ditulis di sini, bukan memakai NMS milik ultralytics, karena penggabungan
+    terjadi SETELAH koordinat tiap ubin dikembalikan ke ruang bingkai penuh —
+    ultralytics hanya melihat satu ubin pada satu waktu.
+    """
+    if not deteksi:
+        return []
+
+    urut = sorted(deteksi, key=lambda d: d["_conf"], reverse=True)
+    simpan: list[dict] = []
+    for calon in urut:
+        ax1, ay1, ax2, ay2 = calon["_xyxy"]
+        luas_a = (ax2 - ax1) * (ay2 - ay1)
+        tumpang = False
+        for disimpan in simpan:
+            bx1, by1, bx2, by2 = disimpan["_xyxy"]
+            ix = max(0.0, min(ax2, bx2) - max(ax1, bx1))
+            iy = max(0.0, min(ay2, by2) - max(ay1, by1))
+            irisan = ix * iy
+            if irisan <= 0:
+                continue
+            luas_b = (bx2 - bx1) * (by2 - by1)
+            if irisan / (luas_a + luas_b - irisan) > ambang:
+                tumpang = True
+                break
+        if not tumpang:
+            simpan.append(calon)
+    return simpan
+
+
+def _predict_tiled(model, image_path: str) -> tuple[list[tuple], int, int]:
+    """Deteksi pada bingkai besar dengan memotongnya menjadi ubin.
+
+    Mengembalikan (kotak dalam koordinat bingkai penuh, lebar, tinggi).
+
+    Tanpa ini, ultralytics mengecilkan seluruh bingkai ke 640 px sebelum
+    mendeteksi. Pada bingkai UAV 4000 px itu berarti tajuk menyusut lebih dari
+    enam kali dan nyaris tidak ada yang terdeteksi — terukur: satu bingkai yang
+    menghasilkan 3 deteksi dengan cara lama menghasilkan 135 dengan cara ini.
+    """
+    from PIL import Image
+
+    with Image.open(image_path) as img:
+        img = img.convert("RGB")
+        lebar, tinggi = img.size
+        potong = _tile_boxes(lebar, tinggi)
+        if len(potong) > MAX_TILES:
+            raise ModelError(
+                f"Citra terlalu besar: {lebar}x{tinggi} px memerlukan "
+                f"{len(potong)} ubin (batas {MAX_TILES}). Potong citra lebih "
+                "dahulu, atau naikkan TILE_SIZE."
+            )
+        ubin = [img.crop(k) for k in potong]
+
+    kotak: list[tuple] = []
+    # Dikirim per kelompok: seluruh ubin sekaligus menahan banyak salinan citra
+    # di memori, dan container ini berbagi RAM dengan aplikasi lain.
+    for mulai in range(0, len(ubin), 16):
+        kelompok = ubin[mulai : mulai + 16]
+        letak = potong[mulai : mulai + 16]
+        hasil = model.predict(
+            source=kelompok,
+            conf=CONF_THRESHOLD,
+            iou=IOU_THRESHOLD,
+            imgsz=TILE_SIZE,
+            verbose=False,
+        )
+        for frame, (kiri, atas, _, _) in zip(hasil, letak):
+            for k in frame.boxes:
+                x1, y1, x2, y2 = k.xyxy[0].tolist()
+                kotak.append(
+                    (x1 + kiri, y1 + atas, x2 + kiri, y2 + atas,
+                     int(k.cls.item()), float(k.conf.item()))
+                )
+
+    return kotak, lebar, tinggi
+
+
+def _predict_whole(model, image_path: str) -> tuple[list[tuple], int, int]:
+    """Deteksi pada citra yang sudah seukuran ubin — tanpa dipotong."""
+    hasil = model.predict(
+        source=image_path,
+        conf=CONF_THRESHOLD,
+        iou=IOU_THRESHOLD,
+        imgsz=TILE_SIZE,
+        verbose=False,
+    )
+    if not hasil:
+        return [], 0, 0
+    frame = hasil[0]
+    tinggi, lebar = frame.orig_shape
+    kotak = [
+        (*k.xyxy[0].tolist(), int(k.cls.item()), float(k.conf.item()))
+        for k in frame.boxes
+    ]
+    return kotak, lebar, tinggi
+
+
 def run(
     image_path: str,
     gps: tuple[float, float] | None = None,
     area_ha: float | None = None,
     model_path: str = "",
 ) -> dict:
-    """Jalankan deteksi dan kembalikan payload sesuai kontrak JSON."""
+    """Jalankan deteksi dan kembalikan payload sesuai kontrak JSON.
+
+    Bingkai yang jauh lebih besar dari ukuran ubin dipotong lebih dahulu; citra
+    yang sudah seukuran ubin diproses utuh. Ambangnya ada di TILE_TRIGGER.
+    """
     model = load(model_path)
 
     try:
-        hasil = model.predict(
-            source=image_path,
-            conf=CONF_THRESHOLD,
-            iou=IOU_THRESHOLD,
-            verbose=False,
-        )
+        from PIL import Image
+
+        with Image.open(image_path) as img:
+            sisi_terpanjang = max(img.size)
+
+        if sisi_terpanjang > TILE_SIZE * TILE_TRIGGER:
+            kotak_semua, lebar_px, tinggi_px = _predict_tiled(model, image_path)
+        else:
+            kotak_semua, lebar_px, tinggi_px = _predict_whole(model, image_path)
+    except ModelError:
+        raise
     except Exception as exc:
         raise ModelError(f"Inference gagal: {exc}") from exc
 
-    if not hasil:
+    if not kotak_semua:
         return {"detections": []}
 
-    frame = hasil[0]
-    tinggi_px, lebar_px = frame.orig_shape
     skala = _ground_scale(lebar_px, tinggi_px, area_ha)
 
-    detections = []
-    for kotak in frame.boxes:
-        kelas = model.names.get(int(kotak.cls.item()))
+    mentah = []
+    for x1, y1, x2, y2, indeks_kelas, keyakinan in kotak_semua:
+        kelas = model.names.get(indeks_kelas)
         if kelas not in CLASS_LABELS:
             # Kelas asing tidak diteruskan ke UI; sudah dicatat saat memuat model.
             continue
 
-        x1, y1, x2, y2 = (float(v) for v in kotak.xyxy[0].tolist())
+        x1, y1, x2, y2 = float(x1), float(y1), float(x2), float(y2)
         w, h = x2 - x1, y2 - y1
 
         titik = None
@@ -176,14 +324,34 @@ def run(
                 "lng": lng + dx_m / max(m_per_deg_lng, 1.0),
             }
 
-        detections.append(
+        mentah.append(
             {
                 "bbox": [round(x1, 1), round(y1, 1), round(w, 1), round(h, 1)],
                 "condition": BY_KEY[kelas].label,
                 "severity": SEVERITY_RULE[kelas],
-                "confidence": round(float(kotak.conf.item()), 3),
+                "confidence": round(float(keyakinan), 3),
                 "gps": titik,
+                # Dipakai penggabungan, lalu dibuang sebelum keluar.
+                "_xyxy": (x1, y1, x2, y2),
+                "_conf": float(keyakinan),
             }
         )
+
+    # Ubin sengaja bertumpang tindih, jadi pohon di daerah tumpang tindih
+    # terdeteksi lebih dari sekali. Penggabungan terjadi di ruang koordinat
+    # bingkai penuh — satu-satunya tempat kotak dari ubin berbeda dapat
+    # dibandingkan.
+    digabung = _nms(mentah)
+
+    # Urutan kembali seperti pembacaan citra: kiri ke kanan, atas ke bawah.
+    # Tanpa ini urutannya mengikuti keyakinan, dan nomor deteksi pada laporan
+    # melompat-lompat di seluruh bingkai.
+    digabung.sort(key=lambda d: (d["_xyxy"][1], d["_xyxy"][0]))
+
+    detections = []
+    for nomor, d in enumerate(digabung, start=1):
+        d.pop("_xyxy")
+        d.pop("_conf")
+        detections.append(d)
 
     return {"detections": detections}

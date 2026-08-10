@@ -41,6 +41,22 @@ def bersihkan_cache():
     yolo._model_path = None
 
 
+@pytest.fixture(autouse=True)
+def citra_nyata(tmp_path, monkeypatch):
+    """Berkas citra sungguhan di direktori kerja tes.
+
+    `run()` membuka citra untuk mengukur sisinya — itu yang menentukan citra
+    dipotong menjadi ubin atau tidak. Berkasnya sengaja kecil supaya jalur yang
+    diuji di berkas ini adalah jalur tanpa pemotongan; ukuran bingkai yang
+    dipakai perhitungan tetap datang dari `orig_shape` milik model tiruan.
+    """
+    from PIL import Image
+
+    monkeypatch.chdir(tmp_path)
+    for nama in ("citra.jpg", "c.jpg"):
+        Image.new("RGB", (320, 240), "green").save(tmp_path / nama)
+
+
 def _pasang(monkeypatch, model):
     monkeypatch.setattr(yolo, "load", lambda path: model)
 
@@ -231,3 +247,82 @@ class TestStatusMesin:
         assert body["inference_mode"] == "mock"
         assert body["model_loaded"] is False
         assert body["model_error"] == "rusak"
+
+
+class TestPemotonganUbin:
+    """Bingkai besar dipotong menjadi ubin seukuran data pelatihan.
+
+    Tanpa ini ultralytics mengecilkan seluruh bingkai ke satu ukuran masukan.
+    Pada bingkai UAV 4000 px tajuk menyusut lebih dari enam kali dan nyaris tak
+    ada yang terdeteksi — terukur di produksi: satu bingkai menghasilkan 3
+    deteksi dengan cara lama, dan 135 setelah dipotong.
+    """
+
+    def test_ubin_menutupi_seluruh_bingkai(self):
+        potong = yolo._tile_boxes(4000, 2250)
+
+        assert max(k[2] for k in potong) == 4000
+        assert max(k[3] for k in potong) == 2250
+
+    def test_ubin_saling_bertumpang_tindih(self):
+        """Tajuk yang terpotong garis batas harus utuh di ubin tetangga."""
+        potong = yolo._tile_boxes(2000, 512)
+        kiri = sorted({k[0] for k in potong})
+
+        langkah = kiri[1] - kiri[0]
+        assert langkah < yolo.TILE_SIZE
+
+    def test_citra_seukuran_ubin_tidak_dipotong(self):
+        """Ubin dataset 512 px diproses utuh, sehingga angka evaluasi terhadap
+        dataset tidak berubah oleh penambahan pemotongan ini."""
+        assert len(yolo._tile_boxes(512, 512)) == 1
+
+    def test_nms_menggabungkan_kotak_kembar_dari_ubin_bertetangga(self):
+        """Satu pohon di daerah tumpang tindih terdeteksi dua kali."""
+        kembar = [
+            {"_xyxy": (100.0, 100.0, 200.0, 200.0), "_conf": 0.9},
+            {"_xyxy": (104.0, 104.0, 204.0, 204.0), "_conf": 0.7},
+        ]
+
+        assert len(yolo._nms(kembar)) == 1
+
+    def test_nms_mempertahankan_pohon_yang_berbeda(self):
+        terpisah = [
+            {"_xyxy": (0.0, 0.0, 50.0, 50.0), "_conf": 0.9},
+            {"_xyxy": (400.0, 400.0, 450.0, 450.0), "_conf": 0.8},
+        ]
+
+        assert len(yolo._nms(terpisah)) == 2
+
+    def test_nms_menyimpan_yang_keyakinannya_tertinggi(self):
+        kembar = [
+            {"_xyxy": (100.0, 100.0, 200.0, 200.0), "_conf": 0.4},
+            {"_xyxy": (102.0, 102.0, 202.0, 202.0), "_conf": 0.95},
+        ]
+
+        assert yolo._nms(kembar)[0]["_conf"] == 0.95
+
+    def test_citra_sangat_besar_ditolak_dengan_pesan_jelas(self, monkeypatch, tmp_path):
+        """Menggantung berjam-jam lebih buruk daripada menolak."""
+        from PIL import Image
+
+        monkeypatch.setattr(yolo, "MAX_TILES", 4)
+        besar = tmp_path / "besar.jpg"
+        Image.new("RGB", (4000, 2250), "green").save(besar)
+
+        with pytest.raises(yolo.ModelError, match="terlalu besar"):
+            yolo._predict_tiled(_Model([]), str(besar))
+
+    def test_hasil_diurutkan_mengikuti_pembacaan_citra(self, monkeypatch):
+        """Nomor deteksi pada laporan tidak boleh melompat-lompat."""
+        kotak = [
+            _Kotak((500, 400, 520, 420), 1, 0.5),
+            _Kotak((100, 100, 120, 120), 1, 0.9),
+            _Kotak((300, 100, 320, 120), 1, 0.7),
+        ]
+        _pasang(monkeypatch, _Model(kotak))
+
+        hasil = yolo.run("c.jpg", model_path="m.pt")["detections"]
+        posisi = [(d["bbox"][1], d["bbox"][0]) for d in hasil]
+
+        assert posisi == sorted(posisi)
