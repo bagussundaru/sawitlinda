@@ -54,6 +54,21 @@ class Settings(BaseSettings):
     #: lama adalah unggah dataset dan unduh bobot.
     modal_timeout_s: float = 900.0
 
+    # --- Mesin inference GPU (Modal) ---
+    #: Kosong berarti deteksi dijalankan di CPU VM ini. Mengisinya memindahkan
+    #: bagian beratnya ke GPU; sisanya — penggabungan, keparahan, georeferensi —
+    #: tetap dihitung di sini.
+    modal_inference_url: str = ""
+    modal_inference_token: str = ""
+    #: Container GPU perlu menyala lebih dulu pada permintaan pertama.
+    modal_inference_timeout_s: float = 300.0
+
+    @property
+    def gpu_inference_enabled(self) -> bool:
+        return bool(
+            self.modal_inference_url.strip() and self.modal_inference_token.strip()
+        )
+
     @property
     def training_enabled(self) -> bool:
         return bool(self.modal_training_url.strip() and self.modal_training_token.strip())

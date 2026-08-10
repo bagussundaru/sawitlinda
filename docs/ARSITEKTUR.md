@@ -548,7 +548,9 @@ Diukur pada VM produksi, 2 vCPU tanpa GPU.
 
 | Operasi | Waktu |
 | --- | --- |
-| Inference YOLOv8m per citra | **0,83 – 1,16 s** |
+| Inference pada ubin dataset (512 px) | **0,83 – 1,16 s** |
+| Inference bingkai UAV penuh, CPU (±60 ubin) | **47 – 52 s** |
+| Inference bingkai UAV penuh, GPU Modal | jauh lebih cepat; belum diukur di sini |
 | Muat model (sekali per container) | 5,4 s |
 | Ambil hasil / dashboard | 9 – 10 ms |
 | Ekspor PDF | 20 ms |

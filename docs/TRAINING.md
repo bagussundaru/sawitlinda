@@ -108,6 +108,53 @@ dipulihkan — jalankan skrip yang sama untuk menggantinya.
 
 ---
 
+## 3b. Mesin inference GPU (opsional, sangat disarankan)
+
+Bingkai UAV penuh (4000×2250 px) dipotong menjadi ±60 ubin. Di CPU 2 core itu
+memakan **±47 detik per citra**. Memindahkan penjalanan modelnya ke GPU
+memangkas waktu itu drastis.
+
+```bash
+modal deploy training_engine/sawitscan_inference.py
+```
+
+Modal mencetak URL kedua, mis.
+`https://<workspace>--sawitscan-inference-web.modal.run`. Tambahkan ke `.env`
+di VM:
+
+```
+MODAL_INFERENCE_URL=https://<workspace>--sawitscan-inference-web.modal.run
+MODAL_INFERENCE_TOKEN=<token yang sama dengan mesin training>
+```
+
+Lalu `docker compose … up -d backend`.
+
+### Yang berpindah ke GPU, dan yang tidak
+
+Mesin GPU **hanya menjalankan model** pada ubin yang sudah ditentukan backend.
+Geometri ubin, penggabungan NMS, pemetaan kelas ke kondisi, aturan keparahan,
+dan georeferensi tetap dihitung di backend.
+
+Ini disengaja: bila logika itu digandakan di dua tempat, dua salinan akan
+berbeda begitu salah satunya disunting, dan hasil di layar akan bergantung pada
+mesin mana yang kebetulan dipakai. Angka yang keluar identik, mesin GPU hanya
+mengerjakannya lebih cepat.
+
+### Berkas bobot
+
+Diunggah otomatis pada pemakaian pertama dan dikenali dari **sha256** isinya —
+bukan namanya. Dua model berbeda yang sama-sama bernama `best.pt` adalah keadaan
+wajar, dan menimpanya akan membuat hasil berubah diam-diam. Permintaan
+berikutnya hanya mengirim citra.
+
+### Bila mesin GPU mati
+
+Deteksi **diulang di CPU**, dicatat di log, dan permintaannya tetap berhasil —
+lebih lambat, tetapi angkanya sama. Mesin GPU yang tidak dapat dihubungi tidak
+pernah membuat aplikasi berhenti bekerja.
+
+---
+
 ## 4. Memakainya
 
 1. Buka menu **Training**.

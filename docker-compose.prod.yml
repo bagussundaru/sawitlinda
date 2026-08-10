@@ -53,6 +53,9 @@ services:
       # Mesin training GPU di Modal. Kosong = menu Training melapor belum siap.
       MODAL_TRAINING_URL: ${MODAL_TRAINING_URL:-}
       MODAL_TRAINING_TOKEN: ${MODAL_TRAINING_TOKEN:-}
+      # Mesin inference GPU. Kosong = deteksi berjalan di CPU VM ini.
+      MODAL_INFERENCE_URL: ${MODAL_INFERENCE_URL:-}
+      MODAL_INFERENCE_TOKEN: ${MODAL_INFERENCE_TOKEN:-}
     volumes:
       - sawitscan_storage:/app/storage
       # Berkas model di-mount, bukan disalin ke dalam image: menggantinya cukup

@@ -39,6 +39,14 @@ from app.inference.conditions import BY_KEY, CLASS_LABELS
 
 logger = logging.getLogger("sawitscan.yolo")
 
+
+class RemoteUnavailable(Exception):
+    """Mesin GPU tidak dapat dipakai; deteksi diulang di CPU.
+
+    Dibedakan dari ModelError supaya kegagalan jaringan tidak dilaporkan sebagai
+    model yang rusak — keduanya memerlukan tindakan yang berbeda.
+    """
+
 #: Ambang keyakinan minimum. Di bawah ini deteksi dibuang.
 CONF_THRESHOLD = 0.25
 #: Ambang IoU untuk non-maximum suppression.
@@ -242,10 +250,52 @@ def _predict_tiled(model, image_path: str) -> tuple[list[tuple], int, int]:
                 x1, y1, x2, y2 = k.xyxy[0].tolist()
                 kotak.append(
                     (x1 + kiri, y1 + atas, x2 + kiri, y2 + atas,
-                     int(k.cls.item()), float(k.conf.item()))
+                     model.names[int(k.cls.item())], float(k.conf.item()))
                 )
 
     return kotak, lebar, tinggi
+
+
+def _predict_remote(settings, image_path: str, model_path: str) -> tuple[list[tuple], int, int]:
+    """Potong ubin di sini, jalankan modelnya di GPU Modal.
+
+    Geometri ubin tetap ditentukan di sini dan dikirim bersama citra, sehingga
+    mesin GPU tidak pernah memutuskan apa pun tentang cara citra dibaca. Yang
+    berpindah ke sana hanya perkalian matriksnya.
+    """
+    from PIL import Image
+
+    from app.services import remote_inference
+
+    with Image.open(image_path) as img:
+        lebar, tinggi = img.size
+
+    potong = _tile_boxes(lebar, tinggi) if max(lebar, tinggi) > TILE_SIZE * TILE_TRIGGER else [
+        (0, 0, lebar, tinggi)
+    ]
+    if len(potong) > MAX_TILES:
+        raise ModelError(
+            f"Citra terlalu besar: {lebar}x{tinggi} px memerlukan {len(potong)} ubin "
+            f"(batas {MAX_TILES})."
+        )
+
+    try:
+        kotak_nama = remote_inference.detect(
+            settings,
+            image_path=image_path,
+            tiles=potong,
+            model_path=model_path,
+            imgsz=TILE_SIZE,
+            conf=CONF_THRESHOLD,
+            iou=IOU_THRESHOLD,
+        )
+    except remote_inference.RemoteError as exc:
+        raise RemoteUnavailable(str(exc)) from exc
+
+    # Mesin GPU mengembalikan NAMA kelas, bukan indeksnya: indeks bergantung
+    # pada urutan di berkas model, dan menyamakannya antara dua mesin adalah
+    # kekeliruan yang menunggu terjadi.
+    return kotak_nama, lebar, tinggi
 
 
 def _predict_whole(model, image_path: str) -> tuple[list[tuple], int, int]:
@@ -261,49 +311,35 @@ def _predict_whole(model, image_path: str) -> tuple[list[tuple], int, int]:
         return [], 0, 0
     frame = hasil[0]
     tinggi, lebar = frame.orig_shape
+    # Nama kelas, bukan indeksnya — supaya ketiga jalur (utuh, ubin, GPU)
+    # menghasilkan bentuk yang sama dan dirakit oleh kode yang sama.
     kotak = [
-        (*k.xyxy[0].tolist(), int(k.cls.item()), float(k.conf.item()))
+        (*k.xyxy[0].tolist(), model.names[int(k.cls.item())], float(k.conf.item()))
         for k in frame.boxes
     ]
     return kotak, lebar, tinggi
 
 
-def run(
-    image_path: str,
-    gps: tuple[float, float] | None = None,
-    area_ha: float | None = None,
-    model_path: str = "",
+def _rakit(
+    kotak_semua: list[tuple],
+    lebar_px: int,
+    tinggi_px: int,
+    gps: tuple[float, float] | None,
+    area_ha: float | None,
 ) -> dict:
-    """Jalankan deteksi dan kembalikan payload sesuai kontrak JSON.
+    """Ubah kotak mentah menjadi payload sesuai kontrak JSON.
 
-    Bingkai yang jauh lebih besar dari ukuran ubin dipotong lebih dahulu; citra
-    yang sudah seukuran ubin diproses utuh. Ambangnya ada di TILE_TRIGGER.
+    Dipakai ketiga jalur — citra utuh, berubin di CPU, dan berubin di GPU —
+    sehingga hasil di layar tidak pernah bergantung pada mesin mana yang
+    kebetulan menjalankan modelnya.
     """
-    model = load(model_path)
-
-    try:
-        from PIL import Image
-
-        with Image.open(image_path) as img:
-            sisi_terpanjang = max(img.size)
-
-        if sisi_terpanjang > TILE_SIZE * TILE_TRIGGER:
-            kotak_semua, lebar_px, tinggi_px = _predict_tiled(model, image_path)
-        else:
-            kotak_semua, lebar_px, tinggi_px = _predict_whole(model, image_path)
-    except ModelError:
-        raise
-    except Exception as exc:
-        raise ModelError(f"Inference gagal: {exc}") from exc
-
     if not kotak_semua:
         return {"detections": []}
 
     skala = _ground_scale(lebar_px, tinggi_px, area_ha)
 
     mentah = []
-    for x1, y1, x2, y2, indeks_kelas, keyakinan in kotak_semua:
-        kelas = model.names.get(indeks_kelas)
+    for x1, y1, x2, y2, kelas, keyakinan in kotak_semua:
         if kelas not in CLASS_LABELS:
             # Kelas asing tidak diteruskan ke UI; sudah dicatat saat memuat model.
             continue
@@ -348,10 +384,59 @@ def run(
     # melompat-lompat di seluruh bingkai.
     digabung.sort(key=lambda d: (d["_xyxy"][1], d["_xyxy"][0]))
 
-    detections = []
-    for nomor, d in enumerate(digabung, start=1):
+    for d in digabung:
         d.pop("_xyxy")
         d.pop("_conf")
-        detections.append(d)
 
-    return {"detections": detections}
+    return {"detections": digabung}
+
+
+def run(
+    image_path: str,
+    gps: tuple[float, float] | None = None,
+    area_ha: float | None = None,
+    model_path: str = "",
+    settings=None,
+) -> dict:
+    """Jalankan deteksi dan kembalikan payload sesuai kontrak JSON.
+
+    Tiga jalur, hasilnya sama:
+
+    - Citra seukuran ubin diproses utuh.
+    - Bingkai besar dipotong menjadi ubin (ambangnya TILE_TRIGGER).
+    - Bila mesin GPU dikonfigurasi, pemotongan tetap dihitung di sini dan hanya
+      penjalanan modelnya yang dikirim ke sana.
+    """
+    from app.config import get_settings
+
+    settings = settings or get_settings()
+
+    # Jalur GPU dicoba lebih dulu bila dikonfigurasi. Kegagalannya TIDAK
+    # menggagalkan permintaan: deteksi diulang di CPU — lebih lambat, tetapi
+    # menghasilkan angka yang sama, karena mesin GPU menjalankan model yang
+    # sama pada ubin yang sama.
+    if settings.gpu_inference_enabled and model_path:
+        try:
+            kotak, lebar_px, tinggi_px = _predict_remote(settings, image_path, model_path)
+            return _rakit(kotak, lebar_px, tinggi_px, gps, area_ha)
+        except RemoteUnavailable as exc:
+            logger.warning("Mesin GPU tidak dipakai (%s); kembali ke CPU", exc)
+
+    model = load(model_path)
+
+    try:
+        from PIL import Image
+
+        with Image.open(image_path) as img:
+            sisi_terpanjang = max(img.size)
+
+        if sisi_terpanjang > TILE_SIZE * TILE_TRIGGER:
+            kotak, lebar_px, tinggi_px = _predict_tiled(model, image_path)
+        else:
+            kotak, lebar_px, tinggi_px = _predict_whole(model, image_path)
+    except ModelError:
+        raise
+    except Exception as exc:
+        raise ModelError(f"Inference gagal: {exc}") from exc
+
+    return _rakit(kotak, lebar_px, tinggi_px, gps, area_ha)
