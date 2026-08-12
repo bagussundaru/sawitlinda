@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Card } from "@/components/Card";
-import { ApiError, uploadImages } from "@/lib/api";
+import { uploadImagesInBatches } from "@/lib/api";
 
 const ACCEPT = ".jpg,.jpeg,.png,.tif,.tiff";
 
@@ -34,6 +34,9 @@ export default function UnggahPage() {
   const [antrean, setAntrean] = useState<Antrean[]>([]);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progres, setProgres] = useState<{ done: number; total: number } | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   // URL objek pratinjau dilepas saat komponen dibongkar; tanpa ini setiap
@@ -76,16 +79,33 @@ export default function UnggahPage() {
     }
     setBusy(true);
     setError(null);
-    try {
-      const { images } = await uploadImages(
-        antrean.map((x) => x.file),
-        antrean.map((x) => x.label),
+    setProgres({ done: 0, total: antrean.length });
+
+    // Dikirim beberapa kali, bukan sekali: reverse proxy membatasi ukuran badan
+    // permintaan, dan 100 bingkai UAV jauh melampaui batas itu.
+    const { images, failedFrom, error: galat } = await uploadImagesInBatches(
+      antrean.map((x) => ({ file: x.file, label: x.label })),
+      setProgres,
+    );
+
+    if (failedFrom !== null) {
+      // Yang sudah masuk tidak dibuang; sisanya tetap di antrean supaya dapat
+      // dicoba lagi tanpa memilih ulang berkasnya.
+      setAntrean((sekarang) => {
+        sekarang.slice(0, failedFrom).forEach((x) => URL.revokeObjectURL(x.preview));
+        return sekarang.slice(failedFrom);
+      });
+      setError(
+        `${galat} ${images.length} citra pertama sudah masuk; ${
+          antrean.length - failedFrom
+        } sisanya masih di daftar dan dapat dicoba lagi.`,
       );
-      router.push(`/proses?ids=${images.map((i) => i.image_id).join(",")}`);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Unggahan gagal. Coba lagi.");
       setBusy(false);
+      setProgres(null);
+      return;
     }
+
+    router.push(`/proses?ids=${images.map((i) => i.image_id).join(",")}`);
   }
 
   return (
@@ -255,16 +275,36 @@ export default function UnggahPage() {
                     strokeLinecap="round"
                   />
                 </svg>
-                Mengunggah…
+                {progres
+                  ? `Mengunggah ${progres.done}/${progres.total}…`
+                  : "Mengunggah…"}
               </>
             ) : (
               `Unggah ${antrean.length || ""} citra & analisis`.trim()
             )}
           </button>
 
+          {busy && progres && (
+            <div className="flex flex-col gap-[6px]">
+              <div className="h-[7px] w-full overflow-hidden rounded-full bg-[var(--line-soft)]">
+                <div
+                  className="h-full rounded-full transition-[width] duration-300"
+                  style={{
+                    width: `${(progres.done / Math.max(1, progres.total)) * 100}%`,
+                    background: "linear-gradient(90deg,#2FBF71,#0F8A55)",
+                  }}
+                />
+              </div>
+              <span className="mono text-[11px] text-[var(--muted-3)]">
+                {progres.done} dari {progres.total} citra terkirim
+              </span>
+            </div>
+          )}
+
           <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
             Waktu pengambilan dibaca otomatis dari metadata EXIF bila ada. Label
-            yang dikosongkan akan memakai nama berkas.
+            yang dikosongkan akan memakai nama berkas. Unggahan besar dikirim
+            bertahap, sehingga gangguan jaringan hanya mengenai bagian terakhir.
           </p>
         </Card>
       </div>

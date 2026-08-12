@@ -63,7 +63,7 @@ async function readError(response: Response): Promise<string> {
   return `Permintaan gagal (${response.status}).`;
 }
 
-/** Unggah citra beserta labelnya.
+/** Unggah satu kiriman citra beserta labelnya.
  *
  * `labels` harus sejajar dengan `files`. Nilai kosong dibiarkan terkirim supaya
  * urutannya tidak bergeser — server yang memutuskan memakai nama berkas. */
@@ -75,6 +75,81 @@ export function uploadImages(
   files.forEach((file) => form.append("files", file));
   files.forEach((file, i) => form.append("labels", labels[i] ?? ""));
   return apiFetch("/api/upload", { method: "POST", body: form });
+}
+
+/** Batas ukuran satu kiriman. Reverse proxy membatasi badan permintaan, dan
+ *  100 bingkai UAV berukuran sekitar 400 MB — jauh di atas batas itu. */
+const BATAS_KIRIMAN_MB = 30;
+
+/** Batas jumlah berkas per kiriman, untuk citra yang kecil-kecil. Tanpa ini,
+ *  seribu ubin dataset masuk dalam satu permintaan yang sangat panjang. */
+const BATAS_BERKAS_PER_KIRIMAN = 12;
+
+/** Bagi berkas menjadi kiriman yang muat di batas proxy. */
+export function batchFiles<T extends { file: File }>(items: T[]): T[][] {
+  const kiriman: T[][] = [];
+  let sekarang: T[] = [];
+  let ukuran = 0;
+
+  for (const item of items) {
+    const besar = item.file.size;
+    const penuh =
+      sekarang.length >= BATAS_BERKAS_PER_KIRIMAN ||
+      (sekarang.length > 0 && ukuran + besar > BATAS_KIRIMAN_MB * 1024 * 1024);
+    if (penuh) {
+      kiriman.push(sekarang);
+      sekarang = [];
+      ukuran = 0;
+    }
+    sekarang.push(item);
+    ukuran += besar;
+  }
+  if (sekarang.length) kiriman.push(sekarang);
+  return kiriman;
+}
+
+export interface UploadProgress {
+  /** Berkas yang sudah berhasil diunggah. */
+  done: number;
+  total: number;
+}
+
+/** Unggah banyak citra dengan memecahnya menjadi beberapa kiriman.
+ *
+ * Mengirim 100 bingkai dalam satu permintaan berarti satu gangguan jaringan
+ * membatalkan seluruhnya, tanpa cara mengetahui sejauh mana ia sempat sampai.
+ * Dipecah begini, kegagalan hanya mengenai kiriman terakhir dan yang sudah
+ * masuk tetap terpakai.
+ */
+export async function uploadImagesInBatches(
+  items: { file: File; label: string }[],
+  onProgress?: (p: UploadProgress) => void,
+): Promise<{ images: ImageItem[]; failedFrom: number | null; error?: string }> {
+  const kiriman = batchFiles(items);
+  const images: ImageItem[] = [];
+  let selesai = 0;
+
+  for (const kelompok of kiriman) {
+    try {
+      const hasil = await uploadImages(
+        kelompok.map((x) => x.file),
+        kelompok.map((x) => x.label),
+      );
+      images.push(...hasil.images);
+      selesai += kelompok.length;
+      onProgress?.({ done: selesai, total: items.length });
+    } catch (err) {
+      // Yang sudah masuk dikembalikan apa adanya, beserta titik gagalnya —
+      // pemanggil dapat menganalisis yang berhasil dan mencoba ulang sisanya.
+      return {
+        images,
+        failedFrom: selesai,
+        error: err instanceof ApiError ? err.message : "Unggahan terputus.",
+      };
+    }
+  }
+
+  return { images, failedFrom: null };
 }
 
 export function analyzeImage(imageId: string): Promise<DetectionResult> {
