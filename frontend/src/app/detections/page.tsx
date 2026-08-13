@@ -82,13 +82,13 @@ export default function HistoryPage() {
               {analyzed && item.summary ? (
                 <div className="mt-3 flex gap-3 text-[12px]">
                   <span className="text-[var(--green-d)]">
-                    <b>{item.summary.healthy}</b> sehat
+                    <b>{item.summary.healthy}</b> healthy
                   </span>
                   <span className="text-[var(--amber)]">
-                    <b>{item.summary.infected}</b> bermasalah
+                    <b>{item.summary.infected}</b> affected
                   </span>
                   <span className="text-[var(--red)]">
-                    <b>{item.summary.severe}</b> berat
+                    <b>{item.summary.severe}</b> severe
                   </span>
                 </div>
               ) : (

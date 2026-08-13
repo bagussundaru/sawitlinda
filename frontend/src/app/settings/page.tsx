@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import AiKeyCard from "@/components/AiKeyCard";
 import { Card } from "@/components/Card";
 import { ApiError, BASE_URL, getSystemInfo, listConditions } from "@/lib/api";
-import { SEVERITY_COLOR } from "@/lib/severity";
+import { SEVERITY_COLOR, SEVERITY_LABEL } from "@/lib/severity";
 import type { ConditionInfo, Severity, SystemInfo } from "@/types/detection";
 
 const SEVERITIES: Severity[] = ["sehat", "ringan", "sedang", "berat"];
@@ -92,7 +92,7 @@ export default function SettingsPage() {
       </Card>
 
       <div className="grid gap-[18px] lg:grid-cols-2">
-        <Card title="Skala Keparahan">
+        <Card title="Severity Scale">
           <div className="flex flex-wrap gap-4 text-[12.5px]">
             {SEVERITIES.map((severity) => (
               <span key={severity} className="flex items-center gap-[7px]">
@@ -100,7 +100,7 @@ export default function SettingsPage() {
                   className="h-[11px] w-[11px] rounded-[3px]"
                   style={{ background: SEVERITY_COLOR[severity] }}
                 />
-                {severity}
+                {SEVERITY_LABEL[severity]}
               </span>
             ))}
           </div>

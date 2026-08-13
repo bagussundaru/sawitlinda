@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import AnnotatedImage from "@/components/AnnotatedImage";
 import { exportUrl } from "@/lib/api";
-import { SEVERITY_COLOR } from "@/lib/severity";
+import { SEVERITY_COLOR, SEVERITY_LABEL } from "@/lib/severity";
 import type { DetectionResult } from "@/types/detection";
 
 function formatDate(value: string | null | undefined): string {
@@ -111,7 +111,7 @@ export default function DronePanel({
             />
             <Fact
               label="SEVERITY"
-              value={detection?.severity ?? "—"}
+              value={detection ? SEVERITY_LABEL[detection.severity] : "—"}
               color={detection ? SEVERITY_COLOR[detection.severity] : undefined}
             />
             <Fact

@@ -23,14 +23,14 @@ export const LAYERS: {
   color: string;
   covers: Severity[];
 }[] = [
-  { key: "sehat", label: "Hijau (Sehat)", color: "#2FBF71", covers: ["sehat"] },
+  { key: "sehat", label: "Green (Healthy)", color: "#2FBF71", covers: ["sehat"] },
   {
     key: "ringan",
-    label: "Kuning (Ringan–sedang)",
+    label: "Amber (Mild–moderate)",
     color: "#E8B93B",
     covers: ["ringan", "sedang"],
   },
-  { key: "berat", label: "Merah (Berat)", color: "#E2574C", covers: ["berat"] },
+  { key: "berat", label: "Red (Severe)", color: "#E2574C", covers: ["berat"] },
 ];
 
 /** The three groups the legend shows. */
@@ -46,3 +46,17 @@ export function layerOf(severity: Severity): "sehat" | "ringan" | "berat" {
   if (severity === "berat") return "berat";
   return "ringan";
 }
+
+/** Nama keparahan yang ditampilkan.
+ *
+ * Nilai `sehat`/`ringan`/`sedang`/`berat` adalah DATA yang tersimpan di
+ * database dan dipakai sebagai kunci di seluruh aplikasi. Menerjemahkan
+ * nilainya berarti memigrasikan setiap baris deteksi dan menyentuh aturan
+ * keparahan di backend; menerjemahkan hanya saat ditampilkan tidak menyentuh
+ * data sama sekali. */
+export const SEVERITY_LABEL: Record<Severity, string> = {
+  sehat: "Healthy",
+  ringan: "Mild",
+  sedang: "Moderate",
+  berat: "Severe",
+};

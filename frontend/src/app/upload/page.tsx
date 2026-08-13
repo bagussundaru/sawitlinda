@@ -331,7 +331,7 @@ export default function UnggahPage() {
                 />
               </div>
               <span className="mono text-[11px] text-[var(--muted-3)]">
-                {progres.done} dari {progres.total} images sent
+                {progres.done} of {progres.total} images sent
               </span>
             </div>
           )}

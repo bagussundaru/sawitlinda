@@ -8,7 +8,12 @@ import AnnotatedImage from "@/components/AnnotatedImage";
 import { Card, StatCard } from "@/components/Card";
 import Legend from "@/components/Legend";
 import { ApiError, exportUrl, getResult } from "@/lib/api";
-import { SEVERITY_BADGE, SEVERITY_COLOR, isHealthy } from "@/lib/severity";
+import {
+  SEVERITY_BADGE,
+  SEVERITY_COLOR,
+  SEVERITY_LABEL,
+  isHealthy,
+} from "@/lib/severity";
 import type { DetectionResult } from "@/types/detection";
 
 export default function ResultScreen({ imageId }: { imageId: string }) {
@@ -83,7 +88,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
       <div className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
         <StatCard label="Total Trees" value={summary.total} share={1} />
         <StatCard
-          label="Sehat"
+          label="Healthy"
           value={summary.healthy}
           share={share(summary.healthy)}
           color="var(--healthy)"
@@ -145,7 +150,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
                         className="rounded-full px-2 py-[2px] text-[10px] font-semibold uppercase"
                         style={{ background: badge.bg, color: badge.fg }}
                       >
-                        {detection.severity}
+                        {SEVERITY_LABEL[detection.severity]}
                       </span>
                     </div>
                     <div className="text-[11.5px] text-[var(--muted)]">

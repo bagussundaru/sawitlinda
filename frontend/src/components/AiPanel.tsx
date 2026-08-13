@@ -33,7 +33,7 @@ function Disagreement({ pp }: { pp: number }) {
       ) : (
         <>
           Only <b>{pp} percentage points</b> from the per-tree detections —
-          keduanya sepakat.
+          the two agree.
         </>
       )}
     </div>
@@ -48,7 +48,7 @@ function Assessment({ ai }: { ai: AiAssessment }) {
           className="rounded-full px-[10px] py-[3px] text-[11px] font-bold text-white"
           style={{
             background:
-              ai.dominant_condition === "Sehat"
+              ai.dominant_condition === "Healthy"
                 ? SEVERITY_COLOR.sehat
                 : SEVERITY_COLOR.ringan,
           }}
@@ -56,7 +56,7 @@ function Assessment({ ai }: { ai: AiAssessment }) {
           {ai.dominant_condition}
         </span>
         <span className="mono text-[11px] text-[var(--muted-3)]">
-          keyakinan {(ai.confidence * 100).toFixed(0)}% · perkiraan bermasalah{" "}
+          confidence {(ai.confidence * 100).toFixed(0)}% · estimated affected{" "}
           {(ai.affected_share * 100).toFixed(0)}%
         </span>
       </div>

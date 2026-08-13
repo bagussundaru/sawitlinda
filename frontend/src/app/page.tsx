@@ -302,7 +302,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between gap-3 border-t border-[var(--line-soft)] pt-3">
                 <span className="mono text-[11px] text-[var(--muted-3)]">
                   {halaman * PER_HALAMAN + 1}–
-                  {Math.min((halaman + 1) * PER_HALAMAN, total)} dari {total}
+                  {Math.min((halaman + 1) * PER_HALAMAN, total)} of {total}
                 </span>
                 <div className="flex gap-2">
                   <button

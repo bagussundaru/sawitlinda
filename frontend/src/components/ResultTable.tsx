@@ -203,7 +203,7 @@ export default function ResultTable({
                       </>
                     ) : (
                       <span className="rounded-md bg-[var(--line-soft)] px-[7px] py-[2px] text-[10.5px] text-[var(--muted-3)]">
-                        belum
+                        pending
                       </span>
                     )}
                   </span>

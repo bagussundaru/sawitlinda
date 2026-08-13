@@ -106,7 +106,7 @@ export function HealthDonut({
           {percent.toFixed(0)}%
         </text>
         <text x="21" y="26" textAnchor="middle" fontSize="3.2" fill="#65806F">
-          bermasalah
+          affected
         </text>
       </svg>
 

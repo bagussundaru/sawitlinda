@@ -69,12 +69,12 @@ export default function ReportsPage() {
             <table className="w-full min-w-[640px] text-[12.5px]">
               <thead>
                 <tr className="border-b border-[var(--line)] text-left text-[var(--muted)]">
-                  <th className="pb-2 font-semibold">Berkas</th>
-                  <th className="pb-2 font-semibold">Berkas</th>
+                  <th className="pb-2 font-semibold">File</th>
+                  <th className="pb-2 font-semibold">File</th>
                   <th className="pb-2 font-semibold">Waktu</th>
                   <th className="pb-2 text-right font-semibold">Trees</th>
                   <th className="pb-2 text-right font-semibold">Affected</th>
-                  <th className="pb-2 text-right font-semibold">Berat</th>
+                  <th className="pb-2 text-right font-semibold">Severe</th>
                   <th className="pb-2 text-right font-semibold">Unduh</th>
                 </tr>
               </thead>

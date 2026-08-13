@@ -131,7 +131,7 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
         {formatTime(hasil.created_at)}
       </p>
 
-      <Card title="Metrik per kelas">
+      <Card title="Per-class metrics">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-[12px]">
             <thead>
@@ -173,7 +173,7 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
           </table>
         </div>
         <p className="text-[11px] text-[var(--muted-3)]">
-          mAP@50 dirata-ratakan hanya atas kelas yang punya anotasi acuan.
+          mAP@50 is averaged only over classes that have ground truth annotations.
         </p>
       </Card>
 
@@ -207,7 +207,7 @@ export default function EvaluationPage() {
 
   async function jalankan() {
     if (!file) {
-      setError("Pilih dulu berkas anotasi.");
+      setError("Choose an annotation file first.");
       return;
     }
     setBusy(true);
@@ -217,7 +217,7 @@ export default function EvaluationPage() {
       setHasil(baru);
       setHistory((lama) => [baru, ...lama]);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Evaluation gagal.");
+      setError(err instanceof ApiError ? err.message : "Evaluation failed.");
     } finally {
       setBusy(false);
     }
@@ -236,16 +236,16 @@ export default function EvaluationPage() {
 
       <Card
         title="Upload ground truth annotations"
-        subtitle="Ekspor YOLOv8 (.zip berisi labels/ + data.yaml) atau COCO JSON — cocokkan dengan nama berkas citra"
+        subtitle="YOLOv8 export (.zip with labels/ + data.yaml) or COCO JSON — matched by image file name"
       >
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-[6px]">
-            <span className="text-[12px] font-semibold text-[var(--muted)]">Berkas</span>
+            <span className="text-[12px] font-semibold text-[var(--muted)]">File</span>
             <button
               onClick={() => inputRef.current?.click()}
               className="rounded-[10px] border border-[var(--line)] bg-white px-4 py-[9px] text-left text-[13px]"
             >
-              {file ? file.name : "Pilih .zip atau .json…"}
+              {file ? file.name : "Choose a .zip or .json…"}
             </button>
             <input
               ref={inputRef}
@@ -294,7 +294,7 @@ export default function EvaluationPage() {
 
         <p className="text-[11.5px] leading-relaxed text-[var(--muted-2)]">
           Only images that have annotations are counted. Other images in the system
-          diabaikan, supaya deteksinya tidak dihitung sebagai positif palsu.
+          are ignored, supaya deteksinya tidak dihitung sebagai positif palsu.
         </p>
       </Card>
 
@@ -307,7 +307,7 @@ export default function EvaluationPage() {
               <thead>
                 <tr className="border-b border-[var(--line)] text-left text-[var(--muted)]">
                   <th className="pb-2 font-semibold">Waktu</th>
-                  <th className="pb-2 font-semibold">Berkas</th>
+                  <th className="pb-2 font-semibold">File</th>
                   <th className="pb-2 font-semibold">Mode</th>
                   <th className="pb-2 text-right font-semibold">IoU</th>
                   <th className="pb-2 text-right font-semibold">mAP@50</th>
