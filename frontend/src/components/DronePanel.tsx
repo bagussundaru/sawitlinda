@@ -8,8 +8,8 @@ import { SEVERITY_COLOR } from "@/lib/severity";
 import type { DetectionResult } from "@/types/detection";
 
 function formatDate(value: string | null | undefined): string {
-  if (!value) return "tanpa EXIF";
-  return new Date(value).toLocaleDateString("id-ID", {
+  if (!value) return "no EXIF";
+  return new Date(value).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -64,7 +64,7 @@ export default function DronePanel({
     <div className="flex flex-col gap-[14px] rounded-[18px] bg-[var(--panel-dark)] p-5 text-[var(--panel-dark-ink)]">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[15px] font-extrabold tracking-[-0.02em] text-white">
-          Citra &amp; Deteksi AI
+          Image &amp; AI Detection
         </h3>
         <span className="mono rounded-[7px] bg-white/[.08] px-[9px] py-[5px] text-[10px]">
           {detection ? `#${detection.id}` : "—"}
@@ -79,7 +79,7 @@ export default function DronePanel({
             <span />
           </span>
           <span className="mono text-[10.5px] tracking-[0.08em] text-white/40">
-            MEMUAT CITRA
+            LOADING IMAGE
           </span>
         </div>
       ) : result ? (
@@ -91,7 +91,7 @@ export default function DronePanel({
               {result.label ?? result.filename}
             </span>
             <span className="mono text-[10px] text-white/40">
-              {result.filename} · {result.detections.length} pohon
+              {result.filename} · {result.detections.length} trees
             </span>
           </div>
 
@@ -106,25 +106,25 @@ export default function DronePanel({
 
           <div className="grid grid-cols-2 gap-[9px]">
             <Fact
-              label="KONDISI"
-              value={detection?.condition ?? "Pilih pohon pada citra"}
+              label="CONDITION"
+              value={detection?.condition ?? "Select a tree on the image"}
             />
             <Fact
-              label="KEPARAHAN"
+              label="SEVERITY"
               value={detection?.severity ?? "—"}
               color={detection ? SEVERITY_COLOR[detection.severity] : undefined}
             />
             <Fact
-              label="KEYAKINAN"
+              label="CONFIDENCE"
               value={detection ? `${(detection.confidence * 100).toFixed(1)}%` : "—"}
             />
-            <Fact label="TANGGAL" value={formatDate(result.captured_at)} />
+            <Fact label="DATE" value={formatDate(result.captured_at)} />
           </div>
 
           {bermasalah.length > 0 && (
             <div className="flex flex-col gap-[6px]">
               <span className="text-[10px] font-bold tracking-[0.1em] text-[#78a891]">
-                PERLU PERHATIAN
+                NEEDS ATTENTION
               </span>
               <div className="flex flex-wrap gap-[6px]">
                 {bermasalah.map((d, i) => (
@@ -166,20 +166,20 @@ export default function DronePanel({
               href={exportUrl(result.image_id, "pdf")}
               className="kartu-tekan flex-1 rounded-[11px] bg-[var(--accent)] py-[11px] text-center text-[12px] font-extrabold text-[#05271a]"
             >
-              Ekspor PDF
+              Export PDF
             </a>
             <Link
-              href={`/hasil/${result.image_id}`}
+              href={`/detections/${result.image_id}`}
               className="kartu-tekan flex-1 rounded-[11px] bg-white/[.08] py-[11px] text-center text-[12px] font-bold text-[var(--panel-dark-ink)]"
             >
-              Detail citra
+              Image detail
             </Link>
           </div>
         </>
       ) : (
         <div className="flex h-[240px] items-center justify-center rounded-[13px] bg-white/[.04] px-6 text-center">
           <p className="mono text-[10.5px] leading-relaxed tracking-[0.08em] text-white/40">
-            BELUM ADA CITRA DIANALISIS
+            NO IMAGE ANALYSED YET
           </p>
         </div>
       )}

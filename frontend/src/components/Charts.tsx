@@ -24,7 +24,7 @@ export function ConditionBars({
   if (total === 0) {
     return (
       <p className="text-[12.5px] text-[var(--muted-2)]">
-        Belum ada data. Analisis sebuah citra terlebih dahulu.
+        No data yet. Analyse an image first.
       </p>
     );
   }
@@ -62,7 +62,7 @@ export function ConditionBars({
       })}
       {onFocus && (
         <p className="mt-1 text-[11.5px] text-[var(--muted-2)]">
-          Klik baris untuk menyorot kondisi tersebut.
+          Click a row to highlight that condition.
         </p>
       )}
     </>
@@ -113,11 +113,11 @@ export function HealthDonut({
       <ul className="space-y-[10px] text-[12.5px]">
         <li className="flex items-center gap-[10px]">
           <i className="h-[10px] w-[10px] rounded-full" style={{ background: "#2FBF71" }} />
-          Sehat — <b>{healthy.toLocaleString("id-ID")}</b> pohon
+          Healthy — <b>{healthy.toLocaleString("en-US")}</b> trees
         </li>
         <li className="flex items-center gap-[10px]">
           <i className="h-[10px] w-[10px] rounded-full" style={{ background: "#E2574C" }} />
-          Bermasalah — <b>{affected.toLocaleString("id-ID")}</b> pohon
+          Affected — <b>{affected.toLocaleString("en-US")}</b> trees
         </li>
       </ul>
     </div>

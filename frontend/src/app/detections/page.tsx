@@ -8,13 +8,13 @@ import type { ResultListItem } from "@/types/detection";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
-  return new Date(value).toLocaleString("id-ID", {
+  return new Date(value).toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   });
 }
 
-export default function RiwayatPage() {
+export default function HistoryPage() {
   const [items, setItems] = useState<ResultListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +23,7 @@ export default function RiwayatPage() {
       .then((halaman) => setItems(halaman.items))
       .catch((err) =>
         setError(
-          err instanceof ApiError ? err.message : "Riwayat gagal dimuat.",
+          err instanceof ApiError ? err.message : "History failed to load.",
         ),
       );
   }, []);
@@ -31,9 +31,9 @@ export default function RiwayatPage() {
   return (
     <>
       <div className="mb-[18px]">
-        <h1 className="text-[19px] font-bold">Hasil Deteksi</h1>
+        <h1 className="text-[19px] font-bold">Detection Result</h1>
         <p className="text-[13px] text-[var(--muted)]">
-          Riwayat citra yang pernah diunggah. Klik untuk membuka hasilnya kembali.
+          Every image uploaded so far. Click one to reopen its result.
         </p>
       </div>
 
@@ -47,14 +47,14 @@ export default function RiwayatPage() {
       )}
 
       {!items && !error && (
-        <p className="text-sm text-[var(--muted)]">Memuat riwayat…</p>
+        <p className="text-sm text-[var(--muted)]">Loading history…</p>
       )}
 
       {items?.length === 0 && (
         <div className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-[15px] py-3 text-[12.5px] text-[var(--green-d)]">
-          Belum ada citra yang diunggah.{" "}
-          <Link href="/unggah" className="font-semibold underline">
-            Mulai unggah
+          No images uploaded yet.{" "}
+          <Link href="/upload" className="font-semibold underline">
+            Start uploading
           </Link>
           .
         </div>
@@ -93,21 +93,21 @@ export default function RiwayatPage() {
                 </div>
               ) : (
                 <div className="mt-3 text-[12px] text-[var(--muted)]">
-                  Belum dianalisis
+                  Not analysed
                 </div>
               )}
             </div>
           );
 
           return analyzed ? (
-            <Link key={item.image_id} href={`/hasil/${item.image_id}`}>
+            <Link key={item.image_id} href={`/detections/${item.image_id}`}>
               {card}
             </Link>
           ) : (
             <Link
               key={item.image_id}
-              href={`/proses?ids=${item.image_id}`}
-              title="Jalankan analisis"
+              href={`/processing?ids=${item.image_id}`}
+              title="Run analysis"
             >
               {card}
             </Link>

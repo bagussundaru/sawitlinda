@@ -9,15 +9,15 @@ const STAGES = [
   { name: "Preprocessing", detail: "validasi · EXIF · GPS" },
   { name: "YOLOv8", detail: "deteksi area" },
   { name: "Swin + MTL", detail: "klasifikasi" },
-  { name: "Hasil", detail: "label · severity" },
+  { name: "Result", detail: "label · severity" },
 ];
 
 const STATUSES = [
-  "Memuat model…",
-  "Memvalidasi berkas & membaca EXIF…",
+  "Loading model…",
+  "Validating files & reading EXIF…",
   "YOLOv8 mendeteksi area…",
   "Swin Transformer + MTL mengklasifikasi…",
-  "Menyusun hasil…",
+  "Assembling results…",
 ];
 
 const STEP_MS = 620;
@@ -58,10 +58,10 @@ export default function ProcessingScreen() {
           await analyzeImage(id);
           setDone(index + 1);
         }
-        router.replace(ids.length === 1 ? `/hasil/${ids[0]}` : "/riwayat");
+        router.replace(ids.length === 1 ? `/detections/${ids[0]}` : "/detections");
       } catch (err) {
         setError(
-          err instanceof ApiError ? err.message : "Analisis gagal dijalankan.",
+          err instanceof ApiError ? err.message : "Analysis could not be run.",
         );
       }
     })();
@@ -74,7 +74,7 @@ export default function ProcessingScreen() {
   return (
     <div className="mx-auto mt-[30px] max-w-[520px] text-center">
       <h2 className="text-xl font-bold">
-        {error ? "Analisis gagal" : "Menganalisis citra…"}
+        {error ? "Analysis failed" : "Analysing image…"}
       </h2>
 
       <div className="my-[34px] flex items-center justify-center">
@@ -120,18 +120,18 @@ export default function ProcessingScreen() {
             onClick={() => router.push("/")}
             className="mt-4 rounded-[9px] bg-[var(--green)] px-5 py-[10px] text-[13.5px] font-semibold text-white hover:bg-[var(--green-d)]"
           >
-            Kembali ke unggah
+            Back to upload
           </button>
         </>
       ) : (
         <>
           <p className="mt-[14px] text-[13px] text-[var(--muted)]">
             {STATUSES[Math.min(step, STATUSES.length - 1)]}
-            {ids.length > 1 && ` · citra ${done + 1} dari ${ids.length}`}
+            {ids.length > 1 && ` · image ${done + 1} of ${ids.length}`}
           </p>
           <p className="mt-2 text-[11px] leading-relaxed text-[var(--muted-3)]">
-            Tahap YOLOv8 dan Swin + MTL menggambarkan pipeline yang dituju.
-            Selama inference masih mock, keduanya belum benar-benar dijalankan.
+            The YOLOv8 and Swin + MTL stages describe the intended pipeline.
+            While inference runs in mock mode, neither actually runs.
           </p>
         </>
       )}

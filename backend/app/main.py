@@ -17,6 +17,7 @@ from app.routers import (
     export,
     results,
     settings as settings_router,
+    spatial,
     training,
     upload,
 )
@@ -73,6 +74,7 @@ terlindungi = [
     dashboard.router,
     export.router,
     evaluation.router,
+    spatial.router,
     settings_router.router,
 ]
 for r in terlindungi:

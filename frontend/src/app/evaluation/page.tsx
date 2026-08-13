@@ -9,7 +9,7 @@ import type { Evaluation } from "@/types/detection";
 const persen = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleString("id-ID", {
+  return new Date(value).toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -26,9 +26,9 @@ function ModeBanner({ mode, model }: { mode: string; model: string | null }) {
   }
   return (
     <div className="rounded-[10px] border border-[#e5cfa6] bg-[var(--amber-bg)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--amber)]">
-      <b>Angka ini mengukur inference MOCK, bukan model.</b> Deteksi masih
-      dibangkitkan secara sintetis, jadi metrik di bawah hanya membuktikan bahwa
-      pipeline evaluasinya bekerja — jangan dilaporkan sebagai hasil pengukuran
+      <b>These figures measure MOCK inference, not the model.</b> Detections are
+      still generated synthetically, so the metrics below only prove that the
+      evaluation pipeline works — do not report them as measurements of
       model.
     </div>
   );
@@ -126,7 +126,7 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
       </section>
 
       <p className="mono text-[11px] text-[var(--muted-3)]">
-        {hasil.source_filename} · IoU ≥ {hasil.iou_threshold} · {hasil.images} citra ·{" "}
+        {hasil.source_filename} · IoU ≥ {hasil.iou_threshold} · {hasil.images} images ·{" "}
         {hasil.ground_truths} anotasi acuan · {hasil.predictions} prediksi ·{" "}
         {formatTime(hasil.created_at)}
       </p>
@@ -137,7 +137,7 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
             <thead>
               <tr className="border-b border-[var(--line)] text-left text-[var(--muted)]">
                 <th className="pb-2 font-semibold">Kelas</th>
-                <th className="pb-2 text-right font-semibold">Acuan</th>
+                <th className="pb-2 text-right font-semibold">Ground truth</th>
                 <th className="pb-2 text-right font-semibold">Prediksi</th>
                 <th className="pb-2 text-right font-semibold">TP</th>
                 <th className="pb-2 text-right font-semibold">FP</th>
@@ -187,22 +187,22 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
   );
 }
 
-export default function EvaluasiPage() {
+export default function EvaluationPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [iou, setIou] = useState("0.5");
   const [hasil, setHasil] = useState<Evaluation | null>(null);
-  const [riwayat, setRiwayat] = useState<Evaluation[]>([]);
+  const [riwayat, setHistory] = useState<Evaluation[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     listEvaluations()
       .then((list) => {
-        setRiwayat(list);
+        setHistory(list);
         if (list.length) setHasil(list[0]);
       })
-      .catch(() => setRiwayat([]));
+      .catch(() => setHistory([]));
   }, []);
 
   async function jalankan() {
@@ -215,9 +215,9 @@ export default function EvaluasiPage() {
     try {
       const baru = await runEvaluation(file, Number(iou));
       setHasil(baru);
-      setRiwayat((lama) => [baru, ...lama]);
+      setHistory((lama) => [baru, ...lama]);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Evaluasi gagal.");
+      setError(err instanceof ApiError ? err.message : "Evaluation gagal.");
     } finally {
       setBusy(false);
     }
@@ -230,12 +230,12 @@ export default function EvaluasiPage() {
           VALIDASI MODEL
         </div>
         <h1 className="mt-[5px] text-[29px] font-extrabold tracking-[-0.035em]">
-          Evaluasi terhadap Anotasi Acuan
+          Evaluation Against Ground Truth
         </h1>
       </header>
 
       <Card
-        title="Unggah anotasi ground truth"
+        title="Upload ground truth annotations"
         subtitle="Ekspor YOLOv8 (.zip berisi labels/ + data.yaml) atau COCO JSON — cocokkan dengan nama berkas citra"
       >
         <div className="flex flex-wrap items-end gap-3">
@@ -279,7 +279,7 @@ export default function EvaluasiPage() {
             disabled={busy}
             className="rounded-[11px] bg-[var(--brand)] px-5 py-[11px] text-[13px] font-bold text-white disabled:opacity-60"
           >
-            {busy ? "Menghitung…" : "Jalankan Evaluasi"}
+            {busy ? "Computing…" : "Run Evaluation"}
           </button>
         </div>
 
@@ -293,7 +293,7 @@ export default function EvaluasiPage() {
         )}
 
         <p className="text-[11.5px] leading-relaxed text-[var(--muted-2)]">
-          Hanya citra yang punya anotasi yang ikut dihitung. Citra lain di sistem
+          Only images that have annotations are counted. Other images in the system
           diabaikan, supaya deteksinya tidak dihitung sebagai positif palsu.
         </p>
       </Card>
@@ -301,7 +301,7 @@ export default function EvaluasiPage() {
       {hasil && <Hasil hasil={hasil} />}
 
       {riwayat.length > 1 && (
-        <Card title="Riwayat evaluasi">
+        <Card title="History evaluasi">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] text-[12px]">
               <thead>

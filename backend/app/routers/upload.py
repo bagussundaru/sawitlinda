@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import mappers, models, schemas
 from app.config import get_settings
 from app.db import get_db
+from app import villages
 from app.services import exif
 
 router = APIRouter(prefix="/api", tags=["upload"])
@@ -45,6 +46,10 @@ def upload_images(
         description="Label tiap citra, berurutan sesuai daftar berkas. "
         "Boleh lebih pendek dari daftar berkas; sisanya memakai nama berkas.",
     ),
+    village: str | None = Form(
+        None,
+        description="Desa asal citra; berlaku untuk seluruh berkas pada kiriman ini.",
+    ),
     db: Session = Depends(get_db),
 ) -> schemas.UploadResponse:
     """Terima satu atau beberapa citra beserta labelnya, lalu simpan.
@@ -59,6 +64,13 @@ def upload_images(
     Seluruh batch ditolak bila ada satu berkas berformat tidak didukung, supaya
     pengguna tidak perlu menebak berkas mana yang lolos.
     """
+    if village is not None and village.strip() and not villages.is_valid(village.strip()):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Desa tidak dikenal. Pilihan: {', '.join(v.key for v in villages.VILLAGES)}.",
+        )
+    desa = village.strip() if village and village.strip() else None
+
     if not files:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Tidak ada berkas yang diunggah.")
 
@@ -99,6 +111,7 @@ def upload_images(
                 filename=upload.filename or destination.name,
                 storage_path=str(destination),
                 label=_label(index, upload.filename or destination.name),
+                village=desa,
                 captured_at=metadata.captured_at,
                 gps_lat=metadata.lat,
                 gps_lng=metadata.lng,

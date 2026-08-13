@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { Card } from "@/components/Card";
-import { uploadImagesInBatches } from "@/lib/api";
+import { listVillages, uploadImagesInBatches } from "@/lib/api";
+import type { VillageInfo } from "@/types/detection";
 
 const ACCEPT = ".jpg,.jpeg,.png,.tif,.tiff";
 
@@ -32,6 +33,8 @@ export default function UnggahPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [antrean, setAntrean] = useState<Antrean[]>([]);
+  const [villages, setVillages] = useState<VillageInfo[]>([]);
+  const [village, setVillage] = useState<string>("");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progres, setProgres] = useState<{ done: number; total: number } | null>(
@@ -45,6 +48,12 @@ export default function UnggahPage() {
     return () => antrean.forEach((item) => URL.revokeObjectURL(item.preview));
     // Sengaja hanya saat unmount: pelepasan per-item ditangani hapus().
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    listVillages()
+      .then(setVillages)
+      .catch(() => setVillages([]));
   }, []);
 
   function tambah(daftar: FileList | File[]) {
@@ -74,7 +83,7 @@ export default function UnggahPage() {
 
   async function submit() {
     if (antrean.length === 0) {
-      setError("Pilih dulu citra yang akan diunggah.");
+      setError("Choose the images to upload first.");
       return;
     }
     setBusy(true);
@@ -86,6 +95,7 @@ export default function UnggahPage() {
     const { images, failedFrom, error: galat } = await uploadImagesInBatches(
       antrean.map((x) => ({ file: x.file, label: x.label })),
       setProgres,
+      village || null,
     );
 
     if (failedFrom !== null) {
@@ -96,37 +106,37 @@ export default function UnggahPage() {
         return sekarang.slice(failedFrom);
       });
       setError(
-        `${galat} ${images.length} citra pertama sudah masuk; ${
+        `${galat} ${images.length} images already went through; ${
           antrean.length - failedFrom
-        } sisanya masih di daftar dan dapat dicoba lagi.`,
+        } remain in the list and can be retried.`,
       );
       setBusy(false);
       setProgres(null);
       return;
     }
 
-    router.push(`/proses?ids=${images.map((i) => i.image_id).join(",")}`);
+    router.push(`/processing?ids=${images.map((i) => i.image_id).join(",")}`);
   }
 
   return (
     <>
       <header className="muncul">
         <div className="text-[11px] font-bold tracking-[0.15em] text-[#5c7a6b]">
-          MASUKKAN DATA
+          DATA ENTRY
         </div>
         <h1 className="mt-[5px] text-[29px] font-extrabold tracking-[-0.035em]">
-          Unggah &amp; Beri Label
+          Upload &amp; Label
         </h1>
         <p className="mt-2 max-w-[560px] text-[13px] text-[var(--muted)]">
-          Setiap citra diberi nama sendiri. Nama itulah yang muncul di dashboard,
-          riwayat, dan laporan — jadi tulis yang mudah Anda kenali kembali.
+          Each image gets its own name. That name is what appears on the dashboard,
+          in history, and in reports — so write something you will recognise later.
         </p>
       </header>
 
       <div className="muncul" style={{ ["--i" as string]: 1 }}>
         <Card
-          title="Berkas citra"
-          subtitle="JPG / PNG / TIFF · satu atau beberapa sekaligus"
+          title="Image files"
+          subtitle="JPG / PNG / TIFF · one or many at once"
         >
           <div
             role="button"
@@ -162,10 +172,10 @@ export default function UnggahPage() {
               ☁️
             </div>
             <h3 className="mb-1 mt-3 text-[14px] font-bold text-[var(--brand)]">
-              {dragging ? "Lepaskan di sini" : "Tarik & letakkan citra di sini"}
+              {dragging ? "Drop them here" : "Drag & drop images here"}
             </h3>
             <p className="text-[12px] text-[var(--muted-2)]">
-              atau klik untuk memilih dari komputer
+              or click to choose from your computer
             </p>
             <input
               ref={inputRef}
@@ -180,11 +190,36 @@ export default function UnggahPage() {
             />
           </div>
 
+          {/* Desa berlaku untuk seluruh berkas pada unggahan ini: satu
+              penerbangan UAV meliput satu wilayah. */}
+          <label className="flex max-w-[380px] flex-col gap-[6px]">
+            <span className="text-[12px] font-semibold text-[var(--muted)]">
+              Village (optional)
+            </span>
+            <select
+              value={village}
+              onChange={(e) => setVillage(e.target.value)}
+              disabled={busy}
+              className="rounded-[10px] border border-[var(--line)] bg-white px-3 py-[9px] text-[12.5px] outline-none transition focus:border-[var(--accent)]"
+            >
+              <option value="">Not recorded</option>
+              {villages.map((v) => (
+                <option key={v.key} value={v.key}>
+                  {v.name} · {v.district}
+                </option>
+              ))}
+            </select>
+            <span className="text-[10.5px] text-[var(--muted-3)]">
+              Applies to every file in this upload. Used to group images on the
+              map.
+            </span>
+          </label>
+
           {antrean.length > 0 && (
             <div className="flex flex-col gap-[10px]">
               <div className="flex items-center justify-between">
                 <span className="text-[12px] font-bold text-[var(--ink)]">
-                  {antrean.length} citra siap diunggah
+                  {antrean.length} images ready to upload
                 </span>
                 <button
                   onClick={() => {
@@ -194,7 +229,7 @@ export default function UnggahPage() {
                   disabled={busy}
                   className="text-[11.5px] font-semibold text-[var(--red)] disabled:opacity-50"
                 >
-                  Kosongkan
+                  Clear all
                 </button>
               </div>
 
@@ -216,7 +251,7 @@ export default function UnggahPage() {
                       onChange={(e) => ubahLabel(item.key, e.target.value)}
                       disabled={busy}
                       placeholder={item.file.name}
-                      aria-label={`Label untuk ${item.file.name}`}
+                      aria-label={`Label for ${item.file.name}`}
                       className="w-full rounded-[8px] border border-[var(--line)] bg-white px-[10px] py-[7px] text-[12.5px] font-semibold outline-none transition focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(47,191,113,.13)]"
                     />
                     <span className="mono truncate text-[10.5px] text-[var(--muted-3)]">
@@ -226,7 +261,7 @@ export default function UnggahPage() {
                   <button
                     onClick={() => hapus(item.key)}
                     disabled={busy}
-                    aria-label={`Hapus ${item.file.name}`}
+                    aria-label={`Delete ${item.file.name}`}
                     className="shrink-0 rounded-[8px] px-[9px] py-[7px] text-[15px] leading-none text-[var(--muted-3)] transition hover:bg-[var(--red-bg)] hover:text-[var(--red)] disabled:opacity-40"
                   >
                     ×
@@ -276,11 +311,11 @@ export default function UnggahPage() {
                   />
                 </svg>
                 {progres
-                  ? `Mengunggah ${progres.done}/${progres.total}…`
-                  : "Mengunggah…"}
+                  ? `Uploading ${progres.done}/${progres.total}…`
+                  : "Uploading…"}
               </>
             ) : (
-              `Unggah ${antrean.length || ""} citra & analisis`.trim()
+              `Upload ${antrean.length || ""} images & analyse`.trim()
             )}
           </button>
 
@@ -296,15 +331,15 @@ export default function UnggahPage() {
                 />
               </div>
               <span className="mono text-[11px] text-[var(--muted-3)]">
-                {progres.done} dari {progres.total} citra terkirim
+                {progres.done} dari {progres.total} images sent
               </span>
             </div>
           )}
 
           <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
-            Waktu pengambilan dibaca otomatis dari metadata EXIF bila ada. Label
-            yang dikosongkan akan memakai nama berkas. Unggahan besar dikirim
-            bertahap, sehingga gangguan jaringan hanya mengenai bagian terakhir.
+            Capture time is read from EXIF metadata when present. A label
+            left empty falls back to the file name. Large uploads are sent
+            in batches, so a network glitch only affects the last one.
           </p>
         </Card>
       </div>

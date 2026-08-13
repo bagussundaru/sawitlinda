@@ -15,6 +15,8 @@ import type {
   ResultPage,
   ResultSort,
   SystemInfo,
+  MapImagePoint,
+  VillageInfo,
 } from "@/types/detection";
 
 export const BASE_URL =
@@ -43,7 +45,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     });
   } catch {
     throw new ApiError(
-      "Tidak dapat menghubungi server. Pastikan backend berjalan.",
+      "Could not reach the server. Check that the backend is running.",
       0,
     );
   }
@@ -60,7 +62,7 @@ async function readError(response: Response): Promise<string> {
   } catch {
     // Fall through to the generic message below.
   }
-  return `Permintaan gagal (${response.status}).`;
+  return `Request failed (${response.status}).`;
 }
 
 /** Unggah satu kiriman citra beserta labelnya.
@@ -70,10 +72,12 @@ async function readError(response: Response): Promise<string> {
 export function uploadImages(
   files: File[],
   labels: string[] = [],
+  village?: string | null,
 ): Promise<{ images: ImageItem[] }> {
   const form = new FormData();
   files.forEach((file) => form.append("files", file));
   files.forEach((file, i) => form.append("labels", labels[i] ?? ""));
+  if (village) form.append("village", village);
   return apiFetch("/api/upload", { method: "POST", body: form });
 }
 
@@ -124,6 +128,7 @@ export interface UploadProgress {
 export async function uploadImagesInBatches(
   items: { file: File; label: string }[],
   onProgress?: (p: UploadProgress) => void,
+  village?: string | null,
 ): Promise<{ images: ImageItem[]; failedFrom: number | null; error?: string }> {
   const kiriman = batchFiles(items);
   const images: ImageItem[] = [];
@@ -134,6 +139,7 @@ export async function uploadImagesInBatches(
       const hasil = await uploadImages(
         kelompok.map((x) => x.file),
         kelompok.map((x) => x.label),
+        village,
       );
       images.push(...hasil.images);
       selesai += kelompok.length;
@@ -144,7 +150,7 @@ export async function uploadImagesInBatches(
       return {
         images,
         failedFrom: selesai,
-        error: err instanceof ApiError ? err.message : "Unggahan terputus.",
+        error: err instanceof ApiError ? err.message : "Upload interrupted.",
       };
     }
   }
@@ -304,4 +310,15 @@ export function getTrainingStatus(jobId: string): Promise<TrainingStatus> {
 
 export function activateModel(jobId: string): Promise<TrainingRun> {
   return apiFetch(`/api/train/${jobId}/activate`, { method: "POST" });
+}
+
+// --- Spatial ---------------------------------------------------------------
+
+export function listVillages(): Promise<VillageInfo[]> {
+  return apiFetch("/api/villages");
+}
+
+export function listMapPoints(village?: string | null): Promise<MapImagePoint[]> {
+  const q = village ? `?village=${encodeURIComponent(village)}` : "";
+  return apiFetch(`/api/map${q}`);
 }

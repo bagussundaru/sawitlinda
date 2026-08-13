@@ -21,10 +21,10 @@ import type {
 const JEDA_POLLING_MS = 2500;
 
 const WARNA_STATUS: Record<string, { bg: string; fg: string; label: string }> = {
-  queued: { bg: "var(--line-soft)", fg: "var(--muted)", label: "Antre" },
-  running: { bg: "rgba(232,185,59,.16)", fg: "var(--amber)", label: "Berjalan" },
-  done: { bg: "rgba(47,191,113,.14)", fg: "var(--brand-2)", label: "Selesai" },
-  failed: { bg: "var(--red-bg)", fg: "var(--red)", label: "Gagal" },
+  queued: { bg: "var(--line-soft)", fg: "var(--muted)", label: "Queued" },
+  running: { bg: "rgba(232,185,59,.16)", fg: "var(--amber)", label: "Running" },
+  done: { bg: "rgba(47,191,113,.14)", fg: "var(--brand-2)", label: "Done" },
+  failed: { bg: "var(--red-bg)", fg: "var(--red)", label: "Failed" },
 };
 
 function Lencana({ status }: { status: string }) {
@@ -46,7 +46,7 @@ function persen(nilai: number | null | undefined) {
 export default function TrainingPage() {
   const [config, setConfig] = useState<TrainingConfig | null>(null);
   const [runs, setRuns] = useState<TrainingRun[]>([]);
-  const [aktifJob, setAktifJob] = useState<string | null>(null);
+  const [aktifJob, setActiveJob] = useState<string | null>(null);
   const [status, setStatus] = useState<TrainingStatus | null>(null);
 
   const [dataset, setDataset] = useState<File | null>(null);
@@ -65,7 +65,7 @@ export default function TrainingPage() {
         setRuns(daftar);
         // Sambungkan kembali ke training yang masih berjalan setelah halaman
         // dimuat ulang — tanpa ini, progres seolah hilang saat refresh.
-        setAktifJob((sekarang) => {
+        setActiveJob((sekarang) => {
           if (sekarang) return sekarang;
           const berjalan = daftar.find(
             (r) => r.status === "running" || r.status === "queued",
@@ -121,11 +121,11 @@ export default function TrainingPage() {
     setStatus(null);
     try {
       const run = await startTraining(dataset, Number(epochs), baseModel, runName);
-      setAktifJob(run.job_id);
-      setPesan(`Training "${run.run_name}" dimulai.`);
+      setActiveJob(run.job_id);
+      setPesan(`Training "${run.run_name}" started.`);
       muatRuns();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal memulai training.");
+      setError(err instanceof ApiError ? err.message : "Could not start training.");
     } finally {
       setBusy(false);
     }
@@ -138,13 +138,13 @@ export default function TrainingPage() {
     try {
       const run = await activateModel(jobId);
       setPesan(
-        `Model "${run.run_name}" kini dipakai untuk seluruh analisis berikutnya.`,
+        `Model "${run.run_name}" is now used for every following analysis.`,
       );
       muatRuns();
       getTrainingConfig().then(setConfig).catch(() => {});
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : "Gagal menjadikan model aktif.",
+        err instanceof ApiError ? err.message : "Could not set the active model.",
       );
     } finally {
       setMengaktifkan(false);
@@ -159,34 +159,34 @@ export default function TrainingPage() {
     <>
       <header className="flex flex-col gap-1">
         <h1 className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--ink)]">
-          Training Model
+          Model Training
         </h1>
         <p className="text-[13px] text-[var(--muted)]">
-          Melatih ulang model deteksi pada mesin GPU, lalu menjadikannya model
-          yang dipakai aplikasi.
+          Retrain the detection model on a GPU machine, then make it the model
+          the application uses.
         </p>
       </header>
 
       {config && !config.configured && (
         <div className="rounded-[12px] border border-[#e5cfa6] bg-[var(--amber-bg)] px-4 py-3 text-[12.5px] leading-relaxed text-[var(--amber)]">
-          <b>Mesin training belum dikonfigurasi.</b> Setel{" "}
+          <b>Training engine is not configured.</b> Set{" "}
           <code className="mono">MODAL_TRAINING_URL</code> dan{" "}
-          <code className="mono">MODAL_TRAINING_TOKEN</code> di server, lalu
-          jalankan ulang backend. Lihat{" "}
+          <code className="mono">MODAL_TRAINING_TOKEN</code> on the server, then
+          restart the backend. See{" "}
           <code className="mono">docs/TRAINING.md</code>.
         </div>
       )}
 
       {/* --- Formulir --- */}
       <Card
-        title="Mulai training baru"
-        subtitle="Dataset dalam format YOLOv8 (.zip), berisi data.yaml serta folder train/valid"
+        title="Start new training"
+        subtitle="Dataset in YOLOv8 format (.zip) containing data.yaml plus train/valid folders"
       >
         <form onSubmit={mulai} className="flex flex-col gap-4">
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex min-w-[260px] flex-1 flex-col gap-[6px]">
               <span className="text-[12px] font-semibold text-[var(--muted)]">
-                Berkas dataset
+                Dataset file
               </span>
               <input
                 type="file"
@@ -198,7 +198,7 @@ export default function TrainingPage() {
 
             <label className="flex w-[130px] flex-col gap-[6px]">
               <span className="text-[12px] font-semibold text-[var(--muted)]">
-                Jumlah epoch
+                Epochs
               </span>
               <input
                 type="number"
@@ -212,7 +212,7 @@ export default function TrainingPage() {
 
             <label className="flex w-[160px] flex-col gap-[6px]">
               <span className="text-[12px] font-semibold text-[var(--muted)]">
-                Model dasar
+                Base model
               </span>
               <select
                 value={baseModel}
@@ -229,7 +229,7 @@ export default function TrainingPage() {
 
             <label className="flex min-w-[190px] flex-1 flex-col gap-[6px]">
               <span className="text-[12px] font-semibold text-[var(--muted)]">
-                Nama versi (opsional)
+                Version name (optional)
               </span>
               <input
                 value={runName}
@@ -244,15 +244,15 @@ export default function TrainingPage() {
               disabled={busy || !dataset || berjalan || !config?.configured}
               className="rounded-[10px] bg-[var(--brand)] px-5 py-[11px] text-[12.5px] font-bold text-white disabled:opacity-50"
             >
-              {busy ? "Mengunggah…" : "Mulai Training"}
+              {busy ? "Uploading…" : "Start Training"}
             </button>
           </div>
 
           <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
-            Training berjalan di GPU dan <b>menimbulkan biaya per pemakaian</b>.
-            Dataset dikirim ke mesin training sekali, lalu prosesnya berjalan di
-            sana — halaman ini boleh ditutup, progresnya tetap tercatat.
-            {config ? ` Batas ukuran dataset ${config.max_dataset_mb} MB.` : ""}
+            Training runs on a GPU and <b>costs money per use</b>.
+            The dataset is sent to the training engine once, then the process runs
+            there — this page may be closed, progress is still recorded.
+            {config ? ` Dataset size limit ${config.max_dataset_mb} MB.` : ""}
           </p>
         </form>
 
@@ -274,11 +274,11 @@ export default function TrainingPage() {
       {/* --- Progres --- */}
       {status && (
         <Card
-          title={`Progres · ${status.run_name ?? status.job_id}`}
+          title={`Progress · ${status.run_name ?? status.job_id}`}
           subtitle={
             berjalan
-              ? "Diperbarui otomatis tiap beberapa detik"
-              : "Training telah berakhir"
+              ? "Refreshed automatically every few seconds"
+              : "Training has finished"
           }
         >
           <div className="flex flex-wrap items-center gap-3">
@@ -288,7 +288,7 @@ export default function TrainingPage() {
             </span>
             {status.latest?.map50 != null && (
               <span className="text-[12px] text-[var(--muted)]">
-                mAP50 saat ini{" "}
+                current mAP50{" "}
                 <b className="text-[var(--ink)]">{persen(status.latest.map50)}</b>
               </span>
             )}
@@ -340,15 +340,15 @@ export default function TrainingPage() {
           ) : (
             <p className="text-[12px] text-[var(--muted-3)]">
               {berjalan
-                ? "Menunggu epoch pertama selesai. Menyiapkan GPU dan dataset biasanya memakan satu hingga dua menit."
-                : "Tidak ada data per epoch untuk run ini."}
+                ? "Waiting for the first epoch. Preparing the GPU and dataset usually takes one to two minutes."
+                : "No per-epoch data for this run."}
             </p>
           )}
 
           {status.status === "done" && (
             <div className="flex flex-wrap items-center gap-3 rounded-[12px] border border-[#bfe6d7] bg-[var(--green-bg)] px-4 py-3">
               <div className="flex-1 text-[12.5px] text-[var(--green-d)]">
-                <b>Training selesai.</b> mAP50 {persen(status.latest?.map50)} ·
+                <b>Training complete.</b> mAP50 {persen(status.latest?.map50)} ·
                 mAP50-95 {persen(status.latest?.map50_95)}
               </div>
               <button
@@ -356,25 +356,25 @@ export default function TrainingPage() {
                 disabled={mengaktifkan}
                 className="rounded-[10px] bg-[var(--brand)] px-4 py-[9px] text-[12.5px] font-bold text-white disabled:opacity-60"
               >
-                {mengaktifkan ? "Mengunduh bobot…" : "Jadikan Model Aktif"}
+                {mengaktifkan ? "Downloading weights…" : "Set As Active Model"}
               </button>
             </div>
           )}
         </Card>
       )}
 
-      {/* --- Riwayat --- */}
+      {/* --- History --- */}
       <Card
-        title="Riwayat training"
+        title="Training history"
         subtitle={
           config?.active_model
             ? `Model aktif: ${config.active_model}`
-            : "Belum ada model hasil training yang diaktifkan"
+            : "No trained model has been activated yet"
         }
       >
         {runs.length === 0 ? (
           <p className="text-[12.5px] text-[var(--muted-3)]">
-            Belum ada training yang pernah dijalankan.
+            No training has been run yet.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -382,11 +382,11 @@ export default function TrainingPage() {
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-[0.08em] text-[var(--muted-3)]">
                   <th className="pb-2 pr-3 font-semibold">Nama</th>
-                  <th className="pb-2 pr-3 font-semibold">Tanggal</th>
+                  <th className="pb-2 pr-3 font-semibold">Date</th>
                   <th className="pb-2 pr-3 font-semibold">Epoch</th>
                   <th className="pb-2 pr-3 font-semibold">mAP50</th>
                   <th className="pb-2 pr-3 font-semibold">Status</th>
-                  <th className="pb-2 font-semibold">Aksi</th>
+                  <th className="pb-2 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -403,7 +403,7 @@ export default function TrainingPage() {
                       </span>
                     </td>
                     <td className="py-[10px] pr-3 text-[var(--muted)]">
-                      {new Date(run.created_at).toLocaleString("id-ID", {
+                      {new Date(run.created_at).toLocaleString("en-GB", {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}
@@ -425,10 +425,10 @@ export default function TrainingPage() {
                     <td className="py-[10px]">
                       <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={() => setAktifJob(run.job_id)}
+                          onClick={() => setActiveJob(run.job_id)}
                           className="rounded-[8px] border border-[var(--line)] px-[10px] py-[5px] text-[11.5px] font-semibold text-[var(--brand)]"
                         >
-                          Lihat
+                          View
                         </button>
                         {run.status === "done" && !run.is_active && (
                           <button
@@ -436,7 +436,7 @@ export default function TrainingPage() {
                             disabled={mengaktifkan}
                             className="rounded-[8px] bg-[var(--brand)] px-[10px] py-[5px] text-[11.5px] font-semibold text-white disabled:opacity-60"
                           >
-                            Aktifkan
+                            Activate
                           </button>
                         )}
                       </div>
@@ -449,9 +449,9 @@ export default function TrainingPage() {
         )}
 
         <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
-          Menjadikan model aktif mengganti berkas yang dipakai untuk analisis
-          berikutnya. Citra yang sudah dianalisis <b>tidak</b> ikut berubah —
-          jalankan analisis ulang bila hasilnya perlu disamakan dengan model baru.
+          Setting the active model changes the file used for the next
+          analysis. Images already analysed do <b>not</b> change —
+          re-run analysis if their results need to match the new model.
         </p>
       </Card>
     </>

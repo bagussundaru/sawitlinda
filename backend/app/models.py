@@ -22,6 +22,9 @@ class Image(Base):
     #: Nama yang diberikan pengunggah — identitas citra di seluruh aplikasi.
     #: Kosong hanya mungkin pada baris lama sebelum migrasi 0008.
     label: Mapped[str | None] = mapped_column(String(200), index=True)
+    #: Desa asal citra — pengelompokan pada peta. Salah satu kunci di
+    #: app/villages.py, atau None bila tidak dicatat.
+    village: Mapped[str | None] = mapped_column(String(64), index=True)
     captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # --- Peninggalan konsep pemetaan. Tidak lagi diisi maupun ditampilkan,
     #     tetapi sengaja dipertahankan: data yang sudah terkumpul tetap utuh dan

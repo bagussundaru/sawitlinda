@@ -230,3 +230,33 @@ export interface ResultPage {
   limit: number;
   offset: number;
 }
+
+// --- Spatial ---
+
+/** One of the five sample villages in Kotawaringin Timur. */
+export interface VillageInfo {
+  key: string;
+  name: string;
+  district: string;
+  /** Approximate area centre — used only to position the map view. */
+  lat: number;
+  lng: number;
+  images: number;
+  analyzed: number;
+  trees: number;
+  affected: number;
+}
+
+/** One image on the map. Markers are per image, not per tree. */
+export interface MapImagePoint {
+  image_id: string;
+  filename: string;
+  label: string | null;
+  village: string | null;
+  captured_at: string | null;
+  gps: Gps;
+  summary: DetectionSummary;
+  dominant_condition: string | null;
+  /** Share of trees that are not healthy, 0..1 — drives marker colour. */
+  affected_share: number;
+}

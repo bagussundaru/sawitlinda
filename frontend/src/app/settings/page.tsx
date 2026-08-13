@@ -10,7 +10,7 @@ import type { ConditionInfo, Severity, SystemInfo } from "@/types/detection";
 
 const SEVERITIES: Severity[] = ["sehat", "ringan", "sedang", "berat"];
 
-export default function PengaturanPage() {
+export default function SettingsPage() {
   const [conditions, setConditions] = useState<ConditionInfo[] | null>(null);
   const [system, setSystem] = useState<SystemInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function PengaturanPage() {
     listConditions()
       .then(setConditions)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Data gagal dimuat."),
+        setError(err instanceof ApiError ? err.message : "Data failed to load."),
       );
     getSystemInfo()
       .then(setSystem)
@@ -29,15 +29,15 @@ export default function PengaturanPage() {
   return (
     <div className="space-y-[18px]">
       <div>
-        <h1 className="text-[19px] font-bold">Pengaturan</h1>
+        <h1 className="text-[19px] font-bold">Settings</h1>
         <p className="text-[13px] text-[var(--muted)]">
-          Acuan kondisi tanaman dan status sistem.
+          Plant condition reference and system status.
         </p>
       </div>
 
       <div className="rounded-[10px] border border-[#e5cfa6] bg-[var(--amber-bg)] px-[15px] py-3 text-[12.5px] text-[var(--amber)]">
-        <b>Inference masih MOCK.</b> Hasil deteksi dibangkitkan secara sintetis dan
-        belum mencerminkan isi citra. Mengganti ke model asli cukup menyentuh satu
+        <b>Inference is still MOCK.</b> Detections are generated synthetically and
+        do not reflect image content. Switching to the real model touches one
         fungsi di backend.
       </div>
 
@@ -52,14 +52,14 @@ export default function PengaturanPage() {
 
       <AiKeyCard />
 
-      <Card title="Acuan Kondisi Tanaman">
+      <Card title="Plant Condition Reference">
         {conditions ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-[12.5px]">
               <thead>
                 <tr className="border-b border-[var(--line)] text-left align-bottom text-[var(--muted)]">
                   <th className="pb-2 font-semibold">Kelas</th>
-                  <th className="pb-2 font-semibold">Ciri dari citra atas</th>
+                  <th className="pb-2 font-semibold">Appearance from above</th>
                   <th className="pb-2 font-semibold">Interpretasi</th>
                   <th className="pb-2 font-semibold">Tindakan</th>
                 </tr>
@@ -87,7 +87,7 @@ export default function PengaturanPage() {
             </table>
           </div>
         ) : (
-          <p className="text-[12.5px] text-[var(--muted)]">Memuat…</p>
+          <p className="text-[12.5px] text-[var(--muted)]">Loading…</p>
         )}
       </Card>
 
@@ -105,8 +105,8 @@ export default function PengaturanPage() {
             ))}
           </div>
           <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--muted)]">
-            Keparahan berasal dari kepala klasifikasi terpisah (Swin + MTL). Dataset
-            saat ini belum memuat label keparahan, sehingga nilainya belum dapat
+            Severity would come from a separate classification head (Swin + MTL). The
+            current dataset carries no severity labels, so the value cannot yet be
             dipertanggungjawabkan sampai klien menyediakannya.
           </p>
         </Card>
@@ -122,7 +122,7 @@ export default function PengaturanPage() {
               <dd className="font-semibold text-[var(--amber)]">Mock</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-[var(--muted)]">Analisis AI</dt>
+              <dt className="text-[var(--muted)]">AI Review</dt>
               <dd
                 className="truncate font-semibold"
                 style={{
@@ -130,12 +130,12 @@ export default function PengaturanPage() {
                 }}
                 title={system?.ai_model ?? undefined}
               >
-                {system ? (system.ai_enabled ? system.ai_model : "Belum dikonfigurasi") : "…"}
+                {system ? (system.ai_enabled ? system.ai_model : "Not configured") : "…"}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--muted)]">Autentikasi</dt>
-              <dd className="font-semibold text-[var(--red)]">Belum tersedia</dd>
+              <dd className="font-semibold text-[var(--red)]">Not available</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--muted)]">Format didukung</dt>

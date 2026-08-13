@@ -88,7 +88,7 @@ export default function HomePage() {
         setError(null);
       } catch (err) {
         if (!dibatalkan) {
-          setError(err instanceof ApiError ? err.message : "Data gagal dimuat.");
+          setError(err instanceof ApiError ? err.message : "Data failed to load.");
         }
       } finally {
         if (!dibatalkan) setMemuat(false);
@@ -153,32 +153,32 @@ export default function HomePage() {
       <header className="muncul flex flex-wrap items-center justify-between gap-5">
         <div>
           <div className="text-[11px] font-bold tracking-[0.15em] text-[#5c7a6b]">
-            DASHBOARD OPERASIONAL
+            OPERATIONS DASHBOARD
           </div>
           <h1 className="mt-[5px] text-[29px] font-extrabold tracking-[-0.035em]">
-            Analisis Kondisi Tanaman
+            Plant Condition Analysis
           </h1>
         </div>
         <div className="flex items-center gap-[10px]">
           <span className="mono hidden rounded-[11px] border border-[var(--line)] bg-[var(--card)] px-[14px] py-[10px] text-[11px] text-[var(--muted-3)] sm:block">
-            {data ? `${data.images_analyzed}/${data.images_total} citra dianalisis` : "memuat…"}
+            {data ? `${data.images_analyzed}/${data.images_total} images analysed` : "loading…"}
           </span>
           <Link
-            href="/unggah"
+            href="/upload"
             className="kartu-tekan rounded-[11px] bg-[var(--brand)] px-[18px] py-[11px] text-[12.5px] font-bold text-white"
           >
-            Unggah &amp; Analisis
+            Upload &amp; Analyse
           </Link>
         </div>
       </header>
 
       {data?.images_analyzed === 0 && !kunci && (
         <div className="muncul rounded-[12px] border border-[#bfe6d7] bg-[var(--green-bg)] px-4 py-3 text-[12.5px] text-[var(--green-d)]">
-          Belum ada citra yang dianalisis.{" "}
-          <Link href="/unggah" className="font-bold underline">
-            Unggah citra pertama
+          No image has been analysed yet.{" "}
+          <Link href="/upload" className="font-bold underline">
+            Upload your first image
           </Link>{" "}
-          untuk mengisi dashboard ini.
+          to fill this dashboard.
         </div>
       )}
 
@@ -200,14 +200,14 @@ export default function HomePage() {
         <input
           value={cari}
           onChange={(e) => setCari(e.target.value)}
-          placeholder="Cari label citra…"
-          aria-label="Cari label citra"
+          placeholder="Search image label…"
+          aria-label="Search image label"
           className="w-full rounded-[11px] border border-[var(--line)] bg-[var(--card)] py-[10px] pl-[36px] pr-[34px] text-[12.5px] outline-none transition focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(47,191,113,.14)]"
         />
         {cari && (
           <button
             onClick={() => setCari("")}
-            aria-label="Kosongkan pencarian"
+            aria-label="Clear search"
             className="absolute right-[10px] top-1/2 -translate-y-1/2 rounded-full px-[6px] text-[15px] leading-none text-[var(--muted-3)] hover:text-[var(--ink)]"
           >
             ×
@@ -222,26 +222,26 @@ export default function HomePage() {
         <section className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
           {[
             {
-              label: "Total Pohon Terdeteksi",
+              label: "Total Trees Detected",
               value: summary.total,
               share: 1,
-              note: `${data?.images_analyzed ?? 0} citra`,
+              note: `${data?.images_analyzed ?? 0} images`,
               color: undefined,
             },
             {
-              label: "Pohon Sehat",
+              label: "Healthy Trees",
               value: summary.healthy,
               share: share(summary.healthy),
               color: "var(--healthy)",
             },
             {
-              label: "Pohon Bermasalah",
+              label: "Affected Trees",
               value: summary.infected,
               share: share(summary.infected),
               color: "var(--mild)",
             },
             {
-              label: "Kasus Berat",
+              label: "Severe Cases",
               value: summary.severe,
               share: share(summary.severe),
               color: "var(--severe)",
@@ -258,18 +258,18 @@ export default function HomePage() {
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <div className="muncul" style={{ ["--i" as string]: 2 }}>
           <Card
-            title="Citra Terpindai"
+            title="Scanned Images"
             subtitle={
               total > 0
-                ? `${total} citra · klik satu baris untuk membuka hasilnya`
-                : "Klik satu baris untuk membuka hasilnya"
+                ? `${total} images · click a row to open its result`
+                : "Click a row to open its result"
             }
             action={
               <Link
-                href="/riwayat"
+                href="/detections"
                 className="text-[11.5px] font-bold text-[var(--brand-2)]"
               >
-                Semua citra →
+                All images →
               </Link>
             }
           >
@@ -294,7 +294,7 @@ export default function HomePage() {
                     disabled={halaman === 0 || memuat}
                     className="kartu-tekan rounded-[8px] border border-[var(--line)] px-[11px] py-[6px] text-[11.5px] font-semibold text-[var(--brand)] disabled:opacity-40"
                   >
-                    Sebelumnya
+                    Previous
                   </button>
                   <button
                     onClick={() =>
@@ -303,7 +303,7 @@ export default function HomePage() {
                     disabled={halaman >= halamanTerakhir || memuat}
                     className="kartu-tekan rounded-[8px] border border-[var(--line)] px-[11px] py-[6px] text-[11.5px] font-semibold text-[var(--brand)] disabled:opacity-40"
                   >
-                    Berikutnya
+                    Next
                   </button>
                 </div>
               </div>
@@ -323,7 +323,7 @@ export default function HomePage() {
 
       <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <div className="muncul" style={{ ["--i" as string]: 4 }}>
-          <Card title="Distribusi Kondisi Tanaman">
+          <Card title="Condition Distribution">
             {memuat || !data ? (
               <div className="kerangka h-[190px]" />
             ) : (
@@ -337,7 +337,7 @@ export default function HomePage() {
         </div>
 
         <div className="muncul" style={{ ["--i" as string]: 5 }}>
-          <Card title="Rasio Sehat vs Bermasalah">
+          <Card title="Healthy vs Affected">
             {memuat || !summary ? (
               <div className="kerangka h-[190px]" />
             ) : (
@@ -348,7 +348,7 @@ export default function HomePage() {
       </section>
 
       <section className="muncul grid gap-4" style={{ ["--i" as string]: 6 }}>
-        <Card title="Antrian Inference" subtitle="Status citra yang masuk ke sistem">
+        <Card title="Inference Queue" subtitle="Images entering the system">
           <InferenceQueue items={history} />
         </Card>
       </section>

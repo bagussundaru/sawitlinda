@@ -20,7 +20,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "SawitScan AI",
-  description: "Deteksi & klasifikasi kondisi tanaman kelapa sawit dari citra UAV",
+  description: "Detection and classification of oil palm plant conditions from UAV imagery",
 };
 
 export default function RootLayout({

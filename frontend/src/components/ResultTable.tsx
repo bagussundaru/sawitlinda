@@ -9,10 +9,10 @@ export interface UrutanTabel {
 
 const KOLOM: { key: ResultSort; label: string; kanan?: boolean }[] = [
   { key: "label", label: "Label" },
-  { key: "created_at", label: "Diunggah" },
-  { key: "captured_at", label: "Diambil" },
-  { key: "trees", label: "Pohon", kanan: true },
-  { key: "affected", label: "Bermasalah", kanan: true },
+  { key: "created_at", label: "Uploaded" },
+  { key: "captured_at", label: "Captured" },
+  { key: "trees", label: "Trees", kanan: true },
+  { key: "affected", label: "Affected", kanan: true },
 ];
 
 /** Satu definisi lebar kolom, dipakai baris judul dan baris isi. Dua definisi
@@ -22,7 +22,7 @@ const GRID =
 
 function tanggal(nilai: string | null): string {
   if (!nilai) return "—";
-  return new Date(nilai).toLocaleDateString("id-ID", {
+  return new Date(nilai).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -30,7 +30,7 @@ function tanggal(nilai: string | null): string {
 }
 
 function hari(nilai: string): string {
-  return new Date(nilai).toLocaleDateString("id-ID", {
+  return new Date(nilai).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -128,7 +128,7 @@ export default function ResultTable({
 
         {items.length === 0 ? (
           <p className="py-8 text-center text-[12.5px] text-[var(--muted-2)]">
-            Tidak ada citra yang cocok.
+            No images match.
           </p>
         ) : (
           items.map((item, i) => {

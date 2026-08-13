@@ -10,8 +10,10 @@ Referensi wajib dibaca sebelum mulai:
 - `docs/SawitScan_Prototype.html` — acuan tampilan (UI/UX) dan alur layar. IKUTI desain & alur ini.
 
 ## Bahasa
-- Seluruh label & teks UI: **Bahasa Indonesia**.
-- Komentar kode & nama variabel: Inggris (standar).
+- Seluruh label & teks UI: **Bahasa Inggris** (diubah atas permintaan klien,
+  Agustus 2026; sebelumnya Bahasa Indonesia).
+- Komentar kode: Bahasa Indonesia — catatan untuk yang merawat kode.
+- Nama variabel & identifier: bebas, mengikuti berkas sekitarnya.
 
 ## Stack
 - Backend: **FastAPI** (Python). Model PyTorch jalan native di sini.

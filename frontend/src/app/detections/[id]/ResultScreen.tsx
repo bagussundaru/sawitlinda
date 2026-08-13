@@ -20,14 +20,14 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
     getResult(imageId)
       .then(setResult)
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Hasil tidak dapat dimuat."),
+        setError(err instanceof ApiError ? err.message : "Result could not be loaded."),
       );
   }, [imageId]);
 
   if (error) {
     return (
       <>
-        <h1 className="mb-3 text-[19px] font-bold">Hasil Deteksi</h1>
+        <h1 className="mb-3 text-[19px] font-bold">Detection Result</h1>
         <p
           role="alert"
           className="rounded-[10px] border border-[#f0c9c9] bg-[var(--red-bg)] px-[15px] py-3 text-[12.5px] text-[var(--red)]"
@@ -35,17 +35,17 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
           {error}
         </p>
         <Link
-          href="/unggah"
+          href="/upload"
           className="mt-4 inline-block rounded-[9px] bg-[var(--green)] px-4 py-[9px] text-[13px] font-semibold text-white hover:bg-[var(--green-d)]"
         >
-          Kembali ke unggah
+          Back to upload
         </Link>
       </>
     );
   }
 
   if (!result) {
-    return <p className="text-sm text-[var(--muted)]">Memuat hasil…</p>;
+    return <p className="text-sm text-[var(--muted)]">Loading result…</p>;
   }
 
   const findings = result.detections.filter((d) => !isHealthy(d.severity));
@@ -56,10 +56,10 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
     <div className="space-y-[18px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[19px] font-bold">Hasil Deteksi</h1>
+          <h1 className="text-[19px] font-bold">Detection Result</h1>
           <p className="text-[13px] text-[var(--muted)]">
             {result.label ? `${result.label} · ` : ""}
-            {result.filename} · {summary.total} pohon dianalisis
+            {result.filename} · {summary.total} trees analysed
             {result.gps &&
               ` · ${result.gps.lat.toFixed(5)}, ${result.gps.lng.toFixed(5)}`}
           </p>
@@ -81,7 +81,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
-        <StatCard label="Total Pohon" value={summary.total} share={1} />
+        <StatCard label="Total Trees" value={summary.total} share={1} />
         <StatCard
           label="Sehat"
           value={summary.healthy}
@@ -89,13 +89,13 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
           color="var(--healthy)"
         />
         <StatCard
-          label="Bermasalah"
+          label="Affected"
           value={summary.infected}
           share={share(summary.infected)}
           color="var(--mild)"
         />
         <StatCard
-          label="Kasus Berat"
+          label="Severe Cases"
           value={summary.severe}
           share={share(summary.severe)}
           color="var(--severe)"
@@ -105,7 +105,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
       <AiPanel result={result} onUpdated={setResult} />
 
       <div className="grid gap-[18px] xl:grid-cols-[1.5fr_1fr]">
-        <Card title="Citra & Deteksi">
+        <Card title="Image & Detections">
           <AnnotatedImage
             imageId={imageId}
             filename={result.filename}
@@ -119,7 +119,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
         <Card title={`${findings.length} temuan`}>
           {findings.length === 0 ? (
             <p className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-[15px] py-3 text-[12.5px] text-[var(--green-d)]">
-              Tidak ada pohon bermasalah pada citra ini.
+              No affected trees in this image.
             </p>
           ) : (
             <div className="max-h-[520px] overflow-y-auto pr-1">
@@ -149,7 +149,7 @@ export default function ResultScreen({ imageId }: { imageId: string }) {
                       </span>
                     </div>
                     <div className="text-[11.5px] text-[var(--muted)]">
-                      Pohon #{index + 1}
+                      Trees #{index + 1}
                       {detection.gps &&
                         ` · ${detection.gps.lat.toFixed(5)}, ${detection.gps.lng.toFixed(5)}`}
                       {` · ${(detection.confidence * 100).toFixed(1)}%`}

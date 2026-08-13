@@ -32,7 +32,7 @@ export default function AiKeyCard() {
 
   async function simpan() {
     if (kunci.trim().length < 8) {
-      setError("Kunci terlalu pendek.");
+      setError("Key is too short.");
       return;
     }
     setBusy(true);
@@ -42,9 +42,9 @@ export default function AiKeyCard() {
       setStatus(await saveAiKey(kunci.trim(), model));
       setKunci("");
       setModel("");
-      setPesan("Kunci tersimpan dan langsung berlaku.");
+      setPesan("Key saved and effective immediately.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal menyimpan kunci.");
+      setError(err instanceof ApiError ? err.message : "Could not save the key.");
     } finally {
       setBusy(false);
     }
@@ -56,9 +56,9 @@ export default function AiKeyCard() {
     setPesan(null);
     try {
       setStatus(await clearAiKey());
-      setPesan("Kunci dihapus dari aplikasi.");
+      setPesan("Key removed from the application.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal menghapus kunci.");
+      setError(err instanceof ApiError ? err.message : "Could not delete the key.");
     } finally {
       setBusy(false);
     }
@@ -66,8 +66,8 @@ export default function AiKeyCard() {
 
   return (
     <Card
-      title="Kunci API Nebius"
-      subtitle="Untuk fitur Analisis AI pada layar hasil deteksi"
+      title="Nebius API key"
+      subtitle="For the AI Review feature on the detection result screen"
     >
       <div className="flex flex-wrap items-center gap-2 text-[12.5px]">
         <span
@@ -78,11 +78,11 @@ export default function AiKeyCard() {
               : { background: "var(--line-soft)", color: "var(--muted)" }
           }
         >
-          {status?.configured ? "Aktif" : "Belum diisi"}
+          {status?.configured ? "Active" : "Not set"}
         </span>
         {status?.configured && (
           <span className="mono text-[11px] text-[var(--muted-3)]">
-            {status.key_hint} · diisi lewat {status.source} · {status.model}
+            {status.key_hint} · set via {status.source} · {status.model}
           </span>
         )}
       </div>
@@ -90,7 +90,7 @@ export default function AiKeyCard() {
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex min-w-[260px] flex-1 flex-col gap-[6px]">
           <span className="text-[12px] font-semibold text-[var(--muted)]">
-            {status?.configured ? "Ganti kunci" : "Kunci API"}
+            {status?.configured ? "Replace key" : "API key"}
           </span>
           <input
             type="password"
@@ -105,7 +105,7 @@ export default function AiKeyCard() {
 
         <label className="flex min-w-[240px] flex-1 flex-col gap-[6px]">
           <span className="text-[12px] font-semibold text-[var(--muted)]">
-            Model (opsional)
+            Model (optional)
           </span>
           <input
             autoComplete="off"
@@ -122,14 +122,14 @@ export default function AiKeyCard() {
           disabled={busy}
           className="rounded-[10px] bg-[var(--brand)] px-4 py-[10px] text-[12.5px] font-bold text-white disabled:opacity-60"
         >
-          {busy ? "Menyimpan…" : "Simpan"}
+          {busy ? "Saving…" : "Save"}
         </button>
 
         {status?.configured && (
           <button
             onClick={async () => {
               if (!model.trim()) {
-                setError("Isi nama model lebih dulu.");
+                setError("Enter a model name first.");
                 return;
               }
               setBusy(true);
@@ -137,9 +137,9 @@ export default function AiKeyCard() {
               try {
                 setStatus(await saveAiModel(model.trim()));
                 setModel("");
-                setPesan("Model diganti.");
+                setPesan("Model changed.");
               } catch (err) {
-                setError(err instanceof ApiError ? err.message : "Gagal mengganti model.");
+                setError(err instanceof ApiError ? err.message : "Could not change the model.");
               } finally {
                 setBusy(false);
               }
@@ -147,7 +147,7 @@ export default function AiKeyCard() {
             disabled={busy}
             className="rounded-[10px] border border-[var(--line)] px-4 py-[10px] text-[12.5px] font-semibold text-[var(--brand)] disabled:opacity-60"
           >
-            Ganti model saja
+            Change model only
           </button>
         )}
 
@@ -157,7 +157,7 @@ export default function AiKeyCard() {
             disabled={busy}
             className="rounded-[10px] border border-[var(--line)] px-4 py-[10px] text-[12.5px] font-semibold text-[var(--red)] disabled:opacity-60"
           >
-            Hapus
+            Delete
           </button>
         )}
       </div>
@@ -177,23 +177,23 @@ export default function AiKeyCard() {
       )}
 
       <div className="rounded-[10px] border border-[#e5cfa6] bg-[var(--amber-bg)] px-3 py-[10px] text-[11.5px] leading-relaxed text-[var(--amber)]">
-        <b>Aplikasi ini belum punya autentikasi.</b> Selama itu belum ada, siapa
-        pun yang bisa membuka alamatnya dapat mengganti kunci di sini dan memakai
-        kuota Nebius Anda. Batasi aksesnya di reverse proxy sampai autentikasi
-        dibangun.
+        <b>This application has no authentication yet.</b> Until it does, anyone
+        who can open its address can replace the key here and spend your
+        Nebius quota. Restrict access at the reverse proxy until authentication
+        is built.
       </div>
 
       <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
-        Tidak semua model menerima gambar. Bila model yang dipilih hanya menerima
-        teks — DeepSeek dan sebagian besar model bahasa — penilaian tetap dibuat,
-        tapi dari <b>ringkasan hasil deteksi</b>, bukan dari citranya. Hasil
-        seperti itu ditandai jelas agar perbedaannya tidak tersamar.
+        Not every model accepts images. If the chosen model takes text only
+        — DeepSeek and most language models — a review is still produced,
+        but from the <b>detection summary</b>, not from the image. Such results
+        are marked clearly so the difference is never hidden.
       </p>
 
       <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
-        Kunci disimpan di server dan berlaku seketika tanpa restart. Setelah
-        dikirim, kunci tidak dapat dibaca kembali lewat aplikasi — yang
-        ditampilkan hanya empat karakter terakhirnya.
+        The key is stored on the server and takes effect immediately. Once
+        sent, it can never be read back through the application — only
+        its last four characters are shown.
       </p>
     </Card>
   );

@@ -85,19 +85,18 @@ class TestPencarianLabel:
         assert client.get("/api/dashboard?q=tidak-ada").json()["images_analyzed"] == 0
 
 
-class TestPetaSudahDilepas:
-    def test_endpoint_peta_dan_blok_tidak_ada_lagi(self, client):
-        """Aplikasi tidak lagi memetakan sebaran; endpointnya ikut dibuang
-        supaya tidak ada kode mati yang menyesatkan pembaca."""
-        assert client.get("/api/map").status_code == 404
+class TestPetaBerbasisCitra:
+    def test_endpoint_blok_tetap_tidak_ada(self, client):
+        """Blok kebun digantikan label; endpointnya tidak dihidupkan lagi."""
         assert client.get("/api/blocks").status_code == 404
 
-    def test_koordinat_exif_tetap_disimpan(self, client):
-        """Data GPS sengaja dipertahankan: menghidupkan lagi fitur peta kelak
-        tidak boleh memerlukan pemulihan data."""
+    def test_peta_mengembalikan_penanda_per_citra(self, client):
+        assert client.get("/api/map").status_code == 200
+
+    def test_citra_tanpa_koordinat_tidak_muncul_di_peta(self, client):
+        """Menempatkannya di titik tengah wilayah akan terlihat seperti data
+        survei padahal bukan."""
         image_id = _unggah(client, ["a.jpg"], ["Tanpa EXIF"]).json()["images"][0]["image_id"]
+        client.post(f"/api/analyze/{image_id}")
 
-        hasil = client.get(f"/api/results/{image_id}")
-
-        # Citra uji memang tidak punya EXIF; yang diuji adalah bidangnya masih ada.
-        assert "gps" in hasil.json() or hasil.status_code == 409
+        assert client.get("/api/map").json() == []

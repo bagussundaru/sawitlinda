@@ -68,7 +68,7 @@ export function StatCard({
         )}
       </div>
       <div className="text-[31px] font-extrabold leading-none tracking-[-0.04em]">
-        {value.toLocaleString("id-ID")}
+        {value.toLocaleString("en-GB")}
         {suffix && <span className="text-[18px]">{suffix}</span>}
       </div>
       <div className="h-[5px] overflow-hidden rounded-[4px] bg-[var(--line-soft)]">

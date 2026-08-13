@@ -9,9 +9,9 @@ function meta(item: ResultListItem): string {
   if (item.gps) {
     parts.push(`${item.gps.lat.toFixed(4)}, ${item.gps.lng.toFixed(4)}`);
   } else {
-    parts.push("GPS tidak ada di EXIF");
+    parts.push("No GPS in EXIF");
   }
-  if (item.summary) parts.push(`${item.summary.total} pohon`);
+  if (item.summary) parts.push(`${item.summary.total} trees`);
   return parts.join(" · ");
 }
 
@@ -21,7 +21,7 @@ export default function InferenceQueue({ items }: { items: ResultListItem[] }) {
   if (items.length === 0) {
     return (
       <p className="text-[12.5px] text-[var(--muted-2)]">
-        Belum ada citra yang diunggah.
+        No images uploaded yet.
       </p>
     );
   }
@@ -40,7 +40,7 @@ export default function InferenceQueue({ items }: { items: ResultListItem[] }) {
               <div className="truncate text-[12.5px] font-semibold">
                 {done ? (
                   <Link
-                    href={`/hasil/${item.image_id}`}
+                    href={`/detections/${item.image_id}`}
                     className="hover:underline"
                   >
                     {item.filename}
@@ -57,10 +57,10 @@ export default function InferenceQueue({ items }: { items: ResultListItem[] }) {
               <span className="mono text-[11px] text-[#4b6656]">selesai</span>
             ) : (
               <Link
-                href={`/proses?ids=${item.image_id}`}
+                href={`/processing?ids=${item.image_id}`}
                 className="mono text-[11px] font-bold text-[var(--brand-2)]"
               >
-                analisis →
+                analyse →
               </Link>
             )}
           </div>

@@ -59,6 +59,8 @@ class DetectionResult(BaseModel):
     filename: str
     #: Nama yang diberikan pengunggah; identitas citra di layar dan laporan.
     label: str | None = None
+    village: str | None = None
+    village_name: str | None = None
     captured_at: datetime | None = None
     gps: Gps | None = None
     summary: Summary
@@ -72,6 +74,8 @@ class ImageOut(BaseModel):
     image_id: UUID
     filename: str
     label: str | None = None
+    village: str | None = None
+    village_name: str | None = None
     captured_at: datetime | None = None
     gps: Gps | None = None
     status: ImageStatus
@@ -89,6 +93,43 @@ class ResultListItem(ImageOut):
     """History entry. `summary` is null while the image has not been analysed."""
 
     summary: Summary | None = None
+
+
+class VillageInfo(BaseModel):
+    """Satu desa contoh, beserta berapa banyak citra yang tercatat di sana."""
+
+    key: str
+    name: str
+    district: str
+    #: Perkiraan pusat wilayah — hanya untuk memposisikan tampilan peta,
+    #: bukan letak survei.
+    lat: float
+    lng: float
+    images: int
+    analyzed: int
+    trees: int
+    affected: int
+
+
+class MapImagePoint(BaseModel):
+    """Satu citra pada peta.
+
+    Penanda dipasang per CITRA, bukan per pohon: koordinat per pohon perlu skala
+    tanah yang tidak lagi tersedia, sedangkan koordinat citra dari EXIF benar
+    benar terukur.
+    """
+
+    image_id: UUID
+    filename: str
+    label: str | None = None
+    village: str | None = None
+    captured_at: datetime | None = None
+    gps: Gps
+    summary: Summary
+    #: Kondisi yang paling banyak muncul pada citra ini.
+    dominant_condition: str | None = None
+    #: Bagian pohon yang bermasalah, 0..1 — dipakai mewarnai penanda.
+    affected_share: float
 
 
 class ResultPage(BaseModel):

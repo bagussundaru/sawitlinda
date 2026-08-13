@@ -9,13 +9,13 @@ import type { ResultListItem } from "@/types/detection";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
-  return new Date(value).toLocaleString("id-ID", {
+  return new Date(value).toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   });
 }
 
-export default function LaporanPage() {
+export default function ReportsPage() {
   const [items, setItems] = useState<ResultListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +25,7 @@ export default function LaporanPage() {
     listResults({ status: "analyzed", limit: 200 })
       .then((halaman) => setItems(halaman.items))
       .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Laporan gagal dimuat."),
+        setError(err instanceof ApiError ? err.message : "Reports failed to load."),
       );
   }, []);
 
@@ -34,9 +34,9 @@ export default function LaporanPage() {
   return (
     <div className="space-y-[18px]">
       <div>
-        <h1 className="text-[19px] font-bold">Laporan</h1>
+        <h1 className="text-[19px] font-bold">Reports</h1>
         <p className="text-[13px] text-[var(--muted)]">
-          Unduh hasil analisis per citra dalam format PDF atau CSV.
+          Download per-image analysis results as PDF or CSV.
         </p>
       </div>
 
@@ -50,14 +50,14 @@ export default function LaporanPage() {
       )}
 
       {!items && !error && (
-        <p className="text-sm text-[var(--muted)]">Memuat laporan…</p>
+        <p className="text-sm text-[var(--muted)]">Loading reports…</p>
       )}
 
       {items && analyzed.length === 0 && (
         <div className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-[15px] py-3 text-[12.5px] text-[var(--green-d)]">
-          Belum ada citra yang dianalisis.{" "}
-          <Link href="/unggah" className="font-semibold underline">
-            Unggah citra
+          No image has been analysed yet.{" "}
+          <Link href="/upload" className="font-semibold underline">
+            Upload images
           </Link>{" "}
           terlebih dahulu.
         </div>
@@ -72,8 +72,8 @@ export default function LaporanPage() {
                   <th className="pb-2 font-semibold">Berkas</th>
                   <th className="pb-2 font-semibold">Berkas</th>
                   <th className="pb-2 font-semibold">Waktu</th>
-                  <th className="pb-2 text-right font-semibold">Pohon</th>
-                  <th className="pb-2 text-right font-semibold">Bermasalah</th>
+                  <th className="pb-2 text-right font-semibold">Trees</th>
+                  <th className="pb-2 text-right font-semibold">Affected</th>
                   <th className="pb-2 text-right font-semibold">Berat</th>
                   <th className="pb-2 text-right font-semibold">Unduh</th>
                 </tr>
@@ -86,7 +86,7 @@ export default function LaporanPage() {
                   >
                     <td className="py-[10px] font-medium">
                       <Link
-                        href={`/hasil/${item.image_id}`}
+                        href={`/detections/${item.image_id}`}
                         className="hover:text-[var(--green)] hover:underline"
                       >
                         {item.label ?? item.filename}

@@ -29,7 +29,7 @@ export default function LoginScreen({
       await login(username, password);
       onSuccess();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal masuk.");
+      setError(err instanceof ApiError ? err.message : "Sign-in failed.");
     } finally {
       setBusy(false);
     }
@@ -57,17 +57,17 @@ export default function LoginScreen({
 
         {!ready ? (
           <div className="rounded-[16px] border border-[#e5cfa6]/30 bg-[#3a2f16] p-6 text-[13px] leading-relaxed text-[#f0d79a]">
-            <b className="mb-2 block text-white">Belum ada akun terdaftar</b>
-            Aplikasi tidak dapat dipakai sampai akun pertama dibuat. Jalankan di
-            server, dari folder yang memuat <code className="mono">docker-compose.prod.yml</code>:
+            <b className="mb-2 block text-white">No account registered yet</b>
+            The application cannot be used until the first account exists. Run this on
+            the server, from the folder containing <code className="mono">docker-compose.prod.yml</code>:
             <code className="mono mt-3 block overflow-x-auto whitespace-pre rounded-[8px] bg-black/30 px-3 py-2 text-[11.5px] leading-relaxed text-[#9fe3c0]">
               {`docker compose -p sawitscan \\
   -f docker-compose.prod.yml \\
   exec backend python scripts/create_user.py`}
             </code>
             <span className="mt-3 block text-[11.5px] leading-relaxed opacity-80">
-              Nama proyek dan berkas compose harus disebutkan — tanpa keduanya,
-              perintah itu tidak menemukan stack yang sedang berjalan.
+              The project name and compose file must be given — without them,
+              the command will not find the running stack.
             </span>
           </div>
         ) : (
@@ -77,16 +77,16 @@ export default function LoginScreen({
           >
             <div>
               <h1 className="text-[17px] font-extrabold tracking-[-0.01em] text-[var(--ink)]">
-                Masuk
+                Sign in
               </h1>
               <p className="mt-1 text-[12px] text-[var(--muted)]">
-                Diperlukan untuk seluruh fitur, termasuk training model.
+                Required for every feature, including model training.
               </p>
             </div>
 
             <label className="flex flex-col gap-[6px]">
               <span className="text-[12px] font-semibold text-[var(--muted)]">
-                Nama pengguna
+                Username
               </span>
               <input
                 autoFocus
@@ -99,7 +99,7 @@ export default function LoginScreen({
 
             <label className="flex flex-col gap-[6px]">
               <span className="text-[12px] font-semibold text-[var(--muted)]">
-                Kata sandi
+                Password
               </span>
               <input
                 type="password"
@@ -124,7 +124,7 @@ export default function LoginScreen({
               disabled={busy || !username || !password}
               className="rounded-[10px] bg-[var(--brand)] px-4 py-[11px] text-[13px] font-bold text-white disabled:opacity-50"
             >
-              {busy ? "Memeriksa…" : "Masuk"}
+              {busy ? "Checking…" : "Sign in"}
             </button>
           </form>
         )}

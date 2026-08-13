@@ -33,7 +33,7 @@ export default function AnnotatedImage({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageFileUrl(imageId)}
-        alt={`Citra UAV ${filename}`}
+        alt={`UAV image ${filename}`}
         className="block w-full"
         onLoad={(event) =>
           setSize({

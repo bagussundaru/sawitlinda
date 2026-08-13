@@ -8,7 +8,7 @@ import { SEVERITY_COLOR } from "@/lib/severity";
 import type { AiAssessment, DetectionResult } from "@/types/detection";
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleString("id-ID", {
+  return new Date(value).toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   });
@@ -27,12 +27,12 @@ function Disagreement({ pp }: { pp: number }) {
     >
       {tinggi ? (
         <>
-          <b>Selisih {pp} poin persen</b> antara perkiraan model vision dan hasil
-          deteksi per pohon. Citra ini layak diperiksa manual.
+          <b>{pp} percentage points apart</b> between the vision model estimate and the
+          per-tree detections. This image is worth checking by hand.
         </>
       ) : (
         <>
-          Selisih dengan hasil deteksi per pohon hanya <b>{pp} poin persen</b> —
+          Only <b>{pp} percentage points</b> from the per-tree detections —
           keduanya sepakat.
         </>
       )}
@@ -110,11 +110,11 @@ export default function AiPanel({
         const system = await getSystemInfo().catch(() => null);
         setError(
           system && !system.ai_enabled
-            ? "Analisis AI belum dikonfigurasi di server (NEBIUS_API_KEY belum diisi)."
+            ? "AI Review is not configured on the server (NEBIUS_API_KEY is empty)."
             : err.message,
         );
       } else {
-        setError(err instanceof ApiError ? err.message : "Analisis AI gagal.");
+        setError(err instanceof ApiError ? err.message : "AI Review failed.");
       }
     } finally {
       setBusy(false);
@@ -123,15 +123,15 @@ export default function AiPanel({
 
   return (
     <Card
-      title="Analisis AI"
-      subtitle="Penilaian keseluruhan citra — pendamping deteksi per pohon, bukan penggantinya"
+      title="AI Review"
+      subtitle="A whole-image assessment — a companion to per-tree detection, not a replacement"
       action={
         <button
           onClick={jalankan}
           disabled={busy}
           className="rounded-[9px] bg-[var(--brand)] px-4 py-2 text-[12px] font-bold text-white disabled:opacity-60"
         >
-          {busy ? "Menganalisis…" : result.ai ? "Ulangi" : "Jalankan"}
+          {busy ? "Analysing…" : result.ai ? "Run again" : "Run"}
         </button>
       }
     >
@@ -149,8 +149,8 @@ export default function AiPanel({
       ) : (
         !error && (
           <p className="text-[12.5px] text-[var(--muted-2)]">
-            Belum ada penilaian untuk citra ini. Klik <b>Jalankan</b> untuk meminta
-            model vision membaca citranya dan memberi ringkasan agronomis.
+            No assessment for this image yet. Click <b>Run</b> to ask the
+            vision model to read it and give an agronomic summary.
           </p>
         )
       )}

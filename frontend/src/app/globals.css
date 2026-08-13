@@ -106,6 +106,201 @@ body {
 }
 
 
+/* Leaflet's own stylesheet, inlined: the artifact CSP and offline dev both rule
+   out fetching it from a CDN. Only the rules this app actually uses. */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.leaflet-container {
+  overflow: hidden;
+  background: #ddd;
+  outline-offset: 1px;
+  font-family: inherit;
+}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.leaflet-tile::selection {
+  background: transparent;
+}
+.leaflet-safari .leaflet-tile {
+  image-rendering: -webkit-optimize-contrast;
+}
+.leaflet-container {
+  -webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+  color: var(--green);
+}
+.leaflet-tile {
+  filter: inherit;
+  visibility: hidden;
+}
+.leaflet-tile-loaded {
+  visibility: inherit;
+}
+.leaflet-zoom-box {
+  width: 0;
+  height: 0;
+  box-sizing: border-box;
+  z-index: 800;
+}
+.leaflet-pane {
+  z-index: 400;
+}
+.leaflet-tile-pane {
+  z-index: 200;
+}
+.leaflet-overlay-pane {
+  z-index: 400;
+}
+.leaflet-shadow-pane {
+  z-index: 500;
+}
+.leaflet-marker-pane {
+  z-index: 600;
+}
+.leaflet-tooltip-pane {
+  z-index: 650;
+}
+.leaflet-popup-pane {
+  z-index: 700;
+}
+.leaflet-map-pane canvas {
+  z-index: 100;
+}
+.leaflet-map-pane svg {
+  z-index: 200;
+}
+.leaflet-control {
+  position: relative;
+  z-index: 800;
+  pointer-events: auto;
+  float: left;
+  clear: both;
+}
+.leaflet-top,
+.leaflet-bottom {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+.leaflet-top {
+  top: 0;
+}
+.leaflet-right {
+  right: 0;
+}
+.leaflet-bottom {
+  bottom: 0;
+}
+.leaflet-left {
+  left: 0;
+}
+.leaflet-right .leaflet-control {
+  float: right;
+  margin-right: 10px;
+}
+.leaflet-top .leaflet-control {
+  margin-top: 10px;
+}
+.leaflet-bottom .leaflet-control {
+  margin-bottom: 10px;
+}
+.leaflet-left .leaflet-control {
+  margin-left: 10px;
+}
+.leaflet-zoom-animated {
+  transform-origin: 0 0;
+}
+.leaflet-grab {
+  cursor: grab;
+}
+.leaflet-container {
+  cursor: grab;
+}
+.leaflet-control-zoom a {
+  display: block;
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 700;
+}
+.leaflet-control-zoom {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.leaflet-popup {
+  position: absolute;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.leaflet-popup-content-wrapper {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-size: 12.5px;
+  text-align: left;
+  line-height: 1.5;
+}
+.leaflet-popup-tip-container {
+  width: 40px;
+  height: 20px;
+  position: absolute;
+  left: 50%;
+  margin-left: -20px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.leaflet-popup-tip {
+  width: 17px;
+  height: 17px;
+  padding: 1px;
+  margin: -10px auto 0;
+  transform: rotate(45deg);
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+.leaflet-popup-close-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 4px 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 16px;
+}
+
 /* ==========================================================================
    Gerak
    --------------------------------------------------------------------------

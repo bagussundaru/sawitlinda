@@ -8,14 +8,18 @@ import LoginScreen from "@/components/LoginScreen";
 import { getAuthState, getSystemInfo, logout } from "@/lib/api";
 import type { AuthState, SystemInfo } from "@/types/detection";
 
+/** Sidebar. Sengaja pendek: satu menu per pekerjaan yang benar-benar dapat
+ *  dilakukan, bukan satu menu per bab pada spesifikasi. Menu yang membuka layar
+ *  kosong lebih membingungkan daripada menu yang tidak ada. */
 const NAV = [
   { href: "/", label: "Dashboard" },
-  { href: "/riwayat", label: "Hasil Deteksi" },
-  { href: "/unggah", label: "Unggah" },
+  { href: "/upload", label: "Upload" },
+  { href: "/detections", label: "Detections" },
+  { href: "/map", label: "Map" },
+  { href: "/evaluation", label: "Evaluation" },
   { href: "/training", label: "Training" },
-  { href: "/laporan", label: "Laporan" },
-  { href: "/evaluasi", label: "Evaluasi" },
-  { href: "/pengaturan", label: "Pengaturan" },
+  { href: "/reports", label: "Reports" },
+  { href: "/settings", label: "Settings" },
 ];
 
 /** Sidebar footer panel. Shows what the system actually runs — a mock-up would
@@ -34,7 +38,7 @@ function ModelPanel({ system }: { system: SystemInfo | null }) {
           }}
         />
         <span className="text-[11px] font-bold text-white">
-          {live ? "Model aktif" : "Mode mock"}
+          {live ? "Model active" : "Mock mode"}
         </span>
       </div>
       <div className="mono text-[10.5px] leading-[1.7] text-[var(--sidebar-mono)]">
@@ -42,18 +46,18 @@ function ModelPanel({ system }: { system: SystemInfo | null }) {
           live ? (
             <>
               {system.model_name}
-              <br />v{system.version} · {system.condition_count} kelas
+              <br />v{system.version} · {system.condition_count} classes
             </>
           ) : (
             <>
-              Model belum dipasang
-              <br />v{system.version} · {system.condition_count} kelas
+              No model installed
+              <br />v{system.version} · {system.condition_count} classes
               <br />
-              {system.ai_enabled ? "analisis AI aktif" : "hasil belum representatif"}
+              {system.ai_enabled ? "AI review on" : "results not representative"}
             </>
           )
         ) : (
-          "memuat…"
+          "loading…"
         )}
       </div>
     </div>
@@ -155,7 +159,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               }}
               className="shrink-0 text-[11.5px] font-semibold text-[#6fa98d] hover:text-white"
             >
-              Keluar
+              Sign out
             </button>
           </div>
         </div>
@@ -170,7 +174,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0">
         <button
-          aria-label="Buka menu"
+          aria-label="Open menu"
           onClick={() => setOpen(true)}
           className="m-4 rounded-[11px] border border-[var(--line)] bg-[var(--card)] p-[10px] text-[var(--muted)] lg:hidden"
         >
