@@ -80,7 +80,7 @@ class TestJalurGpu:
     ):
         hasil = yolo.run(citra, model_path=bobot, settings=settings)["detections"]
 
-        assert [d["condition"] for d in hasil] == ["Sehat", "Menguning"]
+        assert [d["condition"] for d in hasil] == ["Healthy", "Yellowing"]
         assert [d["severity"] for d in hasil] == ["sehat", "ringan"]
 
     def test_hasil_tetap_terurut_mengikuti_pembacaan_citra(

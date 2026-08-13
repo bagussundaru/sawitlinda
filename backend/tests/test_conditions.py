@@ -19,4 +19,4 @@ def test_every_condition_carries_an_interpretation_and_an_action(client):
 def test_healthy_condition_asks_for_no_action(client):
     body = {item["key"]: item for item in client.get("/api/conditions").json()}
 
-    assert body[HEALTHY_CLASS]["action"] == "Tidak ada tindakan"
+    assert body[HEALTHY_CLASS]["action"] == "No action needed"

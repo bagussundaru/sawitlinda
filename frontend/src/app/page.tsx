@@ -24,6 +24,15 @@ const PER_HALAMAN = 25;
  *  permintaan, dan jawaban lama bisa tiba setelah jawaban baru. */
 const JEDA_CARI_MS = 300;
 
+/** Warna per kelas kondisi. Kuncinya label dari server, bukan kunci kelas —
+ *  itulah yang dikirim `by_condition`. */
+const CONDITION_COLOR: Record<string, string | undefined> = {
+  Healthy: "var(--healthy)",
+  Yellowing: "var(--mild)",
+  Stunted: "var(--mild)",
+  "Dead / stressed": "var(--severe)",
+};
+
 function KerangkaAngka() {
   return (
     <div className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
@@ -215,42 +224,49 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* --- Angka ringkas --- */}
-      {memuat || !summary ? (
+      {/* --- Angka ringkas ---
+           Empat kelas kondisi, bukan sehat/bermasalah/berat. Kelompok yang lama
+           saling beririsan — "berat" adalah bagian dari "bermasalah" — sehingga
+           ketiga persentasenya tidak berjumlah 100% dan mudah salah dibaca.
+           Keempat kelas ini saling lepas: dari 100 pohon, sekian sehat, sekian
+           menguning, sekian kerdil, sekian mati. --- */}
+      {memuat || !data || !summary ? (
         <KerangkaAngka />
       ) : (
-        <section className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
-          {[
-            {
-              label: "Total Trees Detected",
-              value: summary.total,
-              share: 1,
-              note: `${data?.images_analyzed ?? 0} images`,
-              color: undefined,
-            },
-            {
-              label: "Healthy Trees",
-              value: summary.healthy,
-              share: share(summary.healthy),
-              color: "var(--healthy)",
-            },
-            {
-              label: "Affected Trees",
-              value: summary.infected,
-              share: share(summary.infected),
-              color: "var(--mild)",
-            },
-            {
-              label: "Severe Cases",
-              value: summary.severe,
-              share: share(summary.severe),
-              color: "var(--severe)",
-            },
-          ].map((kartu, i) => (
-            <div key={kartu.label} className="muncul" style={{ ["--i" as string]: i }}>
-              <StatCard {...kartu} />
-            </div>
-          ))}
+        <section className="flex flex-col gap-[14px]">
+          <div className="muncul flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-[13px] font-semibold text-[var(--muted)]">
+              Of
+            </span>
+            <span className="text-[26px] font-extrabold tracking-[-0.03em] text-[var(--ink)]">
+              {summary.total.toLocaleString("en-GB")}
+            </span>
+            <span className="text-[13px] font-semibold text-[var(--muted)]">
+              trees detected across {data.images_analyzed} image
+              {data.images_analyzed === 1 ? "" : "s"}:
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-[14px] xl:grid-cols-4">
+            {data.by_condition.map((item, i) => (
+              <div key={item.label} className="muncul" style={{ ["--i" as string]: i }}>
+                <StatCard
+                  label={item.label}
+                  value={item.count}
+                  share={share(item.count)}
+                  note={`${(share(item.count) * 100).toFixed(1)}% of all trees`}
+                  color={CONDITION_COLOR[item.label]}
+                />
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
+            These four classes are mutually exclusive, so their percentages add
+            up to 100%. Percentages are of trees the model <b>detected</b>, not
+            of every tree in the field — anything the model missed is counted
+            nowhere.
+          </p>
         </section>
       )}
 

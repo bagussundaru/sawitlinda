@@ -31,7 +31,7 @@ class TestYolo:
 
         assert len(hasil) == 1
         assert hasil[0].box == pytest.approx((400.0, 150.0, 200.0, 200.0))
-        assert hasil[0].label == "Sehat"
+        assert hasil[0].label == "Healthy"
         assert hasil[0].image == "dji_4101"
 
     def test_indeks_kelas_dipetakan_ke_label_sistem(self):
@@ -49,7 +49,7 @@ class TestYolo:
 
         label = [g.label for g in parse_yolo_zip(isi, SIZES)]
 
-        assert label == ["Sehat", "Menguning", "Mati/stres", "Kerdil"]
+        assert label == ["Healthy", "Yellowing", "Dead / stressed", "Stunted"]
 
     def test_classes_txt_juga_diterima(self):
         isi = _zip(
@@ -59,13 +59,13 @@ class TestYolo:
             }
         )
 
-        assert parse_yolo_zip(isi, SIZES)[0].label == "Menguning"
+        assert parse_yolo_zip(isi, SIZES)[0].label == "Yellowing"
 
     def test_names_bergaya_butir_juga_terbaca(self):
         yaml = "nc: 4\nnames:\n  - healthy\n  - yellow\n  - dead\n  - small\n"
         isi = _zip({"data.yaml": yaml, "labels/DJI_4101.txt": "2 0.5 0.5 0.2 0.2\n"})
 
-        assert parse_yolo_zip(isi, SIZES)[0].label == "Mati/stres"
+        assert parse_yolo_zip(isi, SIZES)[0].label == "Dead / stressed"
 
     def test_beberapa_citra_terbaca_terpisah(self):
         isi = _zip(
@@ -153,7 +153,7 @@ class TestCoco:
         hasil = parse_coco(self._coco(), SIZES)
 
         assert hasil[0].box == (10.0, 20.0, 30.0, 40.0)
-        assert hasil[0].label == "Menguning"
+        assert hasil[0].label == "Yellowing"
         assert hasil[0].image == "dji_4101"
 
     def test_anotasi_citra_asing_dilewati(self):

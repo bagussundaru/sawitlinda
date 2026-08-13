@@ -68,7 +68,7 @@ class TestPemetaanKeluaran:
         d = yolo.run("citra.jpg", model_path="model.pt")["detections"][0]
 
         assert d["bbox"] == [100.0, 200.0, 240.0, 300.0]
-        assert d["condition"] == "Sehat"
+        assert d["condition"] == "Healthy"
         assert d["confidence"] == 0.91
 
     def test_indeks_kelas_dibaca_dari_model_bukan_diasumsikan(self, monkeypatch):
@@ -83,7 +83,7 @@ class TestPemetaanKeluaran:
 
         label = [d["condition"] for d in yolo.run("c.jpg", model_path="m.pt")["detections"]]
 
-        assert label == ["Mati/stres", "Sehat", "Kerdil", "Menguning"]
+        assert label == ["Dead / stressed", "Healthy", "Stunted", "Yellowing"]
 
     def test_kelas_asing_diabaikan(self, monkeypatch):
         _pasang(

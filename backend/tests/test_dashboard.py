@@ -21,7 +21,15 @@ def test_dashboard_is_empty_without_data(client):
     assert body["images_total"] == 0
     assert body["images_analyzed"] == 0
     assert body["summary"]["total"] == 0
-    assert body["by_condition"] == []
+    # Keempat kelas tetap dikembalikan walau nol: kelas yang hilang dari layar
+    # terbaca seolah tidak pernah ada.
+    assert [c["label"] for c in body["by_condition"]] == [
+        "Healthy",
+        "Yellowing",
+        "Stunted",
+        "Dead / stressed",
+    ]
+    assert all(c["count"] == 0 for c in body["by_condition"])
 
 
 def test_dashboard_keeps_every_severity_level_even_when_unused(client):

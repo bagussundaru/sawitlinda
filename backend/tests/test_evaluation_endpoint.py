@@ -41,7 +41,7 @@ def _anotasi_dari_deteksi(hasil, ukuran=(1000, 500), ambil=None) -> bytes:
     prediksi dan acuan memang identik.
     """
     lebar, tinggi = ukuran
-    indeks = {"Sehat": 0, "Menguning": 1, "Mati/stres": 2, "Kerdil": 3}
+    indeks = {"Healthy": 0, "Yellowing": 1, "Dead / stressed": 2, "Stunted": 3}
     baris = []
     for d in hasil["detections"][:ambil] if ambil else hasil["detections"]:
         x, y, w, h = d["bbox"]

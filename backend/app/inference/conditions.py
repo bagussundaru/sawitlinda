@@ -34,31 +34,31 @@ class Condition:
 CONDITIONS: tuple[Condition, ...] = (
     Condition(
         key="healthy",
-        label="Sehat",
-        appearance="Tajuk hijau rapat, ukuran pelepah normal",
-        interpretation="Tanaman sehat",
-        action="Tidak ada tindakan",
+        label="Healthy",
+        appearance="Dense green crown, normal frond size",
+        interpretation="Healthy plant",
+        action="No action needed",
     ),
     Condition(
         key="yellow",
-        label="Menguning",
-        appearance="Tajuk didominasi warna kuning atau hijau pucat",
-        interpretation="Dugaan defisiensi nutrisi",
-        action="Periksa unsur hara, lakukan pemupukan susulan (N/Mg/K)",
+        label="Yellowing",
+        appearance="Crown dominated by yellow or pale green",
+        interpretation="Suspected nutrient deficiency",
+        action="Check soil nutrients, apply follow-up fertiliser (N/Mg/K)",
     ),
     Condition(
         key="dead",
-        label="Mati/stres",
-        appearance="Tajuk mengering, berwarna cokelat, pelepah mati",
-        interpretation="Pelepah telah mati atau tanaman mengalami stres berat",
-        action="Lakukan pemangkasan atau inspeksi lapangan lebih lanjut",
+        label="Dead / stressed",
+        appearance="Crown dried out, brown, fronds dead",
+        interpretation="Fronds have died or the plant is severely stressed",
+        action="Prune, or carry out a closer field inspection",
     ),
     Condition(
         key="small",
-        label="Kerdil",
-        appearance="Tajuk berukuran lebih kecil dibanding tanaman sekitar",
-        interpretation="Pertumbuhan tanaman terhambat",
-        action="Review kembali pemupukan dan evaluasi kondisi tanah",
+        label="Stunted",
+        appearance="Crown noticeably smaller than surrounding plants",
+        interpretation="Growth is being held back",
+        action="Review fertilisation and assess soil condition",
     ),
 )
 
@@ -67,6 +67,11 @@ BY_LABEL = {condition.label: condition for condition in CONDITIONS}
 
 #: Model class name -> label yang ditampilkan di UI.
 CLASS_LABELS = {condition.key: condition.label for condition in CONDITIONS}
+
+#: Urutan tampilan kelas pada layar: sehat lebih dulu, lalu dari yang paling
+#: ringan ke yang paling berat. Empat kelas ini SALING LEPAS dan mencakup seluruh
+#: pohon, sehingga persentasenya berjumlah 100%.
+DISPLAY_ORDER = ("healthy", "yellow", "small", "dead")
 
 #: The one class that means "nothing wrong with this tree".
 HEALTHY_CLASS = "healthy"

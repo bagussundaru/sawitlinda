@@ -5,6 +5,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app import models, schemas
+from app.inference import conditions
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.inference import engine
@@ -102,11 +103,20 @@ def get_dashboard(
             select(scope.c.severity, func.count()).group_by(scope.c.severity)
         ).all()
     )
-    condition_counts = db.execute(
-        select(scope.c.condition, func.count())
-        .group_by(scope.c.condition)
-        .order_by(func.count().desc())
-    ).all()
+    terhitung = dict(
+        db.execute(
+            select(scope.c.condition, func.count()).group_by(scope.c.condition)
+        ).all()
+    )
+
+    # Keempat kelas selalu dikembalikan, dalam urutan tetap, termasuk yang nol.
+    # Kelas yang hilang dari layar terbaca seolah tidak pernah ada, dan urutan
+    # yang berubah-ubah mengikuti jumlah membuat dua tangkapan layar sulit
+    # dibandingkan.
+    condition_counts = [
+        (conditions.CLASS_LABELS[key], terhitung.get(conditions.CLASS_LABELS[key], 0))
+        for key in conditions.DISPLAY_ORDER
+    ]
 
     total = sum(severity_counts.values())
     healthy = severity_counts.get("sehat", 0)

@@ -101,7 +101,7 @@ def test_analisis_ai_memakai_kunci_yang_diisi_lewat_aplikasi(client, monkeypatch
                         "message": {
                             "content": json.dumps(
                                 {
-                                    "dominant_condition": "Sehat",
+                                    "dominant_condition": "Healthy",
                                     "affected_share": 0.1,
                                     "confidence": 0.9,
                                     "summary": "Tajuk tampak rapat dan hijau.",

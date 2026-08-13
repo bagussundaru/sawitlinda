@@ -30,7 +30,7 @@ def _jawaban(isi: str) -> httpx.Response:
 
 ISI_SAH = json.dumps(
     {
-        "dominant_condition": "Menguning",
+        "dominant_condition": "Yellowing",
         "affected_share": 0.35,
         "confidence": 0.8,
         "summary": "Sebagian tajuk tampak pucat kekuningan di sisi utara petak.",
@@ -64,7 +64,7 @@ def test_penilaian_dibaca_dari_jawaban_model(monkeypatch, settings_ai, gambar):
 
     hasil = nebius.assess_image(gambar, settings_ai)
 
-    assert hasil.dominant_condition == "Menguning"
+    assert hasil.dominant_condition == "Yellowing"
     assert hasil.affected_share == 0.35
     assert hasil.confidence == 0.8
     assert "kekuningan" in hasil.summary
@@ -77,7 +77,7 @@ def test_json_berpagar_backtick_tetap_terbaca(monkeypatch, settings_ai, gambar):
         httpx, "post", lambda *a, **k: _jawaban(f"Tentu.\n```json\n{ISI_SAH}\n```")
     )
 
-    assert nebius.assess_image(gambar, settings_ai).dominant_condition == "Menguning"
+    assert nebius.assess_image(gambar, settings_ai).dominant_condition == "Yellowing"
 
 
 def test_kondisi_di_luar_daftar_ditolak(monkeypatch, settings_ai, gambar):
@@ -162,7 +162,7 @@ def test_endpoint_menyimpan_penilaian(client, settings_ai, monkeypatch):
 
     assert response.status_code == 200
     ai = response.json()["ai"]
-    assert ai["dominant_condition"] == "Menguning"
+    assert ai["dominant_condition"] == "Yellowing"
     assert ai["recommendation"].startswith("Periksa unsur hara")
     assert ai["model"] == settings_ai.nebius_model
 
