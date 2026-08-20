@@ -260,3 +260,20 @@ export interface MapImagePoint {
   /** Share of trees that are not healthy, 0..1 — drives marker colour. */
   affected_share: number;
 }
+
+/** An analysed image that carries no coordinates, so it cannot be mapped. */
+export interface MapImageWithoutGps {
+  image_id: string;
+  filename: string;
+  label: string | null;
+  village: string | null;
+  captured_at: string | null;
+  summary: DetectionSummary;
+}
+
+/** Contents of the map screen: what can be placed, and what cannot. */
+export interface MapData {
+  points: MapImagePoint[];
+  without_gps: MapImageWithoutGps[];
+  analyzed_total: number;
+}

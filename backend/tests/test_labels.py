@@ -99,4 +99,4 @@ class TestPetaBerbasisCitra:
         image_id = _unggah(client, ["a.jpg"], ["Tanpa EXIF"]).json()["images"][0]["image_id"]
         client.post(f"/api/analyze/{image_id}")
 
-        assert client.get("/api/map").json() == []
+        assert client.get("/api/map").json()["points"] == []

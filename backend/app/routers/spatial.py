@@ -78,24 +78,26 @@ def list_villages(db: Session = Depends(get_db)) -> list[schemas.VillageInfo]:
     ]
 
 
-@router.get("/map", response_model=list[schemas.MapImagePoint])
+@router.get("/map", response_model=schemas.MapData)
 def list_map_points(
     village: str | None = Query(None, description="Batasi ke satu desa"),
     db: Session = Depends(get_db),
-) -> list[schemas.MapImagePoint]:
-    """Citra yang punya koordinat, siap digambar sebagai penanda.
+) -> schemas.MapData:
+    """Isi layar peta: yang dapat ditempatkan, dan yang tidak.
 
-    Citra tanpa koordinat sengaja tidak dikembalikan: menempatkannya di titik
-    tengah wilayah akan terlihat seperti data survei padahal bukan.
+    Citra tanpa koordinat tidak digambar sebagai penanda — menempatkannya di
+    titik tengah wilayah akan terlihat seperti data survei padahal bukan —
+    tetapi tetap DIKEMBALIKAN pada daftar terpisah. Membuangnya sama sekali
+    membuat peta tampak lengkap padahal tidak, dan pembacanya tidak punya cara
+    mengetahui berapa banyak yang tidak terwakili.
     """
     ringkas = _ringkas_deteksi()
-    saring = [
-        models.Image.gps_lat.is_not(None),
-        models.Image.gps_lng.is_not(None),
-        models.Image.status == "analyzed",
-    ]
+    dasar = [models.Image.status == "analyzed"]
     if village:
-        saring.append(models.Image.village == village)
+        dasar.append(models.Image.village == village)
+
+    berkoordinat = models.Image.gps_lat.is_not(None) & models.Image.gps_lng.is_not(None)
+    saring = [*dasar, berkoordinat]
 
     baris = db.execute(
         select(
@@ -138,4 +140,42 @@ def list_map_points(
                 affected_share=(bermasalah / total) if total else 0.0,
             )
         )
-    return titik
+
+    # Citra yang dianalisis tetapi tidak dapat ditempatkan.
+    tanpa_gps = db.execute(
+        select(
+            models.Image,
+            func.coalesce(ringkas.c.total, 0),
+            func.coalesce(ringkas.c.healthy, 0),
+            func.coalesce(ringkas.c.severe, 0),
+        )
+        .outerjoin(ringkas, ringkas.c.image_id == models.Image.id)
+        .where(*dasar, ~berkoordinat)
+        .order_by(models.Image.created_at.desc())
+        .limit(500)
+    ).all()
+
+    dianalisis = (
+        db.scalar(select(func.count()).select_from(models.Image).where(*dasar)) or 0
+    )
+
+    return schemas.MapData(
+        points=titik,
+        without_gps=[
+            schemas.MapImageWithoutGps(
+                image_id=image.id,
+                filename=image.filename,
+                label=image.label,
+                village=image.village,
+                captured_at=image.captured_at,
+                summary=schemas.Summary(
+                    total=int(total),
+                    healthy=int(sehat),
+                    infected=int(total) - int(sehat),
+                    severe=int(berat),
+                ),
+            )
+            for image, total, sehat, berat in tanpa_gps
+        ],
+        analyzed_total=dianalisis,
+    )

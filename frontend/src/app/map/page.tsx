@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Card } from "@/components/Card";
-import { ApiError, listMapPoints, listVillages } from "@/lib/api";
-import type { MapImagePoint, VillageInfo } from "@/types/detection";
+import { ApiError, getMapData, listVillages } from "@/lib/api";
+import type {
+  MapImagePoint,
+  MapImageWithoutGps,
+  VillageInfo,
+} from "@/types/detection";
 
 // Leaflet touches `window` at import time, so it must not run during SSR.
 const PlantationMap = dynamic(() => import("@/components/PlantationMap"), {
@@ -23,6 +27,8 @@ function pct(value: number): string {
 export default function MapPage() {
   const [villages, setVillages] = useState<VillageInfo[]>([]);
   const [points, setPoints] = useState<MapImagePoint[]>([]);
+  const [withoutGps, setWithoutGps] = useState<MapImageWithoutGps[]>([]);
+  const [analysedTotal, setAnalysedTotal] = useState(0);
   const [village, setVillage] = useState<string | null>(null);
   const [selected, setSelected] = useState<MapImagePoint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,10 +43,12 @@ export default function MapPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listMapPoints(village)
+    getMapData(village)
       .then((data) => {
         if (cancelled) return;
-        setPoints(data);
+        setPoints(data.points);
+        setWithoutGps(data.without_gps);
+        setAnalysedTotal(data.analyzed_total);
         setSelected(null);
         setError(null);
       })
@@ -151,11 +159,38 @@ export default function MapPage() {
               ))}
             </div>
 
-            {withoutCoordinates && (
-              <p className="rounded-[10px] border border-[#e5cfa6] bg-[var(--amber-bg)] px-3 py-[10px] text-[11.5px] leading-relaxed text-[var(--amber)]">
-                No image in this selection carries coordinates. The map only
-                shows images whose EXIF metadata contains GPS — placing the rest
-                at an area centre would look like survey data when it is not.
+            {/* Cakupan dinyatakan sebagai angka, bukan disimpulkan sendiri
+                oleh pembaca dari peta yang tampak penuh. */}
+            {!loading && analysedTotal > 0 && (
+              <p
+                className="rounded-[10px] border px-3 py-[10px] text-[11.5px] leading-relaxed"
+                style={
+                  withoutGps.length === 0
+                    ? {
+                        borderColor: "#bfe6d7",
+                        background: "var(--green-bg)",
+                        color: "var(--green-d)",
+                      }
+                    : {
+                        borderColor: "#e5cfa6",
+                        background: "var(--amber-bg)",
+                        color: "var(--amber)",
+                      }
+                }
+              >
+                <b>
+                  {points.length} of {analysedTotal} analysed images are mapped.
+                </b>{" "}
+                {withoutGps.length > 0 ? (
+                  <>
+                    {withoutGps.length} have <b>GPS unavailable</b> — their EXIF
+                    metadata carries no coordinates. They are listed below rather
+                    than hidden; placing them at an area centre would look like
+                    survey data when it is not.
+                  </>
+                ) : (
+                  <>Every analysed image in this selection carries coordinates.</>
+                )}
               </p>
             )}
           </Card>
@@ -255,6 +290,44 @@ export default function MapPage() {
               as if they were not part of the study.
             </p>
           </Card>
+
+          {withoutGps.length > 0 && (
+            <Card
+              title="GPS unavailable"
+              subtitle={`${withoutGps.length} analysed image${
+                withoutGps.length === 1 ? "" : "s"
+              } cannot be placed on the map`}
+            >
+              <div className="flex max-h-[320px] flex-col gap-[6px] overflow-y-auto">
+                {withoutGps.map((item, i) => (
+                  <Link
+                    key={item.image_id}
+                    href={`/detections/${item.image_id}`}
+                    style={{ ["--i" as string]: Math.min(i, 12) }}
+                    className="muncul kartu-tekan flex items-center justify-between gap-3 rounded-[10px] border border-[var(--line)] px-[10px] py-[8px] transition hover:bg-[var(--line-soft)]"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-[12px] font-semibold text-[var(--ink)]">
+                        {item.label ?? item.filename}
+                      </span>
+                      <span className="mono block truncate text-[10px] text-[var(--muted-3)]">
+                        {item.filename}
+                      </span>
+                    </span>
+                    <span className="mono shrink-0 text-right text-[11px] text-[var(--muted)]">
+                      {item.summary.total} trees
+                    </span>
+                  </Link>
+                ))}
+              </div>
+
+              <p className="text-[11px] leading-relaxed text-[var(--muted-3)]">
+                Their detection results are complete and can be opened as
+                usual — only the location is missing. A UAV writes GPS into EXIF
+                only when its receiver had a fix at the moment of capture.
+              </p>
+            </Card>
+          )}
         </div>
       </section>
     </>

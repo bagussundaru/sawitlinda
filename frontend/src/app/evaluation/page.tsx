@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Card, StatCard } from "@/components/Card";
+import ModelComparison from "@/components/ModelComparison";
 import { ApiError, listEvaluations, runEvaluation } from "@/lib/api";
 import type { Evaluation } from "@/types/detection";
 
@@ -300,13 +301,25 @@ export default function EvaluationPage() {
 
       {hasil && <Hasil hasil={hasil} />}
 
+      {riwayat.length > 0 && (
+        <Card
+          title="Model comparison"
+          subtitle="Every evaluation run so far, side by side"
+        >
+          <ModelComparison runs={riwayat} />
+          <p className="text-[11px] text-[var(--muted-3)]">
+            Click a row in the history below to reopen its full report.
+          </p>
+        </Card>
+      )}
+
       {riwayat.length > 1 && (
-        <Card title="History evaluasi">
+        <Card title="Evaluation history">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[620px] text-[12px]">
               <thead>
                 <tr className="border-b border-[var(--line)] text-left text-[var(--muted)]">
-                  <th className="pb-2 font-semibold">Waktu</th>
+                  <th className="pb-2 font-semibold">Time</th>
                   <th className="pb-2 font-semibold">File</th>
                   <th className="pb-2 font-semibold">Mode</th>
                   <th className="pb-2 text-right font-semibold">IoU</th>
@@ -328,16 +341,20 @@ export default function EvaluationPage() {
                         className="rounded-md px-[7px] py-[2px] text-[10.5px] font-bold"
                         style={
                           r.inference_mode === "model"
-                            ? { background: "var(--green-bg)", color: "var(--green-d)" }
-                            : { background: "var(--amber-bg)", color: "var(--amber)" }
+                            ? { background: "rgba(47,191,113,.14)", color: "var(--brand-2)" }
+                            : { background: "var(--red-bg)", color: "var(--red)" }
                         }
                       >
                         {r.inference_mode}
                       </span>
                     </td>
-                    <td className="py-[9px] text-right tabular-nums">{r.iou_threshold}</td>
-                    <td className="py-[9px] text-right tabular-nums">{persen(r.map50)}</td>
-                    <td className="py-[9px] text-right tabular-nums">{persen(r.micro_f1)}</td>
+                    <td className="mono py-[9px] text-right">{r.iou_threshold}</td>
+                    <td className="mono py-[9px] text-right">
+                      {(r.map50 * 100).toFixed(1)}%
+                    </td>
+                    <td className="mono py-[9px] text-right">
+                      {(r.micro_f1 * 100).toFixed(1)}%
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -345,6 +362,7 @@ export default function EvaluationPage() {
           </div>
         </Card>
       )}
+
     </>
   );
 }

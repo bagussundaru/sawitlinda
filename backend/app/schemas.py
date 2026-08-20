@@ -132,6 +132,31 @@ class MapImagePoint(BaseModel):
     affected_share: float
 
 
+class MapImageWithoutGps(BaseModel):
+    """Citra yang dianalisis tetapi tidak dapat ditempatkan di peta."""
+
+    image_id: UUID
+    filename: str
+    label: str | None = None
+    village: str | None = None
+    captured_at: datetime | None = None
+    summary: Summary
+
+
+class MapData(BaseModel):
+    """Isi layar peta.
+
+    Citra tanpa koordinat DIKEMBALIKAN TERPISAH, bukan dibuang. Membuangnya
+    membuat peta tampak sebagai gambaran lengkap padahal sebagian citra tidak
+    terwakili di sana — dan pembacanya tidak punya cara mengetahui itu.
+    """
+
+    points: list[MapImagePoint]
+    #: Citra yang dianalisis tetapi metadata EXIF-nya tidak memuat GPS.
+    without_gps: list[MapImageWithoutGps]
+    analyzed_total: int
+
+
 class ResultPage(BaseModel):
     """Satu halaman riwayat.
 

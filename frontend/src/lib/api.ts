@@ -15,7 +15,7 @@ import type {
   ResultPage,
   ResultSort,
   SystemInfo,
-  MapImagePoint,
+  MapData,
   VillageInfo,
 } from "@/types/detection";
 
@@ -318,7 +318,7 @@ export function listVillages(): Promise<VillageInfo[]> {
   return apiFetch("/api/villages");
 }
 
-export function listMapPoints(village?: string | null): Promise<MapImagePoint[]> {
+export function getMapData(village?: string | null): Promise<MapData> {
   const q = village ? `?village=${encodeURIComponent(village)}` : "";
   return apiFetch(`/api/map${q}`);
 }

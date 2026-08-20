@@ -106,7 +106,7 @@ class TestPeta:
         """Satu citra berisi puluhan pohon menghasilkan SATU penanda."""
         image_id = self._siapkan(client)
 
-        titik = client.get("/api/map").json()
+        titik = client.get("/api/map").json()["points"]
 
         assert len(titik) == 1
         assert titik[0]["image_id"] == image_id
@@ -116,7 +116,7 @@ class TestPeta:
         """Dipakai mewarnai penanda; tanpa itu peta hanya titik seragam."""
         self._siapkan(client)
 
-        titik = client.get("/api/map").json()[0]
+        titik = client.get("/api/map").json()["points"][0]
 
         assert 0.0 <= titik["affected_share"] <= 1.0
         assert titik["dominant_condition"]
@@ -125,15 +125,15 @@ class TestPeta:
         self._siapkan(client, desa="samuda")
         self._siapkan(client, desa="bapeang")
 
-        assert len(client.get("/api/map").json()) == 2
-        assert len(client.get("/api/map?village=samuda").json()) == 1
+        assert len(client.get("/api/map").json()["points"]) == 2
+        assert len(client.get("/api/map?village=samuda").json()["points"]) == 1
 
     def test_citra_belum_dianalisis_tidak_muncul(self, client):
         """Penanda tanpa angka tidak memberi tahu apa pun."""
         image_id = _unggah(client, "a.jpg", "Petak", "samuda").json()["images"][0]["image_id"]
         _beri_koordinat(image_id, -3.0, 112.9)
 
-        assert client.get("/api/map").json() == []
+        assert client.get("/api/map").json()["points"] == []
 
 
 class TestDaftarDesaTetap:
@@ -149,3 +149,58 @@ class TestDaftarDesaTetap:
     def test_setiap_desa_punya_nama_dan_kecamatan(self, v):
         assert v.name and v.district
         assert -4 < v.lat < 0 and 110 < v.lng < 115  # masih di Kalimantan Tengah
+
+
+class TestStatusGpsTidakTersedia:
+    """Citra tanpa GPS harus DINYATAKAN, bukan dibuang diam-diam.
+
+    Membuangnya membuat peta tampak sebagai gambaran lengkap padahal sebagian
+    citra tidak terwakili — dan pembacanya tidak punya cara mengetahui itu.
+    """
+
+    def _analisis(self, client, nama="a.jpg", desa="samuda"):
+        image_id = _unggah(client, nama, nama, desa).json()["images"][0]["image_id"]
+        client.post(f"/api/analyze/{image_id}")
+        return image_id
+
+    def test_citra_tanpa_gps_dikembalikan_terpisah(self, client):
+        image_id = self._analisis(client)
+
+        badan = client.get("/api/map").json()
+
+        assert badan["points"] == []
+        assert [x["image_id"] for x in badan["without_gps"]] == [image_id]
+
+    def test_jumlah_seluruh_citra_dianalisis_ikut_dilaporkan(self, client):
+        """Tanpa angka ini, "26 penanda" tidak dapat dibandingkan dengan apa pun."""
+        self._analisis(client, "a.jpg")
+        self._analisis(client, "b.jpg")
+
+        assert client.get("/api/map").json()["analyzed_total"] == 2
+
+    def test_citra_tanpa_gps_tetap_membawa_angkanya(self, client):
+        """Cukup untuk ditampilkan sebagai baris, bukan sekadar nama berkas."""
+        self._analisis(client)
+
+        tanpa = client.get("/api/map").json()["without_gps"][0]
+
+        assert tanpa["summary"]["total"] > 0
+        assert tanpa["label"]
+
+    def test_penyaringan_desa_ikut_berlaku_pada_yang_tanpa_gps(self, client):
+        self._analisis(client, "a.jpg", desa="samuda")
+        self._analisis(client, "b.jpg", desa="bapeang")
+
+        badan = client.get("/api/map?village=samuda").json()
+
+        assert len(badan["without_gps"]) == 1
+        assert badan["analyzed_total"] == 1
+
+    def test_citra_belum_dianalisis_tidak_masuk_daftar_mana_pun(self, client):
+        _unggah(client, "a.jpg", "belum dianalisis", "samuda")
+
+        badan = client.get("/api/map").json()
+
+        assert badan["points"] == []
+        assert badan["without_gps"] == []
+        assert badan["analyzed_total"] == 0
