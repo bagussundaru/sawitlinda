@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     nebius_model: str = "Qwen/Qwen2.5-VL-72B-Instruct"
     nebius_timeout_s: float = 90.0
 
+    #: Nyalakan pekerja latar di proses ini. Dimatikan saat pengujian — pekerja
+    #: memakai koneksi database sendiri, di luar jangkauan penggantian
+    #: dependency, sehingga ia akan mencoba menghubungi database sungguhan.
+    #: Juga berguna bila kelak aplikasi dijalankan lebih dari satu replika dan
+    #: hanya satu di antaranya yang boleh mengerjakan antrean.
+    worker_enabled: bool = True
+
     # --- Autentikasi ---
     #: Umur sesi login. Setelah ini pengguna harus masuk lagi.
     session_hours: int = 12

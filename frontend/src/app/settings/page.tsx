@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import AiKeyCard from "@/components/AiKeyCard";
+import RoboflowKeyCard from "@/components/RoboflowKeyCard";
 import { Card } from "@/components/Card";
 import { ApiError, BASE_URL, getSystemInfo, listConditions } from "@/lib/api";
 import { SEVERITY_COLOR, SEVERITY_LABEL } from "@/lib/severity";
@@ -51,6 +52,8 @@ export default function SettingsPage() {
       )}
 
       <AiKeyCard />
+
+      <RoboflowKeyCard />
 
       <Card title="Plant Condition Reference">
         {conditions ? (

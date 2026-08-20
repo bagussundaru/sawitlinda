@@ -277,3 +277,31 @@ export interface MapData {
   without_gps: MapImageWithoutGps[];
   analyzed_total: number;
 }
+
+// --- Background jobs ---
+
+export type JobStatus = "queued" | "running" | "done" | "failed";
+
+export interface JobProgress {
+  current: number;
+  total: number;
+  message: string;
+}
+
+export interface Job {
+  id: string;
+  kind: "roboflow_evaluate" | "reanalyse";
+  status: JobStatus;
+  progress: JobProgress;
+  result: Record<string, unknown> | null;
+  error: string | null;
+  created_by: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface RoboflowSettings {
+  configured: boolean;
+  key_hint: string | null;
+}

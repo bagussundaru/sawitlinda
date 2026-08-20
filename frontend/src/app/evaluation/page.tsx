@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Card, StatCard } from "@/components/Card";
 import ModelComparison from "@/components/ModelComparison";
+import RoboflowPull from "@/components/RoboflowPull";
 import { ApiError, listEvaluations, runEvaluation } from "@/lib/api";
 import type { Evaluation } from "@/types/detection";
 
@@ -180,7 +181,7 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
 
       <Card
         title="Confusion matrix"
-        subtitle="Hijau di diagonal berarti benar; merah di luar diagonal berarti tertukar kelas"
+        subtitle="Green on the diagonal is correct; red off-diagonal is a swapped class"
       >
         <ConfusionMatrix data={hasil.confusion} />
       </Card>
@@ -234,6 +235,13 @@ export default function EvaluationPage() {
           Evaluation Against Ground Truth
         </h1>
       </header>
+
+      <Card
+        title="Pull from Roboflow"
+        subtitle="Download a dataset version, analyse it, and score it — no file uploads"
+      >
+        <RoboflowPull onDone={() => listEvaluations().then(setHistory).catch(() => {})} />
+      </Card>
 
       <Card
         title="Upload ground truth annotations"

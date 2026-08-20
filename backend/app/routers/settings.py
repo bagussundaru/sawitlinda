@@ -30,6 +30,10 @@ class NebiusKeyIn(BaseModel):
     model: str | None = Field(default=None, max_length=128)
 
 
+class RoboflowKeyIn(BaseModel):
+    api_key: str = Field(min_length=8, max_length=512)
+
+
 class NebiusModelIn(BaseModel):
     model: str = Field(min_length=1, max_length=128)
 
@@ -100,3 +104,41 @@ def clear_ai_key(
     """
     app_settings.clear(db, app_settings.NEBIUS_KEY)
     return _status(db, settings)
+
+
+# --- Roboflow ---------------------------------------------------------------
+#
+# Kunci dipakai menarik versi dataset langsung dari Roboflow, sehingga citra dan
+# anotasinya tidak perlu diunggah manual. Sama seperti kunci Nebius: dikirim
+# sekali, tidak pernah dapat dibaca kembali lewat aplikasi.
+
+ROBOFLOW_KEY = "roboflow_api_key"
+
+
+class RoboflowSettingsOut(BaseModel):
+    configured: bool
+    key_hint: str | None = None
+
+
+def _roboflow_status(db: Session) -> RoboflowSettingsOut:
+    nilai = app_settings.get(db, ROBOFLOW_KEY)
+    return RoboflowSettingsOut(configured=bool(nilai), key_hint=app_settings.mask(nilai))
+
+
+@router.get("/roboflow", response_model=RoboflowSettingsOut)
+def get_roboflow_settings(db: Session = Depends(get_db)) -> RoboflowSettingsOut:
+    return _roboflow_status(db)
+
+
+@router.put("/roboflow", response_model=RoboflowSettingsOut)
+def set_roboflow_key(
+    body: RoboflowKeyIn, db: Session = Depends(get_db)
+) -> RoboflowSettingsOut:
+    app_settings.set_value(db, ROBOFLOW_KEY, body.api_key)
+    return _roboflow_status(db)
+
+
+@router.delete("/roboflow", response_model=RoboflowSettingsOut)
+def clear_roboflow_key(db: Session = Depends(get_db)) -> RoboflowSettingsOut:
+    app_settings.clear(db, ROBOFLOW_KEY)
+    return _roboflow_status(db)

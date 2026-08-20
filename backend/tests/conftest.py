@@ -21,6 +21,10 @@ def settings(tmp_path, monkeypatch) -> Settings:
         database_url="sqlite://",
         storage_dir=str(tmp_path / "storage"),
         cors_origins="http://localhost:3000",
+        # Pekerja latar memakai koneksi database sendiri, di luar jangkauan
+        # penggantian dependency — dinyalakan, ia akan menggantung mencoba
+        # menghubungi database sungguhan.
+        worker_enabled=False,
     )
     # Modul yang mengimpor get_settings langsung memegang rujukan sendiri, jadi
     # menambal app.config saja tidak menjangkau mereka.

@@ -15,7 +15,9 @@ import type {
   ResultPage,
   ResultSort,
   SystemInfo,
+  Job,
   MapData,
+  RoboflowSettings,
   VillageInfo,
 } from "@/types/detection";
 
@@ -321,4 +323,54 @@ export function listVillages(): Promise<VillageInfo[]> {
 export function getMapData(village?: string | null): Promise<MapData> {
   const q = village ? `?village=${encodeURIComponent(village)}` : "";
   return apiFetch(`/api/map${q}`);
+}
+
+// --- Background jobs -------------------------------------------------------
+
+export function listJobs(): Promise<Job[]> {
+  return apiFetch("/api/jobs");
+}
+
+export function getJob(jobId: string): Promise<Job> {
+  return apiFetch(`/api/jobs/${jobId}`);
+}
+
+export function startRoboflowEvaluation(params: {
+  workspace: string;
+  project: string;
+  version: number;
+  split?: string;
+  iou_threshold?: number;
+}): Promise<Job> {
+  return apiFetch("/api/jobs/roboflow-evaluate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+}
+
+export function startReanalysis(): Promise<Job> {
+  return apiFetch("/api/jobs/reanalyse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+}
+
+// --- Roboflow key ----------------------------------------------------------
+
+export function getRoboflowSettings(): Promise<RoboflowSettings> {
+  return apiFetch("/api/settings/roboflow");
+}
+
+export function saveRoboflowKey(apiKey: string): Promise<RoboflowSettings> {
+  return apiFetch("/api/settings/roboflow", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+}
+
+export function clearRoboflowKey(): Promise<RoboflowSettings> {
+  return apiFetch("/api/settings/roboflow", { method: "DELETE" });
 }

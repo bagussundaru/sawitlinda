@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 import logging
+from contextlib import asynccontextmanager
 
 from app import errors
 from app.config import get_settings
@@ -14,6 +15,7 @@ from app.routers import (
     auth as auth_router,
     dashboard,
     evaluation,
+    jobs as jobs_router,
     export,
     results,
     settings as settings_router,
@@ -21,7 +23,11 @@ from app.routers import (
     training,
     upload,
 )
-from app.services import auth
+from app.services import auth, jobs as job_queue
+
+# Diimpor demi efek sampingnya: modul inilah yang mendaftarkan penjalan tiap
+# jenis pekerjaan ke antrean.
+from app.services import job_handlers  # noqa: F401
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,10 +36,38 @@ logging.basicConfig(
 
 settings = get_settings()
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Nyalakan pekerja latar saat start, hentikan saat berhenti.
+
+    Sisa pekerjaan berstatus "running" dari proses sebelumnya dibereskan lebih
+    dulu: prosesnya mati di tengah jalan, dan dibiarkan begitu layar akan
+    memutar spinner tanpa akhir.
+    """
+    # Dirujuk lewat modulnya, bukan nama yang diikat saat impor: pengujian
+    # menambal app.config.get_settings, dan nama yang sudah terikat tidak ikut
+    # berubah.
+    from app import config as app_config
+
+    if app_config.get_settings().worker_enabled:
+        try:
+            job_queue.reset_interrupted()
+            job_queue.start()
+        except Exception:  # noqa: BLE001
+            # Database belum siap saat start bukan alasan aplikasi gagal
+            # menyala; pekerja mencoba lagi sendiri pada perulangan berikutnya.
+            logging.getLogger("sawitscan").exception("Pekerja latar gagal dinyalakan")
+    try:
+        yield
+    finally:
+        job_queue.stop()
+
+
 app = FastAPI(
     title="SawitScan AI API",
     description="Inference & reporting layer for oil palm plant condition detection from UAV imagery.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -76,6 +110,7 @@ terlindungi = [
     evaluation.router,
     spatial.router,
     settings_router.router,
+    jobs_router.router,
 ]
 for r in terlindungi:
     app.include_router(r, dependencies=[Depends(auth.current_user)])

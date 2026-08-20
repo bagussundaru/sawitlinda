@@ -230,6 +230,9 @@ Enam migrasi Alembic, semuanya teruji naik dan turun:
 | `0006` | app_settings (kunci API dari layar Pengaturan) |
 | `0007` | users, sessions, training_runs |
 | `0008` | label per citra (peran blok kebun digantikan) |
+| `0009` | desa asal citra, untuk pengelompokan peta |
+| `0010` | label kondisi ikut berbahasa Inggris |
+| `0011` | antrean pekerjaan latar |
 
 **`evaluations` menyimpan `inference_mode`.** Angka yang dihasilkan mock tidak
 akan pernah tertukar dengan angka model — layar Evaluasi menandai tiap baris dan
@@ -640,7 +643,9 @@ diisi maupun ditampilkan lagi.
 saat ini menganggap satu berkas = satu bingkai UAV. Bila citra berupa
 orthomosaic seluruh kebun, tiling perlu dibangun.
 
-**Inference sinkron.** Cukup untuk skala saat ini; batch besar memerlukan antrean.
+**Inference sinkron pada jalur unggah.** Analisis satu citra masih menahan satu
+permintaan HTTP. Pekerjaan panjang — menarik dataset Roboflow, analisis ulang
+massal — sudah pindah ke antrean latar; unggahan biasa belum.
 
 **Swin Transformer + MTL belum ada.** Yang terpasang detektor YOLOv8 4 kelas.
 Kepala klasifikasi terpisah untuk jenis dan keparahan belum menjadi bagian sistem.

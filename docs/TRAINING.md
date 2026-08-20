@@ -155,6 +155,51 @@ pernah membuat aplikasi berhenti bekerja.
 
 ---
 
+## 3c. Menarik dataset langsung dari Roboflow
+
+Menghapus dua unggahan manual sekaligus — citra dan anotasinya. Karena keduanya
+berasal dari arsip yang sama, nama berkasnya pasti cocok: kegagalan paling
+sering pada alur unggah tidak dapat terjadi di sini.
+
+**Sekali saja:** buka Roboflow → Settings → API Keys, salin *private key*, lalu
+tempel di layar **Settings** aplikasi. Kunci disimpan di server dan tidak dapat
+dibaca kembali lewat aplikasi.
+
+**Memakainya:** buka **Evaluation** → kartu *Pull from Roboflow*, isi workspace,
+project, versi, dan split, lalu tekan **Pull & Evaluate**. Sistem mengunduh,
+mendaftarkan, menganalisis, dan menghitung metriknya sendiri di latar belakang.
+Halaman boleh ditutup.
+
+Versi dataset ikut tercatat pada hasilnya:
+
+```
+roboflow:heras-workspace/oil-palm-central-kalimantan/v3/test
+```
+
+Bukan nama berkas sementara — inilah yang membuat evaluasi dapat diulang orang
+lain, dan yang perlu disebut di bab metodologi.
+
+Menjalankannya lagi pada versi yang sama memakai ulang citra yang sudah ada,
+tidak menggandakannya.
+
+### Pekerjaan latar
+
+Penarikan dataset dan analisis ulang massal berjalan sebagai pekerjaan latar —
+satu tabel di PostgreSQL dan satu thread pekerja di dalam container backend.
+Tanpa Redis, tanpa container tambahan, karena VM ini berbagi dengan aplikasi
+lain.
+
+**Satu pekerjaan berat pada satu waktu.** Dua inference berjalan bersamaan akan
+memakan seluruh CPU dan membuat aplikasi tetangga tersendat; permintaan kedua
+dijawab `409`.
+
+Pekerjaan yang terputus karena container restart ditandai **gagal** saat
+aplikasi menyala lagi — tidak ada cara mengetahui sejauh mana ia sempat
+berjalan, dan membiarkannya berstatus "running" membuat layar memutar spinner
+tanpa akhir.
+
+---
+
 ## 4. Memakainya
 
 1. Buka menu **Training**.

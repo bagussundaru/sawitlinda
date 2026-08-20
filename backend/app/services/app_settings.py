@@ -30,6 +30,8 @@ NEBIUS_MODEL = "nebius_model"
 #: Berkas model yang sedang dipakai inference. Diisi tombol "Jadikan Model
 #: Aktif" pada layar Training, menimpa MODEL_PATH dari environment.
 MODEL_PATH = "model_path"
+#: Kunci API Roboflow, untuk menarik versi dataset tanpa unggah manual.
+ROBOFLOW_KEY = "roboflow_api_key"
 
 
 def get(db: Session, key: str) -> str | None:

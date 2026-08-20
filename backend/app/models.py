@@ -180,6 +180,38 @@ class TrainingRun(Base):
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class Job(Base):
+    """Pekerjaan yang berjalan di latar belakang.
+
+    Disimpan sebagai baris database, bukan di memori: pekerjaan yang hanya ada
+    di memori hilang begitu container restart, dan tidak ada cara mengetahui
+    apakah ia pernah selesai. Antreannya pun cukup satu tabel — beban aplikasi
+    ini satu operator dengan pekerjaan berurutan, dan VM-nya sudah padat oleh
+    aplikasi lain.
+    """
+
+    __tablename__ = "jobs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    #: roboflow_evaluate | reanalyse
+    kind: Mapped[str] = mapped_column(String(32), index=True)
+    # queued | running | done | failed | cancelled
+    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+
+    #: Masukan pekerjaan, bentuknya bergantung `kind`.
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    #: {"current": n, "total": n, "message": "..."} — dibaca layar saat memantau.
+    progress: Mapped[dict] = mapped_column(JSON, default=dict)
+    #: Hasil akhir; untuk evaluasi berisi id evaluasinya.
+    result: Mapped[dict | None] = mapped_column(JSON)
+    error: Mapped[str | None] = mapped_column(Text)
+
+    created_by: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AppSetting(Base):
     """Pengaturan yang dapat diubah saat aplikasi berjalan.
 
