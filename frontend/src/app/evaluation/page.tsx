@@ -23,7 +23,7 @@ function ModeBanner({ mode, model }: { mode: string; model: string | null }) {
   if (mode === "model") {
     return (
       <div className="rounded-[10px] border border-[#bfe6d7] bg-[var(--green-bg)] px-4 py-3 text-[12.5px] text-[var(--green-d)]">
-        Dievaluasi terhadap model <b>{model}</b>.
+        Evaluated against model <b>{model}</b>.
       </div>
     );
   }
@@ -51,7 +51,7 @@ function ConfusionMatrix({ data }: { data: Record<string, Record<string, number>
         <thead>
           <tr>
             <th className="p-2 text-left font-semibold text-[var(--muted)]">
-              aktual ↓ / prediksi →
+              actual ↓ / predicted →
             </th>
             {kolom.map((c) => (
               <th key={c} className="p-2 font-semibold text-[var(--muted)]">
@@ -106,21 +106,21 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
           suffix="%"
         />
         <StatCard
-          label="Presisi (mikro)"
+          label="Precision (micro)"
           value={Math.round(hasil.micro_precision * 1000) / 10}
           share={hasil.micro_precision}
           color="var(--healthy)"
           suffix="%"
         />
         <StatCard
-          label="Recall (mikro)"
+          label="Recall (micro)"
           value={Math.round(hasil.micro_recall * 1000) / 10}
           share={hasil.micro_recall}
           color="var(--mild)"
           suffix="%"
         />
         <StatCard
-          label="F1 (mikro)"
+          label="F1 (micro)"
           value={Math.round(hasil.micro_f1 * 1000) / 10}
           share={hasil.micro_f1}
           color="var(--brand-2)"
@@ -130,7 +130,7 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
 
       <p className="mono text-[11px] text-[var(--muted-3)]">
         {hasil.source_filename} · IoU ≥ {hasil.iou_threshold} · {hasil.images} images ·{" "}
-        {hasil.ground_truths} anotasi acuan · {hasil.predictions} prediksi ·{" "}
+        {hasil.ground_truths} ground-truth annotations · {hasil.predictions} predictions ·{" "}
         {formatTime(hasil.created_at)}
       </p>
 
@@ -139,13 +139,13 @@ function Hasil({ hasil }: { hasil: Evaluation }) {
           <table className="w-full min-w-[720px] text-[12px]">
             <thead>
               <tr className="border-b border-[var(--line)] text-left text-[var(--muted)]">
-                <th className="pb-2 font-semibold">Kelas</th>
+                <th className="pb-2 font-semibold">Class</th>
                 <th className="pb-2 text-right font-semibold">Ground truth</th>
-                <th className="pb-2 text-right font-semibold">Prediksi</th>
+                <th className="pb-2 text-right font-semibold">Predicted</th>
                 <th className="pb-2 text-right font-semibold">TP</th>
                 <th className="pb-2 text-right font-semibold">FP</th>
                 <th className="pb-2 text-right font-semibold">FN</th>
-                <th className="pb-2 text-right font-semibold">Presisi</th>
+                <th className="pb-2 text-right font-semibold">Precision</th>
                 <th className="pb-2 text-right font-semibold">Recall</th>
                 <th className="pb-2 text-right font-semibold">F1</th>
                 <th className="pb-2 text-right font-semibold">AP</th>
@@ -230,7 +230,7 @@ export default function EvaluationPage() {
     <>
       <header>
         <div className="text-[11px] font-bold tracking-[0.15em] text-[#5c7a6b]">
-          VALIDASI MODEL
+          MODEL VALIDATION
         </div>
         <h1 className="mt-[5px] text-[29px] font-extrabold tracking-[-0.035em]">
           Evaluation Against Ground Truth
@@ -285,7 +285,7 @@ export default function EvaluationPage() {
 
           <div className="flex flex-col gap-[6px]">
             <span className="text-[12px] font-semibold text-[var(--muted)]">
-              Ambang IoU
+              IoU threshold
             </span>
             <input
               type="number"
@@ -318,7 +318,7 @@ export default function EvaluationPage() {
 
         <p className="text-[11.5px] leading-relaxed text-[var(--muted-2)]">
           Only images that have annotations are counted. Other images in the system
-          are ignored, supaya deteksinya tidak dihitung sebagai positif palsu.
+          are ignored, so their detections are not counted as false positives.
         </p>
       </Card>
 
