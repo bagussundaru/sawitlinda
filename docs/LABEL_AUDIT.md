@@ -236,3 +236,71 @@ pembagiannya dapat dibaca tanpa bertanya kepada siapa pun.
 
 B1 dan B2 belum dilatih. Training memerlukan GPU, dan mesin training Modal
 belum di-deploy (`MODAL_TRAINING_URL` masih kosong).
+
+
+---
+
+## 9. Penjagaan test set
+
+Aturan metodologis dijadikan sesuatu yang tercatat, bukan sekadar niat baik.
+
+### Catatan eksperimen tidak dapat diubah
+
+Tidak ada endpoint yang menyunting atau menghapusnya. Hasil hanya dapat
+dilampirkan **sekali**; percobaan kedua ditolak dan hasil pertama tetap utuh.
+
+Hipotesis dicatat **sebelum** hasilnya ada — catatan dibuat lebih dulu, hasil
+menyusul lewat endpoint terpisah. Hipotesis yang ditulis setelah melihat
+angkanya tidak membuktikan apa pun.
+
+### Aturan pemakaian test set
+
+| Keadaan | Perlakuan |
+| --- | --- |
+| Model berbeda, test set sama | Diperbolehkan — itu justru tujuannya |
+| Model sama, test set berbeda | Diperbolehkan — dataset berubah berarti eksperimen berbeda |
+| **Model sama, test set sama** | **Ditolak** kecuali `confirm_repeat=true` |
+| `kind: validation` | Bebas diulang selama pengembangan |
+
+Penolakan itu menyebut catatan sebelumnya beserta tanggalnya, sehingga
+pengulangan yang memang disengaja tetap dapat dijalankan — dan tetap tercatat
+sebagai eksperimen tersendiri.
+
+### Yang disimpan pada setiap catatan
+
+```
+experiment_id · kind · model_id (sha256 bobot) · model_name
+dataset_name · dataset_test_hash · dataset_val_hash
+hypothesis · training_config · git_commit
+metrics · results_at · created_by · created_at
+```
+
+`dataset_test_hash` adalah sha256 atas seluruh isi split test, nama berkas ikut
+dicerna. Diverifikasi pada B1 dan B2:
+
+```
+B1 test = c0a514696760854c…   val = b492f1973b9845a8…
+B2 test = c0a514696760854c…   val = b492f1973b9845a8…   ← identik
+B1 train ≠ B2 train                                     ← berbeda
+```
+
+### Protokol B1/B2
+
+```
+1. Training melihat validation berkali-kali          → kind: validation
+2. Pilih best.pt berdasarkan validation
+3. Bekukan model
+4. Jalankan test SEKALI                              → kind: test
+5. Hasil masuk laporan final
+6. Jangan mengubah hyperparameter setelah melihat test
+```
+
+### Hipotesis yang sudah dicatat sebelum eksperimen
+
+> B2 kemungkinan lebih buruk di test meski data latihnya 2,5× lebih banyak,
+> karena ubin mosaik menggeser sebaran latih jauh dari populasi uji: `healthy`
+> naik dari 44,6% ke 64,5% dan `yellow` turun dari 51,2% ke 20,7%.
+
+Hipotesis ini dilaporkan apa adanya bersama hasil aktualnya, apa pun hasilnya.
+Bila B2 ternyata lebih baik, hipotesis awal tetap dilaporkan — itu justru
+menunjukkan eksperimennya tidak diarahkan untuk mencapai hasil tertentu.

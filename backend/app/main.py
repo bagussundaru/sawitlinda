@@ -15,6 +15,7 @@ from app.routers import (
     auth as auth_router,
     dashboard,
     evaluation,
+    experiments,
     jobs as jobs_router,
     export,
     results,
@@ -111,6 +112,7 @@ terlindungi = [
     spatial.router,
     settings_router.router,
     jobs_router.router,
+    experiments.router,
 ]
 for r in terlindungi:
     app.include_router(r, dependencies=[Depends(auth.current_user)])

@@ -212,6 +212,55 @@ class Job(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class Experiment(Base):
+    """Satu evaluasi yang tercatat permanen.
+
+    Dibuat sebagai catatan yang TIDAK dapat diubah: tidak ada endpoint yang
+    menyunting atau menghapusnya, dan hasilnya hanya boleh dilampirkan sekali.
+    Catatan eksperimen yang dapat disunting setelah hasilnya terlihat bukan
+    catatan eksperimen.
+
+    Hipotesis dicatat SEBELUM hasil dilampirkan. Hipotesis yang ditulis setelah
+    melihat angkanya tidak membuktikan apa pun.
+    """
+
+    __tablename__ = "experiments"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    #: Nama yang dibaca manusia, mis. "EXP-2026-001" atau "B1-dji-only".
+    experiment_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+
+    #: validation | test
+    #:
+    #: `validation` boleh dijalankan berkali-kali selama pengembangan.
+    #: `test` dimaksudkan sekali, setelah model final dibekukan.
+    kind: Mapped[str] = mapped_column(String(16), index=True)
+
+    #: sha256 berkas bobot. Model yang berbeda boleh diuji pada test yang sama;
+    #: model yang SAMA diuji dua kali pada test yang sama adalah keadaan yang
+    #: harus disengaja, bukan terjadi begitu saja.
+    model_id: Mapped[str] = mapped_column(String(64), index=True)
+    model_name: Mapped[str | None] = mapped_column(String(128))
+
+    dataset_name: Mapped[str] = mapped_column(String(128))
+    #: sha256 isi split test. Enam bulan kemudian, inilah satu-satunya cara
+    #: memastikan angka yang dilaporkan diukur pada test set yang sama.
+    dataset_test_hash: Mapped[str] = mapped_column(String(64), index=True)
+    dataset_val_hash: Mapped[str | None] = mapped_column(String(64))
+
+    #: Ditulis sebelum hasilnya ada.
+    hypothesis: Mapped[str | None] = mapped_column(Text)
+    training_config: Mapped[dict] = mapped_column(JSON, default=dict)
+    git_commit: Mapped[str | None] = mapped_column(String(64))
+
+    #: Terisi sekali lewat endpoint hasil; percobaan kedua ditolak.
+    metrics: Mapped[dict | None] = mapped_column(JSON)
+    results_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    created_by: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
 class AppSetting(Base):
     """Pengaturan yang dapat diubah saat aplikasi berjalan.
 

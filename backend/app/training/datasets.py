@@ -16,6 +16,7 @@ tidak menjawab apa pun.
 
 from __future__ import annotations
 
+import hashlib
 import io
 import zipfile
 from dataclasses import dataclass
@@ -41,6 +42,27 @@ class BuildResult:
     #: Kelompok sumber yang muncul di lebih dari satu split. Harus kosong.
     leaked_groups: dict[str, list[str]]
     class_names: list[str]
+
+
+def split_hash(archive: bytes, split: str = "test") -> str:
+    """sha256 atas isi satu split, tidak bergantung urutan di dalam arsip.
+
+    Dicatat bersama setiap hasil eksperimen. Enam bulan kemudian, ketika dataset
+    sudah berubah beberapa kali, inilah satu-satunya cara memastikan bahwa angka
+    yang dilaporkan memang diukur pada test set yang sama — nama berkas dan
+    jumlah citra bisa kebetulan sama sementara isinya berbeda.
+    """
+    folder = FOLDER.get(split, split)
+    arsip = zipfile.ZipFile(io.BytesIO(archive))
+    anggota = sorted(n for n in arsip.namelist() if n.startswith(f"{folder}/"))
+
+    pencerna = hashlib.sha256()
+    for n in anggota:
+        # Nama ikut dicerna: dua berkas yang isinya tertukar harus menghasilkan
+        # hash berbeda.
+        pencerna.update(n.encode("utf-8"))
+        pencerna.update(arsip.read(n))
+    return pencerna.hexdigest()
 
 
 def _is_mosaic(group: str) -> bool:
