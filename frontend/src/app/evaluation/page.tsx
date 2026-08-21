@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Card, StatCard } from "@/components/Card";
+import ExperimentRegistry from "@/components/ExperimentRegistry";
 import ModelComparison from "@/components/ModelComparison";
 import RoboflowPull from "@/components/RoboflowPull";
 import { ApiError, listEvaluations, runEvaluation } from "@/lib/api";
@@ -235,6 +236,20 @@ export default function EvaluationPage() {
           Evaluation Against Ground Truth
         </h1>
       </header>
+
+      {/* Catatan eksperimen didahulukan: inilah rekaman yang dilaporkan.
+          Evaluasi ad-hoc di bawahnya adalah alat kerja, bukan bukti. */}
+      <ExperimentRegistry />
+
+      <div className="border-t border-[var(--line)] pt-2">
+        <div className="text-[11px] font-bold tracking-[0.15em] text-[#5c7a6b]">
+          AD-HOC EVALUATION
+        </div>
+        <p className="mt-1 text-[12px] text-[var(--muted-2)]">
+          Working tools. Numbers produced here are not experiment records —
+          register an experiment above to report a result.
+        </p>
+      </div>
 
       <Card
         title="Pull from Roboflow"

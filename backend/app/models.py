@@ -236,6 +236,13 @@ class Experiment(Base):
     #: `test` dimaksudkan sekali, setelah model final dibekukan.
     kind: Mapped[str] = mapped_column(String(16), index=True)
 
+    #: draft | locked | training | ready_for_final_test | final_tested
+    #:
+    #: Hanya maju, tidak pernah mundur. Sejak `locked`, hipotesis dan identitas
+    #: dataset tidak dapat diubah lagi — itulah yang membuat "dibekukan" berarti
+    #: sesuatu, bukan sekadar kesepakatan lisan.
+    status: Mapped[str] = mapped_column(String(24), default="draft", index=True)
+
     #: sha256 berkas bobot. Model yang berbeda boleh diuji pada test yang sama;
     #: model yang SAMA diuji dua kali pada test yang sama adalah keadaan yang
     #: harus disengaja, bukan terjadi begitu saja.

@@ -314,3 +314,30 @@ export interface RoboflowSettings {
   configured: boolean;
   key_hint: string | null;
 }
+
+/** Catatan eksperimen. Sekali hasilnya dilampirkan, tidak ada yang mengubahnya. */
+export interface Experiment {
+  id: string;
+  experiment_id: string;
+  kind: "validation" | "test";
+  model_id: string;
+  model_name: string | null;
+  dataset_name: string;
+  dataset_test_hash: string;
+  dataset_val_hash: string | null;
+  hypothesis: string | null;
+  training_config: Record<string, unknown>;
+  git_commit: string | null;
+  status: ExperimentStatus;
+  metrics: Record<string, unknown> | null;
+  results_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export type ExperimentStatus =
+  | "draft"
+  | "locked"
+  | "training"
+  | "ready_for_final_test"
+  | "final_tested";

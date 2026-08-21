@@ -123,9 +123,16 @@ class TestPenjagaanTestSet:
             assert r.status_code == 201
 
 
+def _sampai_siap(client, experiment_id="B1-dji-only"):
+    """Jalankan siklus sampai model dinyatakan final."""
+    for tahap in ("locked", "training", "ready_for_final_test"):
+        client.post(f"/api/experiments/{experiment_id}/status", json={"status": tahap})
+
+
 class TestHasilTidakDapatDitimpa:
     def _buat(self, client):
         client.post("/api/experiments", json=_catatan())
+        _sampai_siap(client)
 
     def test_hasil_dilampirkan_sekali(self, client):
         self._buat(client)
@@ -192,3 +199,108 @@ class TestPenyaringan:
 
         assert len(client.get("/api/experiments?kind=test").json()) == 1
         assert len(client.get("/api/experiments?kind=validation").json()) == 1
+
+
+class TestSiklusStatus:
+    def _buat(self, client, **ubah):
+        return client.post("/api/experiments", json=_catatan(**ubah))
+
+    def test_dimulai_sebagai_draft(self, client):
+        assert self._buat(client).json()["status"] == "draft"
+
+    def test_maju_selangkah_demi_selangkah(self, client):
+        self._buat(client)
+
+        for tahap in ("locked", "training", "ready_for_final_test"):
+            r = client.post(
+                "/api/experiments/B1-dji-only/status", json={"status": tahap}
+            )
+            assert r.status_code == 200
+            assert r.json()["status"] == tahap
+
+    def test_mundur_ditolak(self, client):
+        """Catatan yang dapat dikembalikan ke draft setelah hasilnya terlihat
+        bukan catatan yang dibekukan."""
+        self._buat(client)
+        client.post("/api/experiments/B1-dji-only/status", json={"status": "locked"})
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status", json={"status": "draft"}
+        )
+
+        assert r.status_code == 409
+        assert "only moves forward" in r.json()["detail"]
+
+    def test_final_tested_tidak_dapat_disetel_langsung(self, client):
+        """Status itu hanya diperoleh dengan benar-benar melampirkan hasil."""
+        self._buat(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status", json={"status": "final_tested"}
+        )
+
+        assert r.status_code == 400
+        assert "attaching results" in r.json()["detail"]
+
+    def test_hipotesis_dapat_disunting_selagi_draft(self, client):
+        self._buat(client)
+
+        r = client.patch(
+            "/api/experiments/B1-dji-only", json={"hypothesis": "hipotesis baru"}
+        )
+
+        assert r.status_code == 200
+        assert r.json()["hypothesis"] == "hipotesis baru"
+
+    def test_hipotesis_beku_setelah_dikunci(self, client):
+        """Hipotesis yang masih dapat diubah setelah eksperimen berjalan tidak
+        mengikat apa pun."""
+        self._buat(client)
+        client.post("/api/experiments/B1-dji-only/status", json={"status": "locked"})
+
+        r = client.patch(
+            "/api/experiments/B1-dji-only", json={"hypothesis": "diubah belakangan"}
+        )
+
+        assert r.status_code == 409
+        assert "frozen" in r.json()["detail"]
+
+    def test_hipotesis_asli_tetap_utuh_setelah_percobaan_sunting(self, client):
+        self._buat(client)
+        client.post("/api/experiments/B1-dji-only/status", json={"status": "locked"})
+        client.patch("/api/experiments/B1-dji-only", json={"hypothesis": "diubah"})
+
+        tercatat = client.get("/api/experiments").json()[0]
+        assert tercatat["hypothesis"].startswith("B2 akan lebih buruk")
+
+    def test_test_final_ditolak_sebelum_model_final(self, client):
+        """Test set tidak boleh disentuh sebelum modelnya benar-benar final."""
+        self._buat(client)
+        client.post("/api/experiments/B1-dji-only/status", json={"status": "training"})
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/results", json={"metrics": {"map50": 0.6}}
+        )
+
+        assert r.status_code == 409
+        assert "ready_for_final_test" in r.json()["detail"]
+
+    def test_status_menjadi_final_tested_setelah_hasil_dilampirkan(self, client):
+        self._buat(client)
+        _sampai_siap(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/results", json={"metrics": {"map50": 0.6}}
+        )
+
+        assert r.json()["status"] == "final_tested"
+
+    def test_validation_tidak_dibatasi_siklus(self, client):
+        """Validation memang dipakai berkali-kali selama pengembangan."""
+        self._buat(client, experiment_id="B1-val", kind="validation")
+
+        r = client.post(
+            "/api/experiments/B1-val/results", json={"metrics": {"map50": 0.5}}
+        )
+
+        assert r.status_code == 200

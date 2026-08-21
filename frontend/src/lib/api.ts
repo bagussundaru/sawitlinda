@@ -17,6 +17,8 @@ import type {
   SystemInfo,
   Job,
   MapData,
+  Experiment,
+  ExperimentStatus,
   RoboflowSettings,
   VillageInfo,
 } from "@/types/detection";
@@ -373,4 +375,62 @@ export function saveRoboflowKey(apiKey: string): Promise<RoboflowSettings> {
 
 export function clearRoboflowKey(): Promise<RoboflowSettings> {
   return apiFetch("/api/settings/roboflow", { method: "DELETE" });
+}
+
+// --- Catatan eksperimen ---------------------------------------------------
+// Tidak ada fungsi menghapus, menyunting hasil, atau memundurkan status:
+// yang tidak ada di sini memang sengaja tidak ada.
+
+export function listExperiments(): Promise<Experiment[]> {
+  return apiFetch<Experiment[]>("/api/experiments");
+}
+
+export function createExperiment(body: Record<string, unknown>): Promise<Experiment> {
+  return apiFetch<Experiment>("/api/experiments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/** Hanya berlaku selagi statusnya masih `draft`. */
+export function editExperimentDraft(
+  experimentId: string,
+  body: Record<string, unknown>,
+): Promise<Experiment> {
+  return apiFetch<Experiment>(`/api/experiments/${encodeURIComponent(experimentId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/** Majukan status. Server menolak arah mundur. */
+export function advanceExperiment(
+  experimentId: string,
+  status: ExperimentStatus,
+): Promise<Experiment> {
+  return apiFetch<Experiment>(
+    `/api/experiments/${encodeURIComponent(experimentId)}/status`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+  );
+}
+
+/** Hanya dapat dipanggil sekali per eksperimen. */
+export function attachExperimentResults(
+  experimentId: string,
+  metrics: Record<string, unknown>,
+): Promise<Experiment> {
+  return apiFetch<Experiment>(
+    `/api/experiments/${encodeURIComponent(experimentId)}/results`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ metrics }),
+    },
+  );
 }

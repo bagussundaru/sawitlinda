@@ -43,6 +43,23 @@ logger = logging.getLogger("sawitscan")
 VALIDATION = "validation"
 TEST = "test"
 
+#: Siklus status, hanya maju. Indeksnya menentukan urutan; perpindahan mundur
+#: ditolak, karena catatan yang dapat dikembalikan ke draft setelah hasilnya
+#: terlihat bukan catatan yang dibekukan.
+LIFECYCLE = (
+    "draft",
+    "locked",
+    "training",
+    "ready_for_final_test",
+    "final_tested",
+)
+
+#: Sejak status ini, hipotesis dan identitas dataset tidak dapat diubah lagi.
+FROZEN_FROM = LIFECYCLE.index("locked")
+
+#: Hasil hanya boleh dilampirkan pada tahap ini — model sudah final.
+READY = "ready_for_final_test"
+
 
 class ExperimentIn(BaseModel):
     experiment_id: str = Field(min_length=1, max_length=64)
@@ -65,6 +82,19 @@ class ResultsIn(BaseModel):
     metrics: dict
 
 
+class StatusIn(BaseModel):
+    status: str = Field(pattern="^(" + "|".join(LIFECYCLE) + ")$")
+
+
+class DraftEditIn(BaseModel):
+    """Hanya dapat dipakai selagi status masih `draft`."""
+
+    hypothesis: str | None = None
+    training_config: dict | None = None
+    model_id: str | None = Field(default=None, min_length=8, max_length=64)
+    model_name: str | None = Field(default=None, max_length=128)
+
+
 class ExperimentOut(BaseModel):
     id: UUID
     experiment_id: str
@@ -77,6 +107,7 @@ class ExperimentOut(BaseModel):
     hypothesis: str | None
     training_config: dict
     git_commit: str | None
+    status: str
     metrics: dict | None
     results_at: datetime | None
     created_by: str | None
@@ -166,6 +197,80 @@ def record_experiment(
     return baris
 
 
+def _cari(db: Session, experiment_id: str) -> models.Experiment:
+    baris = db.scalar(
+        select(models.Experiment).where(
+            models.Experiment.experiment_id == experiment_id
+        )
+    )
+    if baris is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Experiment not found.")
+    return baris
+
+
+@router.patch("/{experiment_id}", response_model=ExperimentOut)
+def edit_draft(
+    experiment_id: str,
+    body: DraftEditIn,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(auth.current_user),
+) -> models.Experiment:
+    """Ubah hipotesis atau konfigurasi — hanya selagi masih draft.
+
+    Setelah dikunci, hipotesis tidak dapat disunting. Hipotesis yang masih dapat
+    diubah setelah eksperimen berjalan tidak mengikat apa pun.
+    """
+    baris = _cari(db, experiment_id)
+    if LIFECYCLE.index(baris.status) >= FROZEN_FROM:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Experiment '{experiment_id}' is {baris.status}. Hypothesis and "
+            "configuration were frozen when it left draft — that is what makes "
+            "the freeze mean anything.",
+        )
+
+    for bidang, nilai in body.model_dump(exclude_none=True).items():
+        setattr(baris, bidang, nilai)
+    db.commit()
+    db.refresh(baris)
+    return baris
+
+
+@router.post("/{experiment_id}/status", response_model=ExperimentOut)
+def advance_status(
+    experiment_id: str,
+    body: StatusIn,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(auth.current_user),
+) -> models.Experiment:
+    """Majukan status. Mundur ditolak.
+
+    `final_tested` tidak dapat disetel di sini — status itu hanya diperoleh
+    dengan benar-benar melampirkan hasil.
+    """
+    baris = _cari(db, experiment_id)
+    sekarang = LIFECYCLE.index(baris.status)
+    tujuan = LIFECYCLE.index(body.status)
+
+    if body.status == "final_tested":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "'final_tested' is reached by attaching results, not by setting it.",
+        )
+    if tujuan <= sekarang:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Experiment '{experiment_id}' is already {baris.status}; the "
+            "lifecycle only moves forward.",
+        )
+
+    baris.status = body.status
+    db.commit()
+    db.refresh(baris)
+    logger.info("Eksperimen %s -> %s", experiment_id, body.status)
+    return baris
+
+
 @router.post("/{experiment_id}/results", response_model=ExperimentOut)
 def attach_results(
     experiment_id: str,
@@ -178,14 +283,11 @@ def attach_results(
     Percobaan kedua ditolak: catatan yang hasilnya dapat ditimpa tidak
     membuktikan apa pun tentang apa yang benar-benar terjadi.
     """
-    baris = db.scalar(
-        select(models.Experiment).where(
-            models.Experiment.experiment_id == experiment_id
-        )
-    )
-    if baris is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Experiment not found.")
+    baris = _cari(db, experiment_id)
 
+    # Kekekalan diperiksa lebih dulu: setelah hasil dilampirkan statusnya sudah
+    # `final_tested`, sehingga syarat status di bawah akan menolak percobaan
+    # kedua dengan alasan yang salah.
     if baris.metrics is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -194,8 +296,17 @@ def attach_results(
             "immutable — record a new experiment instead.",
         )
 
+    if baris.kind == TEST and baris.status != READY:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Experiment '{experiment_id}' is {baris.status}. A final test may "
+            f"only be recorded once the experiment reaches '{READY}' — the "
+            "model must be final before the test set is touched.",
+        )
+
     baris.metrics = body.metrics
     baris.results_at = datetime.now(timezone.utc)
+    baris.status = "final_tested"
     db.commit()
     db.refresh(baris)
     return baris
