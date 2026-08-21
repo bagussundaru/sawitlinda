@@ -405,17 +405,21 @@ export function editExperimentDraft(
   });
 }
 
-/** Majukan status. Server menolak arah mundur. */
+/** Majukan status. Server menolak arah mundur.
+ *
+ * `checkpoint` hanya diterima saat maju ke `ready_for_final_test`, dan hanya
+ * sekali — sesudah itu bobot yang diuji tidak dapat ditukar. */
 export function advanceExperiment(
   experimentId: string,
   status: ExperimentStatus,
+  checkpoint?: { model_id: string; model_name?: string },
 ): Promise<Experiment> {
   return apiFetch<Experiment>(
     `/api/experiments/${encodeURIComponent(experimentId)}/status`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...checkpoint }),
     },
   );
 }

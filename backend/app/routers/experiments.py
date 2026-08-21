@@ -64,8 +64,9 @@ READY = "ready_for_final_test"
 class ExperimentIn(BaseModel):
     experiment_id: str = Field(min_length=1, max_length=64)
     kind: str = Field(pattern=f"^({VALIDATION}|{TEST})$")
-    #: sha256 berkas bobot yang dievaluasi.
-    model_id: str = Field(min_length=8, max_length=64)
+    #: sha256 berkas bobot yang dievaluasi. Boleh kosong saat mendaftar: bobot
+    #: belum ada sebelum training, sementara hipotesis harus sudah beku.
+    model_id: str | None = Field(default=None, min_length=8, max_length=64)
     model_name: str | None = Field(default=None, max_length=128)
     dataset_name: str = Field(min_length=1, max_length=128)
     dataset_test_hash: str = Field(min_length=8, max_length=64)
@@ -84,6 +85,12 @@ class ResultsIn(BaseModel):
 
 class StatusIn(BaseModel):
     status: str = Field(pattern="^(" + "|".join(LIFECYCLE) + ")$")
+    #: Identitas checkpoint yang dipilih. Hanya diterima saat maju ke
+    #: `ready_for_final_test` — di situlah "pilih checkpoint terbaik" terjadi.
+    model_id: str | None = Field(default=None, min_length=8, max_length=64)
+    model_name: str | None = Field(default=None, max_length=128)
+    #: Wajib true bila checkpoint ini sudah pernah diuji pada test set ini.
+    confirm_repeat: bool = False
 
 
 class DraftEditIn(BaseModel):
@@ -99,7 +106,7 @@ class ExperimentOut(BaseModel):
     id: UUID
     experiment_id: str
     kind: str
-    model_id: str
+    model_id: str | None
     model_name: str | None
     dataset_name: str
     dataset_test_hash: str
@@ -117,18 +124,32 @@ class ExperimentOut(BaseModel):
         from_attributes = True
 
 
-def _guard_test_reuse(db: Session, body: ExperimentIn) -> None:
-    """Tolak evaluasi test kedua pada model yang sama, kecuali disengaja."""
-    if body.kind != TEST or body.confirm_repeat:
+def _guard_test_reuse(
+    db: Session,
+    *,
+    kind: str,
+    model_id: str | None,
+    dataset_test_hash: str,
+    confirm_repeat: bool,
+    abaikan_id: str | None = None,
+) -> None:
+    """Tolak evaluasi test kedua pada model yang sama, kecuali disengaja.
+
+    `model_id` yang masih kosong berarti checkpoint-nya belum dipilih; belum ada
+    yang dapat dibandingkan, jadi penjagaan ini menunggu sampai ia dideklarasikan.
+    """
+    if kind != TEST or confirm_repeat or model_id is None:
         return
 
-    sebelumnya = db.scalar(
-        select(models.Experiment).where(
-            models.Experiment.kind == TEST,
-            models.Experiment.model_id == body.model_id,
-            models.Experiment.dataset_test_hash == body.dataset_test_hash,
-        )
+    kueri = select(models.Experiment).where(
+        models.Experiment.kind == TEST,
+        models.Experiment.model_id == model_id,
+        models.Experiment.dataset_test_hash == dataset_test_hash,
     )
+    if abaikan_id is not None:
+        kueri = kueri.where(models.Experiment.experiment_id != abaikan_id)
+
+    sebelumnya = db.scalar(kueri)
     if sebelumnya is None:
         return
 
@@ -174,7 +195,13 @@ def record_experiment(
             "immutable; choose a new identifier.",
         )
 
-    _guard_test_reuse(db, body)
+    _guard_test_reuse(
+        db,
+        kind=body.kind,
+        model_id=body.model_id,
+        dataset_test_hash=body.dataset_test_hash,
+        confirm_repeat=body.confirm_repeat,
+    )
 
     baris = models.Experiment(
         **body.model_dump(exclude={"confirm_repeat"}),
@@ -247,6 +274,10 @@ def advance_status(
 
     `final_tested` tidak dapat disetel di sini — status itu hanya diperoleh
     dengan benar-benar melampirkan hasil.
+
+    Identitas checkpoint dideklarasikan saat maju ke `ready_for_final_test`,
+    tepat sekali. Itulah momen "pilih checkpoint terbaik": sebelumnya bobotnya
+    belum ada, sesudahnya ia tidak boleh berganti lagi.
     """
     baris = _cari(db, experiment_id)
     sekarang = LIFECYCLE.index(baris.status)
@@ -262,6 +293,39 @@ def advance_status(
             status.HTTP_409_CONFLICT,
             f"Experiment '{experiment_id}' is already {baris.status}; the "
             "lifecycle only moves forward.",
+        )
+
+    if body.model_id is not None:
+        if body.status != READY:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"The checkpoint is declared when advancing to '{READY}', not at "
+                f"'{body.status}'.",
+            )
+        if baris.model_id is not None:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT,
+                f"Experiment '{experiment_id}' already names checkpoint "
+                f"{baris.model_id[:12]}…. It cannot be swapped for another one.",
+            )
+        _guard_test_reuse(
+            db,
+            kind=baris.kind,
+            model_id=body.model_id,
+            dataset_test_hash=baris.dataset_test_hash,
+            confirm_repeat=body.confirm_repeat,
+            abaikan_id=experiment_id,
+        )
+        baris.model_id = body.model_id
+        if body.model_name is not None:
+            baris.model_name = body.model_name
+
+    if body.status == READY and baris.kind == TEST and baris.model_id is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Name the checkpoint being promoted: pass model_id, the sha256 of "
+            "the weights file chosen from validation. A final test that does not "
+            "say which weights were tested cannot be reproduced.",
         )
 
     baris.status = body.status

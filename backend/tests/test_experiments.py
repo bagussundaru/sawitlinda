@@ -17,8 +17,6 @@ def _catatan(**ubah):
     dasar = {
         "experiment_id": "B1-dji-only",
         "kind": "test",
-        "model_id": MODEL_A,
-        "model_name": "b1-best.pt",
         "dataset_name": "B1-dji-only",
         "dataset_test_hash": HASH_TEST,
         "dataset_val_hash": "v" * 64,
@@ -71,7 +69,7 @@ class TestPencatatan:
 class TestPenjagaanTestSet:
     def test_model_berbeda_pada_test_yang_sama_diperbolehkan(self, client):
         """Itu justru tujuan test set — membandingkan model."""
-        client.post("/api/experiments", json=_catatan())
+        client.post("/api/experiments", json=_catatan(model_id=MODEL_A))
 
         r = client.post(
             "/api/experiments",
@@ -82,9 +80,12 @@ class TestPenjagaanTestSet:
 
     def test_model_sama_pada_test_yang_sama_ditolak(self, client):
         """Di sinilah penyetelan diam-diam berdasarkan hasil test bermula."""
-        client.post("/api/experiments", json=_catatan())
+        client.post("/api/experiments", json=_catatan(model_id=MODEL_A))
 
-        r = client.post("/api/experiments", json=_catatan(experiment_id="B1-ulang"))
+        r = client.post(
+            "/api/experiments",
+            json=_catatan(experiment_id="B1-ulang", model_id=MODEL_A),
+        )
 
         assert r.status_code == 409
         pesan = r.json()["detail"]
@@ -92,11 +93,13 @@ class TestPenjagaanTestSet:
         assert "B1-dji-only" in pesan  # menyebut catatan yang mana
 
     def test_pengulangan_yang_disengaja_diperbolehkan_dan_tetap_tercatat(self, client):
-        client.post("/api/experiments", json=_catatan())
+        client.post("/api/experiments", json=_catatan(model_id=MODEL_A))
 
         r = client.post(
             "/api/experiments",
-            json=_catatan(experiment_id="B1-ulang", confirm_repeat=True),
+            json=_catatan(
+                experiment_id="B1-ulang", model_id=MODEL_A, confirm_repeat=True
+            ),
         )
 
         assert r.status_code == 201
@@ -104,11 +107,15 @@ class TestPenjagaanTestSet:
 
     def test_model_sama_pada_test_BERBEDA_diperbolehkan(self, client):
         """Dataset yang berubah adalah eksperimen yang berbeda."""
-        client.post("/api/experiments", json=_catatan())
+        client.post("/api/experiments", json=_catatan(model_id=MODEL_A))
 
         r = client.post(
             "/api/experiments",
-            json=_catatan(experiment_id="B1-dataset-v4", dataset_test_hash=HASH_TEST_LAIN),
+            json=_catatan(
+                experiment_id="B1-dataset-v4",
+                model_id=MODEL_A,
+                dataset_test_hash=HASH_TEST_LAIN,
+            ),
         )
 
         assert r.status_code == 201
@@ -123,10 +130,14 @@ class TestPenjagaanTestSet:
             assert r.status_code == 201
 
 
-def _sampai_siap(client, experiment_id="B1-dji-only"):
+def _sampai_siap(client, experiment_id="B1-dji-only", model_id=MODEL_A):
     """Jalankan siklus sampai model dinyatakan final."""
-    for tahap in ("locked", "training", "ready_for_final_test"):
+    for tahap in ("locked", "training"):
         client.post(f"/api/experiments/{experiment_id}/status", json={"status": tahap})
+    client.post(
+        f"/api/experiments/{experiment_id}/status",
+        json={"status": "ready_for_final_test", "model_id": model_id},
+    )
 
 
 class TestHasilTidakDapatDitimpa:
@@ -211,12 +222,19 @@ class TestSiklusStatus:
     def test_maju_selangkah_demi_selangkah(self, client):
         self._buat(client)
 
-        for tahap in ("locked", "training", "ready_for_final_test"):
+        for tahap in ("locked", "training"):
             r = client.post(
                 "/api/experiments/B1-dji-only/status", json={"status": tahap}
             )
             assert r.status_code == 200
             assert r.json()["status"] == tahap
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status",
+            json={"status": "ready_for_final_test", "model_id": MODEL_A},
+        )
+        assert r.status_code == 200
+        assert r.json()["status"] == "ready_for_final_test"
 
     def test_mundur_ditolak(self, client):
         """Catatan yang dapat dikembalikan ke draft setelah hasilnya terlihat
@@ -301,6 +319,116 @@ class TestSiklusStatus:
 
         r = client.post(
             "/api/experiments/B1-val/results", json={"metrics": {"map50": 0.5}}
+        )
+
+        assert r.status_code == 200
+
+
+class TestCheckpointDideklarasikanSekali:
+    """Bobot belum ada saat mendaftar, sementara hipotesis harus sudah beku.
+
+    Identitas checkpoint karena itu diisi belakangan — tepat di gerbang
+    `ready_for_final_test`, saat "pilih checkpoint terbaik" benar-benar terjadi.
+    """
+
+    def _buat(self, client, **ubah):
+        return client.post("/api/experiments", json=_catatan(**ubah))
+
+    def _sampai_training(self, client):
+        for tahap in ("locked", "training"):
+            client.post("/api/experiments/B1-dji-only/status", json={"status": tahap})
+
+    def test_boleh_mendaftar_tanpa_checkpoint(self, client):
+        r = self._buat(client)
+
+        assert r.status_code == 201
+        assert r.json()["model_id"] is None
+
+    def test_hipotesis_beku_sebelum_checkpoint_diketahui(self, client):
+        """Inilah yang membuat kedua syarat dapat dipenuhi bersamaan."""
+        self._buat(client)
+        client.post("/api/experiments/B1-dji-only/status", json={"status": "locked"})
+
+        r = client.patch("/api/experiments/B1-dji-only", json={"hypothesis": "diubah"})
+
+        assert r.status_code == 409
+        assert client.get("/api/experiments").json()[0]["model_id"] is None
+
+    def test_checkpoint_dicatat_saat_maju_ke_siap(self, client):
+        self._buat(client)
+        self._sampai_training(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status",
+            json={
+                "status": "ready_for_final_test",
+                "model_id": MODEL_A,
+                "model_name": "b1-best.pt",
+            },
+        )
+
+        assert r.status_code == 200
+        assert r.json()["model_id"] == MODEL_A
+        assert r.json()["model_name"] == "b1-best.pt"
+
+    def test_maju_ke_siap_tanpa_checkpoint_ditolak(self, client):
+        """Test final yang tidak menyebut bobot mana tidak dapat diulang orang lain."""
+        self._buat(client)
+        self._sampai_training(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status",
+            json={"status": "ready_for_final_test"},
+        )
+
+        assert r.status_code == 400
+        assert "sha256 of the weights" in r.json()["detail"]
+
+    def test_checkpoint_tidak_dapat_ditukar(self, client):
+        self._buat(client)
+        _sampai_siap(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status",
+            json={"status": "final_tested", "model_id": MODEL_B},
+        )
+
+        assert r.status_code >= 400
+        assert client.get("/api/experiments").json()[0]["model_id"] == MODEL_A
+
+    def test_checkpoint_tidak_boleh_dideklarasikan_terlalu_dini(self, client):
+        self._buat(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status",
+            json={"status": "locked", "model_id": MODEL_A},
+        )
+
+        assert r.status_code == 400
+        assert "declared when advancing" in r.json()["detail"]
+
+    def test_penjagaan_test_set_berlaku_di_gerbang_checkpoint(self, client):
+        """Checkpoint yang sudah pernah diuji pada test set ini tetap ditolak,
+        walau identitasnya baru muncul belakangan."""
+        client.post("/api/experiments", json=_catatan(experiment_id="lama", model_id=MODEL_A))
+        self._buat(client)
+        self._sampai_training(client)
+
+        r = client.post(
+            "/api/experiments/B1-dji-only/status",
+            json={"status": "ready_for_final_test", "model_id": MODEL_A},
+        )
+
+        assert r.status_code == 409
+        assert "already evaluated" in r.json()["detail"]
+
+    def test_validation_tidak_wajib_menyebut_checkpoint(self, client):
+        self._buat(client, experiment_id="B1-val", kind="validation")
+        for tahap in ("locked", "training"):
+            client.post("/api/experiments/B1-val/status", json={"status": tahap})
+
+        r = client.post(
+            "/api/experiments/B1-val/status", json={"status": "ready_for_final_test"}
         )
 
         assert r.status_code == 200

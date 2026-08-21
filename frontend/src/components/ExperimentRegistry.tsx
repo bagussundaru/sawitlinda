@@ -187,7 +187,11 @@ export default function ExperimentRegistry() {
                         {e.kind}
                       </span>
                     </td>
-                    <td className="py-[9px]">{e.model_name ?? pendek(e.model_id)}</td>
+                    <td className="py-[9px]">
+                      {e.model_name ?? (e.model_id ? pendek(e.model_id) : null) ?? (
+                        <span className="text-[var(--muted-3)]">not chosen yet</span>
+                      )}
+                    </td>
                     <td className="py-[9px]">{e.dataset_name}</td>
                     <td className="mono py-[9px] text-[11px]">
                       {pendek(e.dataset_test_hash)}
@@ -236,8 +240,10 @@ export default function ExperimentRegistry() {
             onSave={(hypothesis) =>
               jalankan(() => editExperimentDraft(aktif.experiment_id, { hypothesis }))
             }
-            onAdvance={(status) =>
-              jalankan(() => advanceExperiment(aktif.experiment_id, status))
+            onAdvance={(status, checkpoint) =>
+              jalankan(() =>
+                advanceExperiment(aktif.experiment_id, status, checkpoint),
+              )
             }
           />
           <Hasil
@@ -267,8 +273,6 @@ function FormBaru({
   const [nilai, setNilai] = useState({
     experiment_id: "",
     kind: "test",
-    model_id: "",
-    model_name: "",
     dataset_name: "",
     dataset_test_hash: "",
     hypothesis: "",
@@ -299,27 +303,6 @@ function FormBaru({
             <option value="test">test</option>
             <option value="validation">validation</option>
           </select>
-        </label>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] font-semibold text-[var(--muted)]">
-            Model checkpoint SHA-256
-          </span>
-          <input
-            className={`${bidang} mono`}
-            value={nilai.model_id}
-            onChange={ubah("model_id")}
-          />
-        </label>
-        <label className="flex flex-col gap-[6px]">
-          <span className="text-[12px] font-semibold text-[var(--muted)]">
-            Model file name
-          </span>
-          <input
-            className={bidang}
-            value={nilai.model_name}
-            onChange={ubah("model_name")}
-            placeholder="b1-best.pt"
-          />
         </label>
         <label className="flex flex-col gap-[6px]">
           <span className="text-[12px] font-semibold text-[var(--muted)]">
@@ -355,12 +338,17 @@ function FormBaru({
         />
       </label>
 
+      <p className="text-[11.5px] leading-relaxed text-[var(--muted-2)]">
+        The checkpoint is not named here. Weights do not exist yet, and the
+        hypothesis has to be frozen before training starts — so the checkpoint is
+        declared later, when it is promoted for the final test.
+      </p>
+
       <div>
         <button
           onClick={() =>
             onSubmit({
               ...nilai,
-              model_name: nilai.model_name || null,
               hypothesis: nilai.hypothesis || null,
             })
           }
@@ -385,10 +373,15 @@ function Hipotesis({
   experiment: Experiment;
   sibuk: boolean;
   onSave: (hypothesis: string) => void;
-  onAdvance: (status: ExperimentStatus) => void;
+  onAdvance: (
+    status: ExperimentStatus,
+    checkpoint?: { model_id: string; model_name?: string },
+  ) => void;
 }) {
   const draft = experiment.status === "draft";
   const [teks, setTeks] = useState(experiment.hypothesis ?? "");
+  const [hash, setHash] = useState("");
+  const [namaBobot, setNamaBobot] = useState("");
 
   useEffect(() => {
     setTeks(experiment.hypothesis ?? "");
@@ -451,7 +444,7 @@ function Hipotesis({
           </blockquote>
           <div className="flex flex-wrap items-center gap-3">
             <Lencana status={experiment.status} />
-            {berikutnya && (
+            {berikutnya && berikutnya !== "ready_for_final_test" && (
               <button
                 onClick={() => onAdvance(berikutnya)}
                 disabled={sibuk}
@@ -461,6 +454,55 @@ function Hipotesis({
               </button>
             )}
           </div>
+
+          {berikutnya === "ready_for_final_test" && (
+            <div className="flex flex-col gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--page)] p-4">
+              <p className="text-[12.5px] font-semibold">
+                Promote the checkpoint chosen from validation
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-[6px]">
+                  <span className="text-[12px] font-semibold text-[var(--muted)]">
+                    Checkpoint SHA-256
+                  </span>
+                  <input
+                    className="mono rounded-[10px] border border-[var(--line)] bg-white px-3 py-[9px] text-[12px]"
+                    value={hash}
+                    onChange={(e) => setHash(e.target.value.trim())}
+                  />
+                </label>
+                <label className="flex flex-col gap-[6px]">
+                  <span className="text-[12px] font-semibold text-[var(--muted)]">
+                    Weights file name
+                  </span>
+                  <input
+                    className="rounded-[10px] border border-[var(--line)] bg-white px-3 py-[9px] text-[13px]"
+                    value={namaBobot}
+                    onChange={(e) => setNamaBobot(e.target.value)}
+                    placeholder="b1-best.pt"
+                  />
+                </label>
+              </div>
+              <div>
+                <button
+                  onClick={() =>
+                    onAdvance("ready_for_final_test", {
+                      model_id: hash,
+                      ...(namaBobot ? { model_name: namaBobot } : {}),
+                    })
+                  }
+                  disabled={sibuk || hash.length < 8}
+                  className="rounded-[11px] bg-[var(--brand)] px-5 py-[10px] text-[13px] font-bold text-white disabled:opacity-60"
+                >
+                  Promote for final test
+                </button>
+              </div>
+              <p className="text-[11.5px] leading-relaxed text-[var(--muted-2)]">
+                Named once and never swapped. A final test that does not say which
+                weights were tested cannot be reproduced by anyone else.
+              </p>
+            </div>
+          )}
         </>
       )}
     </Card>
@@ -578,7 +620,7 @@ function Hasil({
         {[
           ["Test set SHA-256", experiment.dataset_test_hash],
           ["Training dataset", experiment.dataset_name],
-          ["Model checkpoint", experiment.model_name ?? experiment.model_id],
+          ["Model checkpoint", experiment.model_name ?? experiment.model_id ?? "—"],
           ["Git commit", experiment.git_commit ?? "—"],
           ["Recorded by", experiment.created_by ?? "—"],
           ["Registered", waktu(experiment.created_at)],

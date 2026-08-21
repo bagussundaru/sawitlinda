@@ -320,7 +320,8 @@ export interface Experiment {
   id: string;
   experiment_id: string;
   kind: "validation" | "test";
-  model_id: string;
+  /** Kosong sampai checkpoint terbaik dipilih. */
+  model_id: string | null;
   model_name: string | null;
   dataset_name: string;
   dataset_test_hash: string;

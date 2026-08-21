@@ -246,7 +246,11 @@ class Experiment(Base):
     #: sha256 berkas bobot. Model yang berbeda boleh diuji pada test yang sama;
     #: model yang SAMA diuji dua kali pada test yang sama adalah keadaan yang
     #: harus disengaja, bukan terjadi begitu saja.
-    model_id: Mapped[str] = mapped_column(String(64), index=True)
+    #: sha256 berkas bobot. Kosong sampai checkpoint terbaik dipilih — bobotnya
+    #: belum ada saat eksperimen didaftarkan, sementara hipotesisnya harus sudah
+    #: beku sebelum training dimulai. Diisi tepat sekali, saat status maju ke
+    #: `ready_for_final_test`, dan tidak dapat diubah setelah itu.
+    model_id: Mapped[str | None] = mapped_column(String(64), index=True)
     model_name: Mapped[str | None] = mapped_column(String(128))
 
     dataset_name: Mapped[str] = mapped_column(String(128))
