@@ -193,3 +193,46 @@ TEST         76 bingkai UAV
 
 Jangan dilaporkan sebagai "1.007 citra dibagi 70/15/15" — itu menyembunyikan
 struktur dataset yang sebenarnya.
+
+
+---
+
+## 8. Phase B0 — dataset siap-latih
+
+Dua arsip dibangun dari arsip Roboflow dengan `app/training/datasets.py`.
+Tidak disimpan di repositori; dibangun ulang dari arsip sumber.
+
+| | B1 | B2 |
+| --- | --- | --- |
+| Train | 354 bingkai UAV | 354 bingkai UAV + 500 ubin mosaik |
+| Validation | 76 bingkai UAV | **sama persis** |
+| Test | 76 bingkai UAV | **sama persis** |
+| Kotak latih | 20.851 | 53.507 |
+| Ukuran | 40,5 MB | 65,5 MB |
+| Kebocoran | 0 kelompok | 0 kelompok |
+
+Validation dan test **identik byte demi byte** antara keduanya (diverifikasi
+lewat sha256 atas seluruh isinya). Tanpa itu, selisih angka B1 dan B2 tidak
+dapat dikaitkan dengan data latih tambahan.
+
+### Sebaran kelas
+
+| Split | dead | healthy | small | yellow |
+| --- | ---: | ---: | ---: | ---: |
+| B1 train | 143 | 9.309 | 732 | 10.667 |
+| B2 train | 221 | 34.496 | 7.689 | 11.101 |
+| val | 72 | 1.857 | 180 | 5.087 |
+| test | 60 | 1.725 | 270 | 5.071 |
+
+Perhatikan B2: data latih tambahan menggeser sebarannya jauh dari val/test —
+`healthy` naik dari 44,6% ke 64,5%, `yellow` turun dari 51,2% ke 20,7%. Itulah
+justru yang hendak diuji: apakah tambahan data itu membantu, atau membawa
+pergeseran domain.
+
+Tiap arsip memuat `SPLIT.md` dan `split-manifest.csv`, sehingga cara
+pembagiannya dapat dibaca tanpa bertanya kepada siapa pun.
+
+### Belum dikerjakan
+
+B1 dan B2 belum dilatih. Training memerlukan GPU, dan mesin training Modal
+belum di-deploy (`MODAL_TRAINING_URL` masih kosong).

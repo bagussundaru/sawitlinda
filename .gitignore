@@ -32,3 +32,6 @@ next-env.d.ts
 .idea/
 .DS_Store
 Thumbs.db
+
+# Dataset siap-latih; dibangun ulang dari arsip Roboflow, bukan disimpan di repo.
+datasets/
