@@ -35,3 +35,6 @@ Thumbs.db
 
 # Dataset siap-latih; dibangun ulang dari arsip Roboflow, bukan disimpan di repo.
 datasets/
+
+# Berkas kata sandi akun demo di VM; nilainya tidak pernah masuk repositori.
+demo-password.txt
