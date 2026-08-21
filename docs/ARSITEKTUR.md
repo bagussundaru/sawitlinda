@@ -647,10 +647,55 @@ orthomosaic seluruh kebun, tiling perlu dibangun.
 permintaan HTTP. Pekerjaan panjang — menarik dataset Roboflow, analisis ulang
 massal — sudah pindah ke antrean latar; unggahan biasa belum.
 
-**Swin Transformer + MTL belum ada.** Yang terpasang detektor YOLOv8 4 kelas.
-Kepala klasifikasi terpisah untuk jenis dan keparahan belum menjadi bagian sistem.
+**Swin Transformer belum ada; MTL adalah pekerjaan lanjutan.**
+
+Yang terpasang saat ini detektor YOLOv8 4 kelas — itulah *baseline* yang
+dibekukan (lihat §17). Tahap kedua berupa Swin Transformer yang mengklasifikasi
+potongan tajuk sedang dikerjakan; labelnya sudah tersedia di dataset.
+
+Multi-Task Learning **tidak** dipaksakan sekarang, dan alasannya bersifat
+metodologis, bukan teknis: MTL memerlukan dua kepala — kondisi dan keparahan —
+sementara dataset tidak memuat label keparahan sama sekali. Kepala kedua tidak
+punya apa pun untuk dipelajari, dan angka apa pun yang keluar darinya adalah
+karangan. MTL karena itu dicatat sebagai *future work*, menunggu label keparahan
+yang sebenarnya:
+
+```
+                 ┌─→ Condition head   (label tersedia)
+YOLOv8 → Swin ───┤
+                 └─→ Severity head    (label BELUM ada)
+```
 
 ---
+
+## 17. Baseline yang dibekukan
+
+Angka acuan untuk pembanding tahap berikutnya. Diukur pada sistem produksi,
+seluruhnya dari catatan pekerjaan yang tersimpan — bukan disalin tangan.
+
+| | |
+| --- | --- |
+| Detektor | YOLOv8 (`best.pt`) |
+| Ambang keyakinan | 0,25 |
+| Ambang IoU (NMS) | 0,45 |
+| Ukuran ubin | 512 px |
+| Bingkai UAV | 28 |
+| Pohon terdeteksi | **2.765** |
+| Bingkai gagal | 0 |
+| mAP@50 (176 citra split test) | 0,555 |
+
+Ambang dibaca dari konstanta yang benar-benar dipakai dan dilaporkan lewat
+`GET /api/system`, sehingga penjelasan metodologis di layar tidak dapat
+menyimpang dari kode.
+
+Commit `f7f2c93` ditandai sebagai titik stabil sebelum pipeline Swin dibangun.
+
+**Confidence tetap disimpan sebagai metadata setiap deteksi.** Ia tidak
+ditampilkan pada daftar ringkas di dashboard — di antara belasan chip, angkanya
+terbaca sebagai keraguan apakah objeknya pohon, padahal 0,25 sekadar batas bawah
+penerimaan yang ditetapkan sendiri. Nilainya tetap tampil pada pohon terpilih,
+halaman detail, serta ekspor CSV dan PDF, dan tersedia untuk audit maupun
+evaluasi.
 
 ## 16. Rujukan
 

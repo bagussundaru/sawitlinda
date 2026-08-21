@@ -100,6 +100,15 @@ export interface SystemInfo {
   inference_mode: "mock" | "model";
   model_loaded: boolean;
   model_name: string | null;
+  /** Set when the model file exists but the engine could not be loaded. */
+  model_error: string | null;
+  /** "rule" means severity is derived from a fixed rule, not predicted. */
+  severity_source: "rule" | "model";
+  /** Thresholds actually used at inference time, reported by the server so
+   *  the methodology note on screen can never drift from the code. */
+  confidence_threshold: number;
+  nms_iou_threshold: number;
+  tile_size: number;
   ai_enabled: boolean;
   ai_model: string | null;
   max_upload_mb: number;

@@ -3,7 +3,13 @@
 ## Ringkasan
 Aplikasi web untuk deteksi & klasifikasi penyakit kelapa sawit dari citra UAV (drone).
 Web ini adalah **lapisan inference & pelaporan** di atas model AI yang dilatih terpisah.
-Model: YOLOv8 (deteksi area) → Swin Transformer + Multi-Task Learning (klasifikasi jenis penyakit + tingkat keparahan).
+Model: **YOLOv8** (deteksi tajuk) → **Swin Transformer** (klasifikasi kondisi,
+sedang dibangun). **Multi-Task Learning = future work**, bukan dipaksakan
+sekarang: MTL memerlukan label keparahan yang tidak ada di dataset, dan kepala
+kedua tanpa label hanya menghasilkan angka karangan.
+
+Baseline YOLOv8 DIBEKUKAN pada commit f7f2c93 — 28 bingkai, 2.765 pohon, 0
+gagal, ambang 0,25. Jangan diubah tanpa mengukur ulang.
 
 Referensi wajib dibaca sebelum mulai:
 - `docs/Proposal_Deteksi_Penyakit_Sawit.docx` — ruang lingkup, alur bisnis, batas tanggung jawab.

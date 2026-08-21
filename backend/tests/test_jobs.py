@@ -106,9 +106,13 @@ class TestAnalisisUlang:
         job = jobs.enqueue(db, "reanalyse", {"image_ids": None})
         hasil = job_handlers.reanalyse(db, job)
 
-        assert hasil["images"] == 1
-        assert hasil["detections"] > 0
-        assert hasil["failed"] == 0
+        assert hasil["uav_frames"] == 1
+        assert hasil["detected_trees"] > 0
+        assert hasil["failed_frames"] == 0
+        # Ambang dan model ikut dicatat — itulah yang membuat angkanya dapat
+        # diulang orang lain.
+        assert hasil["confidence_threshold"] == 0.25
+        assert hasil["inference_mode"] in ("mock", "model")
         assert client.get(f"/api/results/{image_id}").json()["summary"]["total"] > 0
 
     def test_citra_rusak_tidak_menghentikan_sisanya(self, client, settings, monkeypatch):
@@ -133,8 +137,8 @@ class TestAnalisisUlang:
         job = jobs.enqueue(db, "reanalyse", {"image_ids": None})
         hasil = job_handlers.reanalyse(db, job)
 
-        assert hasil["failed"] == 1
-        assert hasil["images"] == 2
+        assert hasil["failed_frames"] == 1
+        assert hasil["uav_frames"] == 2
 
 
 class TestRoboflow:

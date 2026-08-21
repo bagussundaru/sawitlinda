@@ -8,7 +8,7 @@ from app import models, schemas
 from app.inference import conditions
 from app.config import Settings, get_settings
 from app.db import get_db
-from app.inference import engine
+from app.inference import engine, yolo
 from app.inference.conditions import CONDITIONS, SEVERITIES
 from app.services import app_settings
 
@@ -39,6 +39,9 @@ def get_system_info(
         model_loaded=loaded,
         model_name=model_path.name if loaded and model_path else None,
         model_error=galat,
+        confidence_threshold=yolo.CONF_THRESHOLD,
+        nms_iou_threshold=yolo.IOU_THRESHOLD,
+        tile_size=yolo.TILE_SIZE,
         severity_source="rule",
         ai_enabled=settings.ai_enabled,
         ai_model=settings.nebius_model if settings.ai_enabled else None,

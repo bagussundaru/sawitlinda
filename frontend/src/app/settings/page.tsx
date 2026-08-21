@@ -110,20 +110,92 @@ export default function SettingsPage() {
           <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--muted)]">
             Severity would come from a separate classification head (Swin + MTL). The
             current dataset carries no severity labels, so the value cannot yet be
-            dipertanggungjawabkan sampai klien menyediakannya.
+            defended as a measurement until the client provides them.
           </p>
         </Card>
 
-        <Card title="Sistem">
+        <Card title="Detection method" subtitle="The thresholds actually in use">
+          {/* Dibaca dari server, bukan ditulis ulang di sini: penjelasan
+              metodologis harus ikut berubah dengan sendirinya bila ambangnya
+              diubah, tanpa seorang pun harus ingat memperbarui layar ini. */}
+          <dl className="space-y-[10px] text-[12.5px]">
+            {[
+              {
+                k: "Detector",
+                v: system ? (system.model_loaded ? "YOLOv8" : "mock generator") : "…",
+              },
+              {
+                k: "Model file",
+                v: system?.model_name ?? (system ? "none installed" : "…"),
+              },
+              {
+                k: "Confidence threshold",
+                v: system ? system.confidence_threshold.toFixed(2) : "…",
+              },
+              {
+                k: "NMS IoU threshold",
+                v: system ? system.nms_iou_threshold.toFixed(2) : "…",
+              },
+              {
+                k: "Tile size",
+                v: system ? `${system.tile_size} px` : "…",
+              },
+              {
+                k: "Severity source",
+                v: system?.severity_source === "rule" ? "fixed rule" : "model",
+              },
+            ].map((row) => (
+              <div key={row.k} className="flex justify-between gap-4">
+                <dt className="text-[var(--muted)]">{row.k}</dt>
+                <dd className="mono truncate font-semibold">{row.v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <p className="rounded-[10px] border border-[var(--line)] bg-[var(--line-soft)] px-3 py-[10px] text-[11.5px] leading-relaxed text-[var(--muted)]">
+            A detection is accepted when YOLOv8 reports a confidence at or above
+            the threshold above. Overlapping boxes are merged by non-maximum
+            suppression at the IoU threshold. Frames larger than the tile size
+            are cut into overlapping tiles before detection, because the model
+            was trained on tiles of that size.
+            <br />
+            <br />
+            The confidence of every accepted detection is <b>kept as metadata</b>
+            {" "}and appears on the selected tree, the detection detail page, and
+            the CSV and PDF exports — it is left off the dashboard lists only
+            because, next to a dozen chips, it reads as doubt about whether the
+            object is a tree rather than as the acceptance threshold it is.
+          </p>
+        </Card>
+
+        <Card title="System">
           <dl className="space-y-[10px] text-[12.5px]">
             <div className="flex justify-between gap-4">
-              <dt className="text-[var(--muted)]">Alamat API</dt>
+              <dt className="text-[var(--muted)]">API address</dt>
               <dd className="truncate font-mono text-[11.5px]">{BASE_URL}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-[var(--muted)]">Status inference</dt>
-              <dd className="font-semibold text-[var(--amber)]">Mock</dd>
+              <dt className="text-[var(--muted)]">Inference</dt>
+              <dd
+                className="font-semibold"
+                style={{
+                  color: system?.model_loaded ? "var(--brand-2)" : "var(--amber)",
+                }}
+              >
+                {system ? (system.model_loaded ? "Model" : "Mock") : "…"}
+              </dd>
             </div>
+            {system?.model_error && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--muted)]">Engine error</dt>
+                <dd
+                  className="truncate font-semibold text-[var(--red)]"
+                  title={system.model_error}
+                >
+                  {system.model_error}
+                </dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <dt className="text-[var(--muted)]">AI Review</dt>
               <dd
@@ -137,11 +209,13 @@ export default function SettingsPage() {
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-[var(--muted)]">Autentikasi</dt>
-              <dd className="font-semibold text-[var(--red)]">Not available</dd>
+              <dt className="text-[var(--muted)]">Authentication</dt>
+              <dd className="font-semibold text-[var(--brand-2)]">
+                Session login
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-[var(--muted)]">Format didukung</dt>
+              <dt className="text-[var(--muted)]">Supported formats</dt>
               <dd>JPG · PNG · TIFF</dd>
             </div>
           </dl>

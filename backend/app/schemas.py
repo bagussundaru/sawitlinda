@@ -186,6 +186,16 @@ class SystemInfo(BaseModel):
     #: Dari mana nilai keparahan berasal. "rule" berarti diturunkan dari aturan
     #: tetap, bukan diprediksi model — dataset belum memuat label keparahan.
     severity_source: Literal["rule", "model"] = "rule"
+
+    # --- Ambang yang benar-benar dipakai saat inference. Dilaporkan, bukan
+    #     ditulis ulang di layar: penjelasan metodologis harus ikut berubah
+    #     dengan sendirinya bila nilainya diubah. ---
+    #: Batas minimum penerimaan sebuah deteksi.
+    confidence_threshold: float = 0.25
+    #: Ambang IoU untuk non-maximum suppression.
+    nms_iou_threshold: float = 0.45
+    #: Sisi ubin saat bingkai besar dipotong, dalam piksel.
+    tile_size: int = 512
     #: Lapisan analisis AI (Nebius) aktif atau tidak.
     ai_enabled: bool = False
     ai_model: str | None = None

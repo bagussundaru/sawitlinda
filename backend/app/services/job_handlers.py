@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.config import get_settings
+from app.inference import yolo
 from app.inference.engine import run_inference
 from app.services import app_settings, evaluation_run, jobs, roboflow
 
@@ -88,7 +89,22 @@ def reanalyse(db: Session, job: models.Job) -> dict:
             gagal += 1
 
     jobs.set_progress(db, job.id, total, total, "Finished")
-    return {"images": total, "detections": pohon, "failed": gagal}
+
+    # Dicatat sebagai catatan eksperimen, bukan sekadar jumlah: ambang dan nama
+    # model itulah yang membuat angka ini dapat diulang orang lain. Dibaca dari
+    # konstanta dan pengaturan yang benar-benar dipakai, bukan ditulis ulang.
+    berkas_model = settings.model_file
+    terpasang = bool(berkas_model and berkas_model.is_file())
+    return {
+        "uav_frames": total,
+        "detected_trees": pohon,
+        "failed_frames": gagal,
+        "confidence_threshold": yolo.CONF_THRESHOLD,
+        "nms_iou_threshold": yolo.IOU_THRESHOLD,
+        "tile_size": yolo.TILE_SIZE,
+        "model": berkas_model.name if terpasang else "mock",
+        "inference_mode": "model" if terpasang else "mock",
+    }
 
 
 @jobs.register("roboflow_evaluate")

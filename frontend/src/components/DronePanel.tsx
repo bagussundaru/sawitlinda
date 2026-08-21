@@ -151,10 +151,13 @@ export default function DronePanel({
                       className="h-[7px] w-[7px] shrink-0 rounded-full"
                       style={{ background: SEVERITY_COLOR[d.severity] }}
                     />
+                    {/* Confidence sengaja TIDAK ditampilkan di daftar ini.
+                        Di antara belasan chip, angkanya terbaca sebagai
+                        "model hanya sekian persen yakin ini pohon", padahal
+                        0,25 sekadar batas bawah yang ditetapkan sendiri.
+                        Nilainya tetap tersimpan dan tampil pada pohon yang
+                        dipilih, halaman detail, serta ekspor CSV dan PDF. */}
                     <span className="text-white/85">{d.condition}</span>
-                    <span className="mono text-white/40">
-                      {(d.confidence * 100).toFixed(0)}%
-                    </span>
                   </button>
                 ))}
               </div>
