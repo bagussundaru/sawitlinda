@@ -39,3 +39,4 @@ datasets/
 # Berkas kata sandi akun demo di VM; nilainya tidak pernah masuk repositori.
 demo-password.txt
 frontend/tsconfig.tsbuildinfo
+modal-training-token.txt
