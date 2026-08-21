@@ -136,3 +136,32 @@ docker compose -p sawitscan -f docker-compose.prod.yml down
   sampai autentikasi dibangun.
 - Matikan login SSH dengan password, pakai kunci publik:
   `PasswordAuthentication no` di `/etc/ssh/sshd_config`.
+
+
+## Cadangan database
+
+Yang tidak tergantikan adalah metadatanya — label, deteksi, evaluasi, akun.
+Berkas citra dapat diunggah ulang; hasil analisis tidak.
+
+```bash
+bash deploy/backup.sh
+```
+
+Menulis dump SQL terkompresi ke `~/sawitscan-backups/`, menyimpan 14 hari
+terakhir. Dump dipilih daripada menyalin volume: direktori data PostgreSQL yang
+sedang hidup menghasilkan salinan rusak bila disalin begitu saja.
+
+Terjadwal harian pukul 02:00:
+
+```
+0 2 * * * TUJUAN=/home/ubuntu/sawitscan-backups   COMPOSE=/home/ubuntu/sawitscan/docker-compose.prod.yml   /bin/bash /home/ubuntu/sawitscan/deploy/backup.sh >> /var/log/sawitscan-backup.log 2>&1
+```
+
+Memulihkan:
+
+```bash
+zcat sawitscan-YYYYMMDD-HHMMSS.sql.gz |   docker compose -p sawitscan -f docker-compose.prod.yml exec -T db   psql -U sawitscan -d sawitscan
+```
+
+Skrip memeriksa ukuran hasilnya: `pg_dump` yang gagal tetap menghasilkan berkas
+gzip kecil, dan tanpa pemeriksaan itu kegagalan akan lolos sebagai keberhasilan.
