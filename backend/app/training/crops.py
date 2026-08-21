@@ -79,12 +79,21 @@ def split_groups(
     counts: dict[str, int],
     ratios: tuple[float, float, float] = (0.7, 0.15, 0.15),
     seed: int = 0,
+    strata: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """Bagikan SELURUH kelompok ke split, bukan potongan per potongan.
 
     Mengembalikan {kelompok: split}. Kelompok besar dibagikan lebih dulu supaya
     proporsi akhirnya tidak melenceng jauh — membagikan berurutan dari yang
     kecil membuat satu kelompok raksasa di akhir menjatuhkan seluruh imbangan.
+
+    `strata` memetakan kelompok ke jenis sumbernya, dan bila diberikan, tiap
+    jenis dibagikan SENDIRI-SENDIRI ke ketiga split. Tanpa itu, jenis yang
+    kelompoknya besar bisa jatuh seluruhnya ke satu split — dan bila sebaran
+    kelasnya berbeda antar-jenis, split itu mengukur populasi yang berbeda.
+    Pada dataset ini ubin mosaik didominasi `yellow`/`dead` sementara bingkai
+    berdiri sendiri didominasi `small`; membiarkannya terpisah membuat angka
+    evaluasi tidak dapat dibandingkan dengan apa pun.
 
     Deterministik untuk `seed` yang sama: dua orang yang menjalankan ini pada
     dataset yang sama harus memperoleh pembagian yang sama, atau angkanya tidak
@@ -94,6 +103,23 @@ def split_groups(
         return {}
     if abs(sum(ratios) - 1.0) > 1e-6:
         raise ValueError(f"Rasio harus berjumlah 1, dapat {sum(ratios)}.")
+
+    if strata is None:
+        return _bagikan(counts, ratios, seed)
+
+    hasil: dict[str, str] = {}
+    for jenis in sorted({strata.get(g, "") for g in counts}):
+        bagian = {g: n for g, n in counts.items() if strata.get(g, "") == jenis}
+        hasil.update(_bagikan(bagian, ratios, seed))
+    return hasil
+
+
+def _bagikan(
+    counts: dict[str, int], ratios: tuple[float, float, float], seed: int
+) -> dict[str, str]:
+    """Bagikan satu himpunan kelompok ke ketiga split."""
+    if not counts:
+        return {}
 
     total = sum(counts.values())
     target = dict(zip(SPLITS, (r * total for r in ratios)))
