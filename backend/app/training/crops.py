@@ -142,6 +142,34 @@ def _bagikan(
     return hasil
 
 
+def class_names(archive: bytes) -> list[str]:
+    """Nama kelas menurut arsip, MENURUT URUTANNYA SENDIRI.
+
+    Wajib dipakai, bukan ditebak. Dataset ini menulis
+    `names: ['dead', 'healthy', 'small', 'yellow']` — urutan yang berbeda dari
+    urutan tampilan di aplikasi. Menebaknya menukar seluruh kelas tanpa satu pun
+    galat muncul, dan angka yang keluar tetap terlihat masuk akal.
+    """
+    arsip = zipfile.ZipFile(io.BytesIO(archive))
+    for anggota in arsip.namelist():
+        if Path(anggota).name.lower() != "data.yaml":
+            continue
+        for baris in arsip.read(anggota).decode("utf-8", "replace").splitlines():
+            if not baris.strip().startswith("names:"):
+                continue
+            sisa = baris.split("names:", 1)[1].strip()
+            if sisa.startswith("["):
+                return [
+                    n.strip().strip("'\"")
+                    for n in sisa.strip("[]").split(",")
+                    if n.strip()
+                ]
+    raise ValueError(
+        "data.yaml tidak memuat `names:`. Urutan kelas tidak boleh ditebak — "
+        "menebaknya menukar seluruh kelas tanpa galat apa pun."
+    )
+
+
 def read_annotations(
     archive: bytes, class_names: list[str]
 ) -> dict[str, list[tuple[int, float, float, float, float]]]:

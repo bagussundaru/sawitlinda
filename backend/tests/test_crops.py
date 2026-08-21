@@ -244,3 +244,50 @@ class TestManifest:
 
         assert baris[0].startswith("crop_id,split,source_image,source_group")
         assert baris[1] == "c1,train,img1,g1,0,healthy,1,2,3,4"
+
+
+class TestUrutanKelas:
+    """Urutan kelas dibaca dari arsip, tidak pernah ditebak.
+
+    Dataset ini menulis `names: ['dead', 'healthy', 'small', 'yellow']` — urutan
+    yang berbeda dari urutan tampilan di aplikasi. Menebaknya menukar seluruh
+    kelas tanpa satu pun galat muncul, dan angka yang keluar tetap terlihat
+    masuk akal. Kekeliruan itu pernah terjadi saat mengaudit dataset ini.
+    """
+
+    def _arsip(self, names="['dead', 'healthy', 'small', 'yellow']") -> bytes:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("data.yaml", f"nc: 4\nnames: {names}\n")
+        return buf.getvalue()
+
+    def test_urutan_dibaca_apa_adanya(self):
+        assert crops.class_names(self._arsip()) == [
+            "dead",
+            "healthy",
+            "small",
+            "yellow",
+        ]
+
+    def test_urutan_lain_juga_terbaca_apa_adanya(self):
+        """Tidak ada urutan yang dianggap "benar" di sini."""
+        arsip = self._arsip("['healthy', 'yellow', 'dead', 'small']")
+
+        assert crops.class_names(arsip) == ["healthy", "yellow", "dead", "small"]
+
+    def test_tanpa_names_ditolak_bukan_ditebak(self):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("data.yaml", "nc: 4\n")
+
+        with pytest.raises(ValueError, match="tidak boleh ditebak"):
+            crops.class_names(buf.getvalue())
+
+    def test_indeks_dipetakan_lewat_urutan_arsip(self):
+        """Bukti bahwa indeks 0 pada berkas label menjadi kelas pertama arsip."""
+        nama = crops.class_names(self._arsip())
+        anotasi = {"a": [(0, 0.5, 0.5, 0.2, 0.2)]}
+
+        potongan, _ = crops.plan_crops(anotasi, nama, {"a": (500, 500)})
+
+        assert potongan[0].label == "dead"
