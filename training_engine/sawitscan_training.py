@@ -9,14 +9,14 @@ Tiga route, seluruhnya memerlukan header `Authorization: Bearer <token>`:
     POST /train                    mulai training, kembalikan job_id
     GET  /train/{job_id}/status    progres terkini per epoch
     GET  /train/{job_id}/weights   unduh best.pt
+    POST /evaluate/{job_id}        ukur best.pt pada satu split (default test)
 
 Progres ditulis ke modal.Dict lewat callback ultralytics tiap epoch — bukan
 diambil dari stdout. stdout milik container GPU tidak dapat dibaca endpoint web
 yang berjalan di container lain, dan formatnya berubah antar versi ultralytics.
 """
 
-from __future__ import annotations
-
+import hashlib
 import json
 import os
 import shutil
@@ -44,7 +44,10 @@ RUNS_DIR = DATA_DIR / "runs"
 # diimpor dengan "libGL.so.1: cannot open shared object file".
 train_image = (
     modal.Image.debian_slim(python_version="3.11")
-    .apt_install("libglib2.0-0")
+    # OpenCV — ditarik ultralytics — menautkan libGL dan libglib secara dinamis.
+    # Keduanya tidak ada di debian_slim, dan ketiadaannya baru terlihat saat
+    # `import ultralytics` di container GPU, bukan saat image dibangun.
+    .apt_install("libgl1", "libglib2.0-0")
     .pip_install(
         "ultralytics==8.4.115",
         "opencv-python-headless",
@@ -279,6 +282,79 @@ def train_job(
         raise
 
 
+@app.function(
+    image=train_image,
+    gpu=GPU_TYPE,
+    volumes={"/data": volume},
+    timeout=60 * 60,
+)
+def evaluate_job(job_id: str, split: str = "test", imgsz: int = 640) -> dict:
+    """Ukur `best.pt` pada satu split, dan kembalikan angkanya apa adanya.
+
+    Dijalankan terpisah dari training dengan sengaja. Test set hanya disentuh
+    setelah checkpoint dipilih dari validation; menggabungkannya ke akhir
+    training akan membuat angka test ikut terlihat pada setiap percobaan.
+
+    Jumlah instance dihitung dari berkas label, bukan diambil dari ultralytics:
+    namanya berpindah-pindah antar versi, sementara isi labelnya tidak.
+    """
+    import collections
+
+    import yaml
+    from ultralytics import YOLO
+
+    volume.reload()
+    bobot = RUNS_DIR / job_id / "weights" / "best.pt"
+    if not bobot.exists():
+        raise FileNotFoundError(f"best.pt tidak ada untuk job {job_id}.")
+
+    kerja = Path("/tmp/eval") / job_id
+    data_yaml = _bongkar_dataset(DATASET_DIR / f"{job_id}.zip", kerja)
+    _perbaiki_path_dataset(data_yaml)
+
+    nama_kelas = yaml.safe_load(data_yaml.read_text())["names"]
+
+    hasil = YOLO(str(bobot)).val(
+        data=str(data_yaml), split=split, imgsz=imgsz, verbose=False
+    )
+
+    # AP per kelas hanya berisi kelas yang muncul; `ap_class_index` memetakannya
+    # kembali ke indeks kelas yang sebenarnya.
+    ap50 = {}
+    ap = {}
+    for posisi, indeks in enumerate(hasil.box.ap_class_index):
+        ap50[nama_kelas[int(indeks)]] = float(hasil.box.ap50[posisi])
+        ap[nama_kelas[int(indeks)]] = float(hasil.box.maps[int(indeks)])
+
+    instance: collections.Counter = collections.Counter()
+    folder = {"train": "train", "val": "valid", "test": "test"}.get(split, split)
+    for berkas in (data_yaml.parent / folder / "labels").glob("*.txt"):
+        for baris in berkas.read_text().splitlines():
+            bagian = baris.split()
+            if bagian:
+                instance[nama_kelas[int(float(bagian[0]))]] += 1
+
+    return {
+        "job_id": job_id,
+        "split": split,
+        "imgsz": imgsz,
+        "weights_sha256": hashlib.sha256(bobot.read_bytes()).hexdigest(),
+        "map50": float(hasil.box.map50),
+        "map50_95": float(hasil.box.map),
+        "precision": float(hasil.box.mp),
+        "recall": float(hasil.box.mr),
+        "per_class": {
+            k: {
+                "ap": ap50.get(k),
+                "ap50_95": ap.get(k),
+                "instances": instance.get(k, 0),
+            }
+            for k in nama_kelas
+        },
+        "class_names": list(nama_kelas),
+    }
+
+
 # --- Endpoint web ------------------------------------------------------------
 @app.function(
     image=web_image,
@@ -392,6 +468,20 @@ def web():
         if catatan is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Job tidak ditemukan.")
         return {"job_id": job_id, **catatan}
+
+    @api.post("/evaluate/{job_id}", dependencies=[Depends(wajib_token)])
+    def evaluasi(job_id: str, split: str = "test") -> dict:
+        """Ukur best.pt pada satu split. Menunggu sampai selesai.
+
+        Sengaja tidak diberi jalur `.spawn()`: hasilnya harus dibaca sekali dan
+        dicatat, bukan dipantau berulang-ulang sampai angkanya terlihat bagus.
+        """
+        if split not in {"test", "val", "train"}:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Split tidak dikenal.")
+        try:
+            return evaluate_job.remote(job_id, split)
+        except FileNotFoundError as exc:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 
     @api.get("/train/{job_id}/weights", dependencies=[Depends(wajib_token)])
     def unduh_bobot(job_id: str):
